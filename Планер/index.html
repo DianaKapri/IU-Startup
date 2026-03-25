@@ -3,168 +3,288 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Synapse AI — Интеллект нового поколения</title>
+  <title>ШколаПлан — Расписание. Переосмыслено.</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
 </head>
 <body>
- 
-  <!-- ===================== НАВИГАЦИЯ ===================== -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-inner">
-      <a href="#" class="logo">
-        <span class="logo-icon">◈</span> Synapse<span class="logo-ai">AI</span>
+
+  <!-- NAV -->
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="#" class="nav__logo">
+        <svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/>
+          <rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/>
+          <rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/>
+          <rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/>
+        </svg>
+        ШколаПлан
       </a>
-      <ul class="nav-links">
-        <li><a href="#how">Как это работает</a></li>
-        <li><a href="#form">Попробовать</a></li>
-      </ul>
+      <div class="nav__links">
+        <a href="#features" class="nav__link">Возможности</a>
+        <a href="#how" class="nav__link">Как это работает</a>
+        <a href="#form" class="nav__link nav__link--cta">Попробовать</a>
+      </div>
     </div>
   </nav>
- 
-  <!-- ===================== HERO ===================== -->
+
+  <!-- HERO -->
   <section class="hero">
-    <div class="hero-grid-bg"></div>
-    <div class="hero-glow"></div>
-    <div class="hero-content">
-      <p class="hero-tag" data-animate>Искусственный интеллект для бизнеса</p>
-      <h1 class="hero-title" data-animate>
-        Автоматизируйте<br />
-        <span class="gradient-text">рутину за секунды</span>
+    <div class="hero__content">
+      <h1 class="hero__title fade-in">
+        Расписание.
+        <br/>
+        <span class="hero__title--gradient">Переосмыслено.</span>
       </h1>
-      <p class="hero-desc" data-animate>
-        Synapse AI анализирует документы, генерирует отчёты и отвечает на вопросы 
-        клиентов — быстрее и точнее, чем целый отдел. Подключите ИИ-ассистента 
-        и освободите команду для стратегических задач.
+      <p class="hero__subtitle fade-in fade-in--d1">
+        Загрузите расписание — получите аудит по СанПиН за 30 секунд.
+        <br class="hide-mobile" />
+        Составьте расписание с ИУП за 30 минут вместо двух недель.
       </p>
-      <div class="hero-actions" data-animate>
-        <a href="#form" class="btn btn-primary">
-          <span>Начать бесплатно</span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </a>
-        <a href="#how" class="btn btn-ghost">Узнать больше</a>
+      <div class="hero__actions fade-in fade-in--d2">
+        <a href="#form" class="link-cta link-cta--blue">Попробовать бесплатно ›</a>
+        <a href="#how" class="link-cta link-cta--muted">Узнать больше ›</a>
       </div>
-      <div class="hero-stats" data-animate>
-        <div class="stat">
-          <span class="stat-num" data-count="12">0</span><span class="stat-suffix">×</span>
-          <span class="stat-label">быстрее людей</span>
+    </div>
+
+    <div class="hero__mockup fade-in fade-in--d3">
+      <div class="mockup">
+        <div class="mockup__header">
+          <div class="mockup__dots"><span></span><span></span><span></span></div>
+          <span class="mockup__tab">Аудит СанПиН — Школа №42</span>
         </div>
-        <div class="stat-divider"></div>
-        <div class="stat">
-          <span class="stat-num" data-count="98">0</span><span class="stat-suffix">%</span>
-          <span class="stat-label">точность ответов</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat">
-          <span class="stat-num" data-count="500">0</span><span class="stat-suffix">+</span>
-          <span class="stat-label">компаний доверяют</span>
+        <div class="mockup__body">
+          <div class="mockup__row mockup__row--green">
+            <span class="mockup__dot"></span>
+            <span class="mockup__label">5А — Понедельник</span>
+            <span class="mockup__value">Соответствует</span>
+          </div>
+          <div class="mockup__row mockup__row--green">
+            <span class="mockup__dot"></span>
+            <span class="mockup__label">5Б — Понедельник</span>
+            <span class="mockup__value">Соответствует</span>
+          </div>
+          <div class="mockup__row mockup__row--red">
+            <span class="mockup__dot"></span>
+            <span class="mockup__label">7В — Среда</span>
+            <span class="mockup__value">Нарушение п. 3.4.16</span>
+          </div>
+          <div class="mockup__row mockup__row--yellow">
+            <span class="mockup__dot"></span>
+            <span class="mockup__label">9А — Четверг</span>
+            <span class="mockup__value">Рекомендация</span>
+          </div>
+          <div class="mockup__row mockup__row--green">
+            <span class="mockup__dot"></span>
+            <span class="mockup__label">10Б — Пятница</span>
+            <span class="mockup__value">Соответствует</span>
+          </div>
         </div>
       </div>
     </div>
   </section>
- 
-  <!-- ===================== КАК ЭТО РАБОТАЕТ ===================== -->
-  <section class="how-section" id="how">
-    <div class="container">
-      <p class="section-tag" data-animate>Простой старт</p>
-      <h2 class="section-title" data-animate>Как это работает</h2>
- 
-      <div class="steps-grid">
- 
-        <div class="step-card" data-animate>
-          <div class="step-number">01</div>
-          <div class="step-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          </div>
-          <h3>Загрузите данные</h3>
-          <p>Подключите базу знаний, документы или API. Synapse поддерживает PDF, DOCX, CSV и 40+ форматов.</p>
-        </div>
- 
-        <div class="step-card" data-animate>
-          <div class="step-number">02</div>
-          <div class="step-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          </div>
-          <h3>ИИ обучается</h3>
-          <p>Модель анализирует контекст, выстраивает связи и адаптируется под вашу предметную область за минуты.</p>
-        </div>
- 
-        <div class="step-card" data-animate>
-          <div class="step-number">03</div>
-          <div class="step-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          </div>
-          <h3>Получайте результат</h3>
-          <p>Задавайте вопросы на обычном языке — получайте точные ответы, отчёты и автоматизацию 24/7.</p>
-        </div>
- 
+
+  <!-- STATS RIBBON -->
+  <section class="ribbon">
+    <div class="ribbon__inner">
+      <div class="ribbon__stat fade-in">
+        <span class="ribbon__number" data-target="85">0</span><span class="ribbon__unit">%</span>
+        <span class="ribbon__label">быстрее</span>
+      </div>
+      <div class="ribbon__stat fade-in fade-in--d1">
+        <span class="ribbon__number" data-target="47">0</span>
+        <span class="ribbon__label">правил СанПиН</span>
+      </div>
+      <div class="ribbon__stat fade-in fade-in--d2">
+        <span class="ribbon__number" data-target="3">0</span><span class="ribbon__unit"> мин</span>
+        <span class="ribbon__label">на замену учителя</span>
+      </div>
+      <div class="ribbon__stat fade-in fade-in--d3">
+        <span class="ribbon__number" data-target="95">0</span><span class="ribbon__unit">%</span>
+        <span class="ribbon__label">учеников без конфликтов</span>
       </div>
     </div>
   </section>
- 
-  <!-- ===================== ФОРМА ===================== -->
+
+  <!-- SHOWCASE: SanPin -->
+  <section class="showcase showcase--dark">
+    <div class="showcase__inner">
+      <p class="showcase__eyebrow fade-in">Киллер-фича</p>
+      <h2 class="showcase__title fade-in">
+        СанПиН&#8209;аудит
+        <br/>в один клик.
+      </h2>
+      <p class="showcase__text fade-in fade-in--d1">
+        47 правил. 15 секунд. Визуальный дашборд с цветовыми маркерами для каждого класса, каждого дня, каждого правила. Скачайте PDF&#8209;отчёт со ссылками на пункты нормативов и покажите проверяющим.
+      </p>
+      <a href="#form" class="link-cta link-cta--blue fade-in fade-in--d2">Проверить расписание ›</a>
+    </div>
+  </section>
+
+  <!-- SHOWCASE: Replacements -->
+  <section class="showcase showcase--light">
+    <div class="showcase__inner">
+      <p class="showcase__eyebrow fade-in">Экстренные замены</p>
+      <h2 class="showcase__title fade-in">
+        Учитель заболел?
+        <br/>3 минуты вместо 45.
+      </h2>
+      <p class="showcase__text fade-in fade-in--d1">
+        Отметьте отсутствие — система за 5 секунд предложит ранжированный план замен. Для каждого кандидата: квалификация, нагрузка, свободные слоты, побочные эффекты. Одно подтверждение — готовая карточка замен в чат и на стенд.
+      </p>
+      <a href="#form" class="link-cta link-cta--dark fade-in fade-in--d2">Узнать больше ›</a>
+    </div>
+  </section>
+
+  <!-- SHOWCASE: IUP -->
+  <section class="showcase showcase--dark">
+    <div class="showcase__inner">
+      <p class="showcase__eyebrow fade-in">ИУП и группы</p>
+      <h2 class="showcase__title fade-in">
+        120 учеников.
+        <br/>9 групп. 40 секунд.
+      </h2>
+      <p class="showcase__text fade-in fade-in--d1">
+        Ученики выбирают предметы через веб&#8209;форму. Система кластеризует индивидуальные наборы в оптимальные группы, генерирует расписание без конфликтов и с соблюдением СанПиН. Один день вместо трёх недель.
+      </p>
+      <a href="#form" class="link-cta link-cta--blue fade-in fade-in--d2">Начать ›</a>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="process" id="how">
+    <h2 class="process__heading fade-in">Как это работает</h2>
+    <p class="process__sub fade-in fade-in--d1">Четыре шага от файла до готового расписания.</p>
+
+    <div class="process__grid">
+      <div class="process__step fade-in">
+        <div class="process__num">1</div>
+        <h3 class="process__step-title">Загрузите</h3>
+        <p class="process__step-text">Excel, CSV или копия из браузера. Парсер распознает структуру автоматически.</p>
+      </div>
+      <div class="process__step fade-in fade-in--d1">
+        <div class="process__num">2</div>
+        <h3 class="process__step-title">Проверьте</h3>
+        <p class="process__step-text">Мгновенный аудит по СанПиН. Визуальные маркеры для каждого нарушения.</p>
+      </div>
+      <div class="process__step fade-in fade-in--d2">
+        <div class="process__num">3</div>
+        <h3 class="process__step-title">Оптимизируйте</h3>
+        <p class="process__step-text">Примите предложенные исправления или скорректируйте вручную.</p>
+      </div>
+      <div class="process__step fade-in fade-in--d3">
+        <div class="process__num">4</div>
+        <h3 class="process__step-title">Скачайте</h3>
+        <p class="process__step-text">Готовое расписание в Excel и PDF&#8209;отчёт для проверяющих.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES GRID -->
+  <section class="cards" id="features">
+    <div class="cards__inner">
+      <div class="card card--wide fade-in">
+        <p class="card__eyebrow">Импорт</p>
+        <h3 class="card__title">Умный парсер с нечётким сопоставлением</h3>
+        <p class="card__text">«Иванова М.П.» и «Иванова Мария Петровна» — один человек. Шаблоны для 1С:АСР, Ректор, типового Excel.</p>
+      </div>
+      <div class="card fade-in fade-in--d1">
+        <p class="card__eyebrow">Проектная деятельность</p>
+        <h3 class="card__title">Слоты для межклассных групп</h3>
+        <p class="card__text">Тепловая карта доступности. Минимальные корректировки основного расписания.</p>
+      </div>
+      <div class="card fade-in fade-in--d2">
+        <p class="card__eyebrow">Конфликты</p>
+        <h3 class="card__title">Проверка в реальном времени</h3>
+        <p class="card__text">Визуальный конструктор групп с drag&#8209;and&#8209;drop. Конфликты подсвечиваются мгновенно.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICE -->
+  <section class="price">
+    <div class="price__inner fade-in">
+      <p class="price__eyebrow">Стоимость</p>
+      <div class="price__amount">14 400 <span>₽/год</span></div>
+      <p class="price__note">Бесплатный аудит СанПиН. 14 дней полного доступа без оплаты.</p>
+      <a href="#form" class="link-cta link-cta--blue">Начать бесплатно ›</a>
+    </div>
+  </section>
+
+  <!-- FORM -->
   <section class="form-section" id="form">
-    <div class="container">
-      <div class="form-wrapper">
-        <div class="form-info">
-          <p class="section-tag" data-animate>Бесплатный доступ</p>
-          <h2 class="section-title" data-animate>Попробуйте Synapse AI</h2>
-          <p class="form-desc" data-animate>
-            Оставьте заявку — и мы подключим вам тестовый доступ в течение 24 часов. 
-            Без привязки карты, без обязательств.
-          </p>
-          <ul class="form-perks" data-animate>
-            <li><span class="perk-check">✓</span> 14 дней бесплатно</li>
-            <li><span class="perk-check">✓</span> Полный функционал</li>
-            <li><span class="perk-check">✓</span> Персональный онбординг</li>
-          </ul>
+    <div class="form-section__inner">
+      <div class="form-section__left fade-in">
+        <h2 class="form-section__title">Попробуйте
+          <br/>бесплатно.</h2>
+        <p class="form-section__desc">Оставьте заявку — мы поможем загрузить расписание и покажем результат аудита в тот же день.</p>
+      </div>
+
+      <form class="form fade-in fade-in--d1" id="contactForm" novalidate>
+        <div class="form__field">
+          <label class="form__label" for="name">Имя</label>
+          <input class="form__input" type="text" id="name" name="name" placeholder="Елена Сергеевна" required />
+          <span class="form__error" id="nameError"></span>
         </div>
- 
-        <form class="contact-form" id="contactForm" data-animate>
-          <div class="form-group">
-            <label for="userName">Имя</label>
-            <input type="text" id="userName" name="name" placeholder="Александр" required />
-          </div>
-          <div class="form-group">
-            <label for="userEmail">Электронная почта</label>
-            <input type="email" id="userEmail" name="email" placeholder="alex@company.com" required />
-          </div>
-          <div class="form-group">
-            <label for="userCompany">Компания</label>
-            <input type="text" id="userCompany" name="company" placeholder="ООО «Компания»" />
-          </div>
-          <div class="form-group">
-            <label for="userMessage">Чем можем помочь?</label>
-            <textarea id="userMessage" name="message" rows="3" placeholder="Расскажите о вашей задаче..."></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary btn-full">
-            <span>Отправить заявку</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </button>
-          <div class="form-success" id="formSuccess">
-            <span class="success-icon">✓</span>
-            <p>Заявка отправлена! Мы свяжемся с вами в ближайшее время.</p>
-          </div>
-        </form>
+        <div class="form__field">
+          <label class="form__label" for="school">Школа</label>
+          <input class="form__input" type="text" id="school" name="school" placeholder="Школа №42, г. Москва" required />
+          <span class="form__error" id="schoolError"></span>
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="email">Email</label>
+          <input class="form__input" type="email" id="email" name="email" placeholder="elena@school42.ru" required />
+          <span class="form__error" id="emailError"></span>
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="phone">Телефон</label>
+          <input class="form__input" type="tel" id="phone" name="phone" placeholder="+7 (999) 123-45-67" />
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="classes">Количество классов</label>
+          <select class="form__input form__select" id="classes" name="classes">
+            <option value="">Выберите</option>
+            <option value="1-10">до 10</option>
+            <option value="11-20">11 – 20</option>
+            <option value="21-40">21 – 40</option>
+            <option value="40+">более 40</option>
+          </select>
+        </div>
+        <button class="form__btn" type="submit">Отправить заявку</button>
+      </form>
+
+      <div class="form-success" id="formSuccess">
+        <div class="form-success__check">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="16" fill="#0071e3"/>
+            <path d="M10 16.5l4 4 8-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="form-success__title">Заявка отправлена</h3>
+        <p class="form-success__text">Мы свяжемся с вами в течение рабочего дня.</p>
       </div>
     </div>
   </section>
- 
-  <!-- ===================== ФУТЕР ===================== -->
+
+  <!-- FOOTER -->
   <footer class="footer">
-    <div class="container footer-inner">
-      <a href="#" class="logo">
-        <span class="logo-icon">◈</span> Synapse<span class="logo-ai">AI</span>
-      </a>
-      <p class="footer-copy">© 2026 Synapse AI. Все права защищены.</p>
+    <div class="footer__inner">
+      <span class="footer__logo">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+          <rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/>
+          <rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/>
+          <rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/>
+          <rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".15"/>
+        </svg>
+        ШколаПлан
+      </span>
+      <span class="footer__copy">© 2026 ШколаПлан</span>
     </div>
   </footer>
- 
-  <script src="script.js"></script>
-</body>
-</html>
+
   <script src="script.js"></script>
 </body>
 </html>
