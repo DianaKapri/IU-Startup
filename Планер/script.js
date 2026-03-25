@@ -1,114 +1,121 @@
-/* ============================================
-   SYNAPSE AI — Landing Page Scripts
-   ============================================ */
-
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ——————————— Навигация — фон при скролле ———————————
-  const navbar = document.getElementById('navbar');
-  const onScroll = () => {
-    navbar.classList.toggle('scrolled', window.scrollY > 40);
-  };
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  /* ===== SCROLL REVEAL ===== */
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
 
-  // ——————————— Анимации появления (IntersectionObserver) ———————————
-  const animatedEls = document.querySelectorAll('[data-animate]');
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry, i) => {
-        if (entry.isIntersecting) {
-          // Каскадная задержка для элементов, видимых одновременно
-          const siblings = [...entry.target.parentElement.querySelectorAll('[data-animate]')];
-          const idx = siblings.indexOf(entry.target);
-          entry.target.style.transitionDelay = `${idx * 100}ms`;
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
-  );
 
-  animatedEls.forEach((el) => observer.observe(el));
+  /* ===== NAV THEME (dark on dark sections) ===== */
+  const nav = document.getElementById('nav');
+  const darkSections = document.querySelectorAll('.hero, .showcase--dark, .form-section, .ribbon');
 
-  // ——————————— Анимированный счётчик чисел ———————————
-  const counters = document.querySelectorAll('[data-count]');
-  let countersDone = false;
+  function updateNavTheme() {
+    const navBottom = nav.getBoundingClientRect().bottom;
+    let onDark = false;
 
-  const statsObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !countersDone) {
-          countersDone = true;
-          animateCounters();
-          statsObserver.disconnect();
-        }
-      });
-    },
-    { threshold: 0.5 }
-  );
+    darkSections.forEach(section => {
+      const rect = section.getBoundingClientRect();
+      if (rect.top < navBottom && rect.bottom > navBottom) {
+        onDark = true;
+      }
+    });
 
-  const statsSection = document.querySelector('.hero-stats');
-  if (statsSection) statsObserver.observe(statsSection);
+    nav.classList.toggle('nav--dark', onDark);
+  }
+
+  window.addEventListener('scroll', updateNavTheme, { passive: true });
+  updateNavTheme();
+
+
+  /* ===== COUNTER ANIMATION ===== */
+  let counterFired = false;
+
+  const counterObserver = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !counterFired) {
+      counterFired = true;
+      animateCounters();
+    }
+  }, { threshold: 0.3 });
+
+  const ribbon = document.querySelector('.ribbon');
+  if (ribbon) counterObserver.observe(ribbon);
 
   function animateCounters() {
-    counters.forEach((el) => {
-      const target = parseInt(el.getAttribute('data-count'), 10);
+    document.querySelectorAll('.ribbon__number[data-target]').forEach(el => {
+      const target = +el.dataset.target;
       const duration = 1800;
       const start = performance.now();
 
-      function tick(now) {
-        const elapsed = now - start;
-        const progress = Math.min(elapsed / duration, 1);
-        // easeOutExpo
-        const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-        el.textContent = Math.round(ease * target);
-        if (progress < 1) requestAnimationFrame(tick);
-      }
-
-      requestAnimationFrame(tick);
+      (function tick(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * ease);
+        if (p < 1) requestAnimationFrame(tick);
+      })(start);
     });
   }
 
-  // ——————————— Обработка формы ———————————
+
+  /* ===== FORM ===== */
   const form = document.getElementById('contactForm');
   const success = document.getElementById('formSuccess');
+  if (!form) return;
 
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      // Собираем данные
-      const data = Object.fromEntries(new FormData(form));
-      console.log('📩 Данные формы:', data);
-
-      // Показываем сообщение об успехе
-      const submitBtn = form.querySelector('button[type="submit"]');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span>Отправляем…</span>';
-
-      // Имитация отправки
-      setTimeout(() => {
-        submitBtn.style.display = 'none';
-        success.classList.add('show');
-        form.reset();
-      }, 1200);
-    });
+  function setError(id, msg) {
+    const span = document.getElementById(id);
+    const input = span && span.previousElementSibling;
+    if (span) span.textContent = msg;
+    if (input) input.classList.toggle('error', !!msg);
   }
 
-  // ——————————— Плавный скролл для ссылок ———————————
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener('click', (e) => {
-      const id = anchor.getAttribute('href');
-      if (id === '#') return;
-      e.preventDefault();
-      const target = document.querySelector(id);
-      if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+  form.querySelectorAll('.form__input').forEach(input => {
+    input.addEventListener('input', () => {
+      const err = input.nextElementSibling;
+      if (err && err.classList.contains('form__error')) {
+        err.textContent = '';
+        input.classList.remove('error');
       }
     });
+  });
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    let ok = true;
+
+    const name   = form.name.value.trim();
+    const school = form.school.value.trim();
+    const email  = form.email.value.trim();
+
+    setError('nameError', '');
+    setError('schoolError', '');
+    setError('emailError', '');
+
+    if (!name)   { setError('nameError', 'Введите имя');   ok = false; }
+    if (!school) { setError('schoolError', 'Укажите школу'); ok = false; }
+    if (!email)  { setError('emailError', 'Введите email'); ok = false; }
+    else if (!isEmail(email)) { setError('emailError', 'Некорректный email'); ok = false; }
+
+    if (!ok) return;
+
+    const btn = form.querySelector('.form__btn');
+    btn.disabled = true;
+    btn.textContent = 'Отправка…';
+
+    setTimeout(() => {
+      form.style.display = 'none';
+      document.querySelector('.form-section__left').style.display = 'none';
+      success.classList.add('active');
+    }, 900);
   });
 
 });
