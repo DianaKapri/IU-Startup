@@ -25,6 +25,7 @@
       </a>
       <div class="nav__links">
         <a href="#features" class="nav__link">Возможности</a>
+        <a href="#demo" class="nav__link">Демо</a>
         <a href="#how" class="nav__link">Как это работает</a>
         <a href="#form" class="nav__link nav__link--cta">Попробовать</a>
       </div>
@@ -118,9 +119,68 @@
         <br/>в один клик.
       </h2>
       <p class="showcase__text fade-in fade-in--d1">
-        47 правил. 15 секунд. Визуальный дашборд с цветовыми маркерами для каждого класса, каждого дня, каждого правила. Скачайте PDF&#8209;отчёт со ссылками на пункты нормативов и покажите проверяющим.
+        47 правил. Менее 5 миллисекунд. Визуальный дашборд с цветовыми маркерами для каждого класса, каждого дня, каждого правила. Наведите на ячейку — увидите балл трудности и причину нарушения. Скачайте PDF&#8209;отчёт со ссылками на пункты нормативов и покажите проверяющим.
       </p>
-      <a href="#form" class="link-cta link-cta--blue fade-in fade-in--d2">Проверить расписание ›</a>
+      <a href="#demo" class="link-cta link-cta--blue fade-in fade-in--d2">Проверить расписание ›</a>
+    </div>
+  </section>
+
+  <!-- LIVE DEMO -->
+  <section class="demo" id="demo">
+    <div class="demo__inner">
+      <p class="demo__eyebrow fade-in">Попробуйте прямо сейчас</p>
+      <h2 class="demo__heading fade-in">Загрузите расписание — увидите результат</h2>
+      <p class="demo__sub fade-in fade-in--d1">Перетащите Excel-файл или посмотрите на демо-данных. Аудит занимает менее 5 мс.</p>
+
+      <!-- Upload zone -->
+      <div class="demo__upload fade-in fade-in--d2" id="demoUpload">
+        <div class="demo__dropzone" id="dropzone">
+          <div class="demo__dropzone-icon">📄</div>
+          <div class="demo__dropzone-text">Перетащите <b>.xlsx</b> файл сюда</div>
+          <div class="demo__dropzone-hint">или нажмите для выбора</div>
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden />
+        </div>
+        <button class="demo__demo-btn" id="loadDemoBtn">Или посмотреть на демо-данных ›</button>
+        <div class="demo__error" id="demoError"></div>
+      </div>
+
+      <!-- Dashboard (hidden until data loaded) -->
+      <div class="demo__dashboard" id="demoDashboard" style="display:none">
+
+        <!-- Header row: score + counters -->
+        <div class="demo__header fade-in">
+          <div class="demo__score" id="demoScore"></div>
+          <div class="demo__counters">
+            <div class="demo__counter demo__counter--green" id="cntPass">
+              <span class="demo__counter-val">0</span>
+              <span class="demo__counter-lbl">✅ пройдено</span>
+            </div>
+            <div class="demo__counter demo__counter--yellow" id="cntWarn">
+              <span class="demo__counter-val">0</span>
+              <span class="demo__counter-lbl">⚠️ рекоменд.</span>
+              <div class="demo__counter-popup" id="warnPopup"></div>
+            </div>
+            <div class="demo__counter demo__counter--red" id="cntViol">
+              <span class="demo__counter-val">0</span>
+              <span class="demo__counter-lbl">❌ нарушений</span>
+              <div class="demo__counter-popup" id="violPopup"></div>
+            </div>
+          </div>
+          <button class="demo__reset" id="resetBtn" title="Загрузить другой файл">↻ Другой файл</button>
+        </div>
+
+        <!-- Schedule grid -->
+        <div class="demo__grid-wrap">
+          <table class="demo__grid" id="demoGrid"></table>
+        </div>
+        <div class="demo__grid-hint">Наведите на ячейку — увидите балл трудности и причину нарушения</div>
+
+        <!-- Tooltip -->
+        <div class="demo__tooltip" id="demoTooltip" style="display:none"></div>
+
+        <!-- Recommendations -->
+        <div class="demo__recs" id="demoRecs"></div>
+      </div>
     </div>
   </section>
 
@@ -285,6 +345,7 @@
     </div>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
