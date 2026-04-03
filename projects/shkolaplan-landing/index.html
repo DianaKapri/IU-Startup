@@ -139,13 +139,13 @@
 <section class="form-section" id="form"><div class="form-section__inner">
   <div class="form-section__left fade-in"><h2 class="form-section__title">Попробуйте<br/>бесплатно.</h2><p class="form-section__desc">Мы покажем результат аудита в тот же день.</p></div>
   <form class="form fade-in fade-in--d1" id="contactForm" novalidate>
-    <div class="form__field"><label class="form__label">Имя</label><input class="form__input" name="name" placeholder="Елена Сергеевна" required/><span class="form__error" id="nameError"></span></div>
-    <div class="form__field"><label class="form__label">Школа</label><input class="form__input" name="school" placeholder="Школа №42" required/><span class="form__error" id="schoolError"></span></div>
-    <div class="form__field"><label class="form__label">Email</label><input class="form__input" type="email" name="email" placeholder="elena@school42.ru" required/><span class="form__error" id="emailError"></span></div>
-    <div class="form__field"><label class="form__label">Телефон</label><input class="form__input" type="tel" name="phone" placeholder="+7 (999) 123-45-67"/></div>
+    <div class="form__field"><label class="form__label">Имя</label><input id="name" class="form__input" name="name" placeholder="Елена Сергеевна" required autocomplete="name"/><span class="form__error" id="nameError"></span></div>
+    <div class="form__field"><label class="form__label">Школа</label><input id="school" class="form__input" name="school" placeholder="Школа №42" required autocomplete="organization"/><span class="form__error" id="schoolError"></span></div>
+    <div class="form__field"><label class="form__label">Email</label><input id="email" class="form__input" type="email" name="email" placeholder="elena@school42.ru" required autocomplete="email"/><span class="form__error" id="emailError"></span></div>
+    <div class="form__field"><label class="form__label">Телефон</label><input id="phone" class="form__input" type="tel" name="phone" placeholder="+7 (999) 123-45-67" autocomplete="tel"/></div>
     <button class="form__btn" type="submit">Отправить заявку</button>
   </form>
-  <div class="form-success" id="formSuccess"><h3 class="form-success__title">✓ Заявка отправлена</h3><p class="form-success__text">Мы свяжемся в течение рабочего дня.</p></div>
+  <div class="form-success" id="formSuccess" style="display:none"><h3 class="form-success__title">✓ Заявка отправлена</h3><p class="form-success__text">Мы свяжемся в течение рабочего дня.</p></div>
 </div></section>
 
 <footer class="footer"><div class="footer__inner">
