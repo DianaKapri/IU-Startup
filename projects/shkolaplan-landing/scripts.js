@@ -17,22 +17,101 @@ var cio=new IntersectionObserver(function(en){if(en[0].isIntersecting&&!cf){cf=t
 var rib=document.querySelector('.ribbon');if(rib)cio.observe(rib);
 
 /* ═══ FORM ═══ */
-var form=document.getElementById('contactForm');
-if(form){
-  function setErr(id,msg){var s=document.getElementById(id);if(s)s.textContent=msg;var inp=s&&s.previousElementSibling;if(inp)inp.classList.toggle('error',!!msg);}
-  form.querySelectorAll('.form__input').forEach(function(i){i.addEventListener('input',function(){var e=i.nextElementSibling;if(e&&e.classList.contains('form__error')){e.textContent='';i.classList.remove('error');}});});
-  form.addEventListener('submit',function(e){
-    e.preventDefault();var ok=true;
-    var n=form.name.value.trim(),s=form.school.value.trim(),em=form.email.value.trim();
-    setErr('nameError','');setErr('schoolError','');setErr('emailError','');
-    if(!n){setErr('nameError','Введите имя');ok=false;}
-    if(!s){setErr('schoolError','Укажите школу');ok=false;}
-    if(!em){setErr('emailError','Введите email');ok=false;}
-    else if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){setErr('emailError','Некорректный email');ok=false;}
-    if(!ok)return;
-    var btn=form.querySelector('.form__btn');btn.disabled=true;btn.textContent='Отправка…';
-    setTimeout(function(){form.style.display='none';document.querySelector('.form-section__left').style.display='none';document.getElementById('formSuccess').classList.add('active');},900);
-  });
+var form = document.getElementById('contactForm');
+if (form) {
+  // предотвратить многократную привязку обработчика
+  if (!form.dataset.subHandlerAttached) {
+    form.dataset.subHandlerAttached = '1';
+
+    function setErr(id, msg) {
+      var s = document.getElementById(id);
+      if (s) s.textContent = msg;
+      var inp = s && s.previousElementSibling;
+      if (inp) inp.classList.toggle('error', !!msg);
+    }
+
+    form.querySelectorAll('.form__input').forEach(function (i) {
+      i.addEventListener('input', function () {
+        var e = i.nextElementSibling;
+        if (e && e.classList.contains('form__error')) {
+          e.textContent = '';
+          i.classList.remove('error');
+        }
+      });
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var ok = true;
+      var n = (form.name && form.name.value || '').trim();
+      var s = (form.school && form.school.value || '').trim();
+      var em = (form.email && form.email.value || '').trim();
+      var ph = (form.phone && form.phone.value || '').trim();
+
+      setErr('nameError', '');
+      setErr('schoolError', '');
+      setErr('emailError', '');
+
+      if (!n) { setErr('nameError', 'Введите имя'); ok = false; }
+      if (!s) { setErr('schoolError', 'Укажите школу'); ok = false; }
+      if (!em) { setErr('emailError', 'Введите email'); ok = false; }
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { setErr('emailError', 'Некорректный email'); ok = false; }
+
+      if (!ok) return;
+
+      var btn = form.querySelector('.form__btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Отправка…'; }
+
+      // подготовка уникального id (crypto.randomUUID() если доступно)
+      var genId = function () {
+        if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+        return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+      };
+
+      // безопасная загрузка и нормализация существующих данных
+      try {
+        var raw = localStorage.getItem('shkolaplan_submissions');
+        var arr = [];
+        if (raw) {
+          try {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) arr = parsed;
+            else if (parsed && typeof parsed === 'object') arr = [parsed];
+          } catch (ignore) {
+            // невалидный JSON — перезапишем ниже
+            arr = [];
+          }
+        }
+
+        var submission = {
+          id: genId(),
+          name: n,
+          school: s,
+          email: em,
+          phone: ph,
+          createdAt: new Date().toISOString()
+        };
+
+        arr.push(submission);
+        localStorage.setItem('shkolaplan_submissions', JSON.stringify(arr));
+
+        // сигнал остальным частям приложения
+        window.dispatchEvent(new CustomEvent('shkolaplan:submissionsUpdated', { detail: arr }));
+        console.info('Shkolaplan: saved submission', submission);
+      } catch (err) {
+        console.error('shkolaplan: save error', err);
+      }
+
+      // UI: скрыть форму и показать success, вернуть кнопку
+      setTimeout(function () {
+        form.reset();
+        if (form.style) form.style.display = 'none';
+        var left = document.querySelector('.form-section__left'); if (left) left.style.display = 'none';
+        var fs = document.getElementById('formSuccess'); if (fs) { fs.style.display = 'block'; fs.classList.add('active'); }
+        if (btn) { btn.disabled = false; btn.textContent = 'Отправить заявку'; }
+      }, 700);
+    });
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
