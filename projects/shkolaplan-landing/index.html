@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ШколаПлан — Расписание. Переосмыслено.</title>
+<link rel="stylesheet" href="styles.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav__inner">
+  <a href="#" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
+  <div class="nav__links"><a href="#features" class="nav__link">Возможности</a><a href="#demo" class="nav__link">Демо</a><a href="#how" class="nav__link">Как это работает</a><a href="#form" class="nav__link nav__link--cta">Попробовать</a></div>
+</div></nav>
+
+<section class="hero"><div class="hero__content">
+  <h1 class="hero__title fade-in">Расписание.<br/><span class="hero__title--gradient">Переосмыслено.</span></h1>
+  <p class="hero__subtitle fade-in fade-in--d1">Загрузите расписание — получите аудит по СанПиН за 5 мс.<br class="hide-mobile"/>Составьте расписание с ИУП за 30 минут вместо двух недель.</p>
+  <div class="hero__actions fade-in fade-in--d2"><a href="#demo" class="link-cta link-cta--blue">Попробовать бесплатно ›</a> <a href="#how" class="link-cta link-cta--muted">Узнать больше ›</a></div>
+</div>
+<div class="hero__mockup fade-in fade-in--d3"><div class="mockup"><div class="mockup__header"><div class="mockup__dots"><span></span><span></span><span></span></div><span class="mockup__tab">Аудит СанПиН — Школа №42</span></div><div class="mockup__body">
+  <div class="mockup__row mockup__row--green"><span class="mockup__dot"></span><span class="mockup__label">5А — Понедельник</span><span class="mockup__value">Соответствует</span></div>
+  <div class="mockup__row mockup__row--red"><span class="mockup__dot"></span><span class="mockup__label">7В — Среда</span><span class="mockup__value">Нарушение п. 3.4.16</span></div>
+  <div class="mockup__row mockup__row--yellow"><span class="mockup__dot"></span><span class="mockup__label">9А — Четверг</span><span class="mockup__value">Рекомендация</span></div>
+  <div class="mockup__row mockup__row--green"><span class="mockup__dot"></span><span class="mockup__label">10Б — Пятница</span><span class="mockup__value">Соответствует</span></div>
+</div></div></div></section>
+
+<section class="ribbon"><div class="ribbon__inner">
+  <div class="ribbon__stat fade-in"><span class="ribbon__number" data-target="23">0</span><span class="ribbon__label">проверки СанПиН</span></div>
+  <div class="ribbon__stat fade-in fade-in--d1"><span class="ribbon__number" data-target="5">0</span><span class="ribbon__unit"> мс</span><span class="ribbon__label">время аудита</span></div>
+  <div class="ribbon__stat fade-in fade-in--d2"><span class="ribbon__number" data-target="0">0</span><span class="ribbon__label">вызовов к API</span></div>
+  <div class="ribbon__stat fade-in fade-in--d3"><span class="ribbon__number" data-target="85">0</span><span class="ribbon__unit">%</span><span class="ribbon__label">быстрее ручного</span></div>
+</div></section>
+
+<section class="showcase showcase--dark"><div class="showcase__inner">
+  <p class="showcase__eyebrow fade-in">Киллер-фича</p>
+  <h2 class="showcase__title fade-in">СанПиН&#8209;аудит<br/>в один клик.</h2>
+  <p class="showcase__text fade-in fade-in--d1">23 проверки. Менее 5 мс. Цветовые маркеры для каждого класса, каждого дня, каждого правила.</p>
+  <a href="#demo" class="link-cta link-cta--blue fade-in fade-in--d2">Проверить расписание ›</a>
+</div></section>
+
+<!-- ═══ LIVE DEMO ═══ -->
+<section class="demo" id="demo"><div class="demo__inner">
+  <p class="demo__eyebrow fade-in">Попробуйте прямо сейчас</p>
+  <h2 class="demo__heading fade-in">Загрузите расписание — увидите результат</h2>
+  <p class="demo__sub fade-in fade-in--d1">Перетащите Excel-файл или посмотрите на демо-данных.</p>
+  <div id="demoUpload" class="demo__upload">
+    <div id="dropzone" class="demo__dropzone">
+      <div style="font-size:2.4rem;margin-bottom:8px">📄</div>
+      <div style="font-size:.95rem;color:#f5f5f7;margin-bottom:4px">Перетащите <b>.xlsx</b> файл сюда</div>
+      <div style="font-size:.78rem;color:#86868b">или нажмите для выбора</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden/>
+    </div>
+    <button id="loadDemoBtn" class="demo__demo-btn">Или посмотреть на демо-данных ›</button>
+    <div style="margin-top:14px"><a href="../../assets/shablon-raspisaniya.xlsx" download style="font-family:var(--font);font-size:.88rem;font-weight:500;color:#30d158;text-decoration:none">📥 Скачать шаблон расписания (.xlsx)</a></div>
+    <div id="demoError" class="demo__error"></div>
+  </div>
+  <div id="demoDash" style="display:none">
+    <div class="demo__header">
+      <div class="demo__score-wrap">
+        <div id="scoreEl"></div>
+        <div class="demo__score-tip">
+          <div style="font-weight:700;margin-bottom:6px">Общий балл аудита</div>
+          <div style="background:rgba(255,255,255,.06);border-radius:6px;padding:6px 10px;font-size:.72rem;color:#d2d2d7;margin-bottom:8px">Score = пройдено ÷ (пройдено + рек. + нар.) × 100</div>
+          <div style="font-size:.75rem;color:#86868b;margin-bottom:6px"><div><span style="color:#30d158">90–100</span> — расписание соответствует СанПиН</div><div><span style="color:#ff9f0a">70–89</span> — есть рекомендации по улучшению</div><div><span style="color:#ff453a">0–69</span> — обнаружены жёсткие нарушения</div></div>
+          <div style="font-size:.65rem;color:rgba(255,255,255,.25)">На основе 23 проверок чек-листа Роспотребнадзора.<br/>Нормативная база: СанПиН 1.2.3685-21, СП 2.4.3648-20, МР 2.4.0331-23</div>
+        </div>
+      </div>
+      <div class="demo__counters">
+        <div class="demo__cnt demo__cnt--g" id="cntP"><span class="demo__cnt-v">0</span><span class="demo__cnt-l">✅ пройдено</span></div>
+        <div class="demo__cnt demo__cnt--y" id="cntW"><span class="demo__cnt-v">0</span><span class="demo__cnt-l">⚠️ рекоменд.</span><div class="demo__cnt-pop" id="popW"></div></div>
+        <div class="demo__cnt demo__cnt--r" id="cntV"><span class="demo__cnt-v">0</span><span class="demo__cnt-l">❌ нарушений</span><div class="demo__cnt-pop" id="popV"></div></div>
+      </div>
+      <button id="resetBtn" class="demo__reset">↻ Другой файл</button>
+    </div>
+    <div class="demo__tabs">
+      <button class="demo__tab demo__tab--on" data-t="grid">📅 Сетка</button>
+      <button class="demo__tab" data-t="heat">🌡️ Трудность</button>
+      <button class="demo__tab" data-t="recs">📋 Проблемы</button>
+      <button class="demo__tab" data-t="vars">🔄 Варианты</button>
+    </div>
+    <div id="pGrid" class="demo__pane">
+      <div class="demo__grid-hint">Число в ячейке = балл трудности предмета для данного класса. Оранжевая рамка = рекомендация (сложный не на 2–4 уроке или два сложных подряд). Наведите на ячейку для подробностей.</div>
+      <div class="demo__tw"><table class="demo__tbl" id="tGrid"></table></div>
+    </div>
+    <div id="pHeat" class="demo__pane" style="display:none">
+      <div class="demo__heat-note">
+        <b>Шкала трудности предметов</b> — таблицы 6.9, 6.10, 6.11 СанПиН 1.2.3685-21.<br/>
+        Каждому предмету присвоен балл от 1 до 13 в зависимости от класса. Для 5–9 классов баллы <b>поклассные</b> (табл. 6.10): например, математика в 5 кл. = 10 баллов, в 6 кл. = 13 баллов.<br/>
+        Суммарный балл дня показывает общую нагрузку. <span style="color:#30d158">■</span> Облегчённый день (наименьшая сумма) должен приходиться на среду или четверг (п. 189 СанПиН 1.2.3685-21). <span style="color:#ff453a">■</span> Пик нагрузки — самый тяжёлый день.
+      </div>
+      <div class="demo__tw"><table class="demo__tbl" id="tHeat"></table></div>
+    </div>
+    <div id="pRecs" class="demo__pane" style="display:none"><div id="elRecs"></div></div>
+    <div id="pVars" class="demo__pane" style="display:none"><div id="elVars"></div></div>
+    <div id="ttip" class="demo__ttip"></div>
+  </div>
+</div></section>
+
+<section class="showcase showcase--light"><div class="showcase__inner">
+  <p class="showcase__eyebrow fade-in">Экстренные замены</p>
+  <h2 class="showcase__title fade-in">Учитель заболел?<br/>3 минуты вместо 45.</h2>
+  <p class="showcase__text fade-in fade-in--d1">Система предложит план замен за 5 секунд.</p>
+  <a href="#form" class="link-cta link-cta--dark fade-in fade-in--d2">Узнать больше ›</a>
+</div></section>
+
+<section class="showcase showcase--dark"><div class="showcase__inner">
+  <p class="showcase__eyebrow fade-in">ИУП и группы</p>
+  <h2 class="showcase__title fade-in">120 учеников.<br/>9 групп. 40 секунд.</h2>
+  <p class="showcase__text fade-in fade-in--d1">Кластеризация индивидуальных наборов в оптимальные группы без конфликтов.</p>
+  <a href="#form" class="link-cta link-cta--blue fade-in fade-in--d2">Начать ›</a>
+</div></section>
+
+<section class="process" id="how">
+  <h2 class="process__heading fade-in">Как это работает</h2>
+  <p class="process__sub fade-in fade-in--d1">Четыре шага от файла до готового расписания.</p>
+  <div class="process__grid">
+    <div class="process__step fade-in"><div class="process__num">1</div><h3 class="process__step-title">Загрузите</h3><p class="process__step-text">Excel, CSV или копия из браузера.</p></div>
+    <div class="process__step fade-in fade-in--d1"><div class="process__num">2</div><h3 class="process__step-title">Проверьте</h3><p class="process__step-text">Мгновенный аудит по 23 нормам СанПиН.</p></div>
+    <div class="process__step fade-in fade-in--d2"><div class="process__num">3</div><h3 class="process__step-title">Оптимизируйте</h3><p class="process__step-text">Примите предложения или скорректируйте.</p></div>
+    <div class="process__step fade-in fade-in--d3"><div class="process__num">4</div><h3 class="process__step-title">Скачайте</h3><p class="process__step-text">Готовое расписание в Excel и PDF-отчёт.</p></div>
+  </div>
+</section>
+
+<section class="cards" id="features"><div class="cards__inner">
+  <div class="card card--wide fade-in"><p class="card__eyebrow">Импорт</p><h3 class="card__title">Умный парсер с нечётким сопоставлением</h3><p class="card__text">«Иванова М.П.» и «Иванова Мария Петровна» — один человек.</p></div>
+  <div class="card fade-in fade-in--d1"><p class="card__eyebrow">Проектная деятельность</p><h3 class="card__title">Слоты для межклассных групп</h3><p class="card__text">Тепловая карта доступности.</p></div>
+  <div class="card fade-in fade-in--d2"><p class="card__eyebrow">Конфликты</p><h3 class="card__title">Проверка в реальном времени</h3><p class="card__text">Конфликты подсвечиваются мгновенно.</p></div>
+</div></section>
+
+<section class="price"><div class="price__inner fade-in">
+  <p class="price__eyebrow">Стоимость</p>
+  <div class="price__amount">14 400 <span>₽/год</span></div>
+  <p class="price__note">Бесплатный аудит. 14 дней полного доступа без оплаты.</p>
+  <a href="#form" class="link-cta link-cta--blue">Начать бесплатно ›</a>
+</div></section>
+
+<section class="form-section" id="form"><div class="form-section__inner">
+  <div class="form-section__left fade-in"><h2 class="form-section__title">Попробуйте<br/>бесплатно.</h2><p class="form-section__desc">Мы покажем результат аудита в тот же день.</p></div>
+  <form class="form fade-in fade-in--d1" id="contactForm" novalidate>
+    <div class="form__field"><label class="form__label">Имя</label><input class="form__input" name="name" placeholder="Елена Сергеевна" required/><span class="form__error" id="nameError"></span></div>
+    <div class="form__field"><label class="form__label">Школа</label><input class="form__input" name="school" placeholder="Школа №42" required/><span class="form__error" id="schoolError"></span></div>
+    <div class="form__field"><label class="form__label">Email</label><input class="form__input" type="email" name="email" placeholder="elena@school42.ru" required/><span class="form__error" id="emailError"></span></div>
+    <div class="form__field"><label class="form__label">Телефон</label><input class="form__input" type="tel" name="phone" placeholder="+7 (999) 123-45-67"/></div>
+    <button class="form__btn" type="submit">Отправить заявку</button>
+  </form>
+  <div class="form-success" id="formSuccess"><h3 class="form-success__title">✓ Заявка отправлена</h3><p class="form-success__text">Мы свяжемся в течение рабочего дня.</p></div>
+</div></section>
+
+<footer class="footer"><div class="footer__inner">
+  <span class="footer__logo">ШколаПлан</span><span class="footer__copy">© 2026 ШколаПлан</span>
+</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="scripts.js"></script>
+</body>
+</html>
