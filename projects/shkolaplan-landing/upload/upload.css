@@ -1,0 +1,299 @@
+/* Модуль: frontend
+   Задача: US-0401-ST01
+   Описание: Стили зоны загрузки, прогресс-бара, состояний (drag-over, error, success). */
+
+/* ─── Drop Zone ────────────────────────────────────────────── */
+
+.upload-container {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.upload-title {
+  font-family: var(--font-display, 'Unbounded', sans-serif);
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+  color: var(--text, #f5f5f7);
+}
+
+.upload-subtitle {
+  color: var(--text-secondary, #86868b);
+  font-size: 15px;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+
+.drop-zone {
+  position: relative;
+  border: 2px dashed var(--border-active, #333);
+  border-radius: 16px;
+  padding: 56px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background: var(--surface, #0a0a0a);
+  overflow: hidden;
+}
+
+.drop-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(41, 151, 255, 0.15), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.drop-zone:hover {
+  border-color: var(--accent, #2997ff);
+  background: var(--surface-hover, #111);
+}
+
+.drop-zone:hover::before { opacity: 1; }
+
+/* Drag-over */
+.drop-zone.drag-over {
+  border-color: var(--accent, #2997ff);
+  border-style: solid;
+  background: var(--surface-hover, #111);
+  transform: scale(1.01);
+}
+
+.drop-zone.drag-over::before { opacity: 1; }
+
+/* Error */
+.drop-zone.has-error { border-color: var(--red, #ff453a); }
+
+.drop-zone.has-error::before {
+  background: radial-gradient(ellipse at center, rgba(255, 69, 58, 0.15), transparent 70%);
+  opacity: 1;
+}
+
+/* Uploading */
+.drop-zone.uploading {
+  pointer-events: none;
+  border-color: var(--accent, #2997ff);
+  border-style: solid;
+}
+
+/* Success */
+.drop-zone.success {
+  border-color: var(--green, #30d158);
+  border-style: solid;
+}
+
+.drop-zone.success::before {
+  background: radial-gradient(ellipse at center, rgba(48, 209, 88, 0.15), transparent 70%);
+  opacity: 1;
+}
+
+/* ─── Drop Zone Content ────────────────────────────────────── */
+
+.drop-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+  border-radius: 14px;
+  background: var(--border, #1a1a1a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.25s ease;
+}
+
+.drop-zone:hover .drop-icon,
+.drop-zone.drag-over .drop-icon {
+  background: var(--accent, #2997ff);
+}
+
+.drop-icon svg {
+  width: 28px;
+  height: 28px;
+  stroke: var(--text-secondary, #86868b);
+  stroke-width: 1.5;
+  fill: none;
+  transition: stroke 0.25s ease;
+}
+
+.drop-zone:hover .drop-icon svg,
+.drop-zone.drag-over .drop-icon svg {
+  stroke: #fff;
+}
+
+.drop-label {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text, #f5f5f7);
+}
+
+.drop-hint {
+  font-size: 13px;
+  color: var(--text-secondary, #86868b);
+}
+
+.drop-formats {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.format-badge {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--border, #1a1a1a);
+  color: var(--text-secondary, #86868b);
+  letter-spacing: 0.02em;
+}
+
+.file-input { display: none; }
+
+/* ─── Error Message ────────────────────────────────────────── */
+
+.error-msg {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 69, 58, 0.15);
+  color: var(--red, #ff453a);
+  font-size: 13px;
+  font-weight: 500;
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-msg.visible { display: flex; }
+
+.error-msg svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke: var(--red, #ff453a);
+  fill: none;
+  stroke-width: 2;
+}
+
+/* ─── Progress Bar ─────────────────────────────────────────── */
+
+.progress-wrapper {
+  margin-top: 20px;
+  display: none;
+}
+
+.progress-wrapper.visible { display: block; }
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-filename {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #f5f5f7);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70%;
+}
+
+.progress-percent {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 12px;
+  color: var(--accent, #2997ff);
+}
+
+.progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border, #1a1a1a);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent, #2997ff), #64d2ff);
+  transition: width 0.15s ease;
+}
+
+.progress-fill.complete {
+  background: linear-gradient(90deg, var(--green, #30d158), #30d158);
+}
+
+.progress-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #86868b);
+}
+
+/* ─── Success Message ──────────────────────────────────────── */
+
+.success-msg {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(48, 209, 88, 0.15);
+  display: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.success-msg.visible { display: flex; }
+
+.success-msg svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--green, #30d158);
+  fill: none;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+.success-text {
+  font-size: 14px;
+  color: var(--green, #30d158);
+  font-weight: 600;
+}
+
+.success-detail {
+  font-size: 12px;
+  color: var(--text-secondary, #86868b);
+  margin-top: 2px;
+}
+
+/* ─── Results Button ───────────────────────────────────────── */
+
+.btn-results {
+  margin-top: 20px;
+  width: 100%;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent, #2997ff);
+  color: #fff;
+  font-family: var(--font-body, 'DM Sans', sans-serif);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: none;
+}
+
+.btn-results.visible { display: block; }
+
+.btn-results:hover {
+  background: #0a84ff;
+  transform: translateY(-1px);
+}
