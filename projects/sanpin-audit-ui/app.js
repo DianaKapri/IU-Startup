@@ -23,6 +23,19 @@ app.use(express.urlencoded({ extended: true }));
 // const requestLogger = require('./middleware/request-logger');  // US-0205
 // app.use(requestLogger);
 
+// ─── Root ───────────────────────────────────────────────────
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'ШколаПлан API',
+    version: '0.1.0',
+    endpoints: {
+      health: 'GET /health',
+      upload: 'POST /api/schedules/upload',
+      status: 'GET /api/schedules/:id/status',
+    },
+  });
+});
+
 // ─── Healthcheck ────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

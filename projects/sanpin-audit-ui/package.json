@@ -1,0 +1,19 @@
+{
+  "name": "sanpin-audit-ui",
+  "version": "0.1.0",
+  "description": "ШколаПлан — бэкенд для загрузки и парсинга школьных расписаний",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "npx nodemon app.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.13.1",
+    "xlsx": "^0.18.5"
+  }
+}
