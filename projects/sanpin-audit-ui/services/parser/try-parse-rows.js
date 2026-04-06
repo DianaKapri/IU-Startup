@@ -188,6 +188,7 @@ function tryParseRows(workbook) {
 
   let groups;
   let dataStart;
+  let headerRow = 0;
 
   const found = findDayGroups(matrix);
   if (found) {

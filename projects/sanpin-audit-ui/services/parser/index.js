@@ -7,7 +7,7 @@
 const XLSX = require('xlsx');
 const db = require('../../config/database');
 const { tryParseRows } = require('./try-parse-rows'); // US-0402
-// const { tryParseTransposed } = require('./try-parse-transposed'); // US-0403
+const { tryParseTransposed } = require('./try-parse-transposed'); // US-0403
 // const { normSubj } = require('./norm-subj');                  // US-0404
 
 // ─── Детекция стратегии ─────────────────────────────────────
@@ -15,6 +15,8 @@ const { tryParseRows } = require('./try-parse-rows'); // US-0402
 // Без \\b: в JS граница «слова» не работает с кириллицей.
 const DAY_PATTERN =
   /^\s*(понедельник|вторник|среда|четверг|пятница|суббота|пн|вт|ср|чт|пт|сб)(?:$|(?=\s)|(?=[^а-яёa-z0-9])|[.,;:])/i;
+const CLASS_NAME_PATTERN =
+  /^\s*(\d{1,2}\s*[а-яa-z]?|\d{1,2}\s*[-/]\s*\d{1,2}\s*[а-яa-z]?)\s*$/i;
 
 /**
  * @param {XLSX.WorkBook} workbook
@@ -40,7 +42,21 @@ function detectStrategy(workbook) {
     if (cell && DAY_PATTERN.test(String(cell.v || '').trim())) daysInCol++;
   }
 
-  return daysInRow >= daysInCol ? 'rows' : 'transposed';
+  if (daysInRow !== daysInCol) return daysInRow > daysInCol ? 'rows' : 'transposed';
+
+  // Фолбэк-эвристика: где больше "похожих на класс" меток в первой строке/колонке.
+  let classesInRow0 = 0;
+  let classesInCol0 = 0;
+  for (let c = range.s.c; c <= Math.min(range.e.c, 30); c++) {
+    const cell = sheet[XLSX.utils.encode_cell({ r: 0, c })];
+    if (cell && CLASS_NAME_PATTERN.test(String(cell.v || '').trim())) classesInRow0++;
+  }
+  for (let r = range.s.r; r <= Math.min(range.e.r, 30); r++) {
+    const cell = sheet[XLSX.utils.encode_cell({ r, c: 0 })];
+    if (cell && CLASS_NAME_PATTERN.test(String(cell.v || '').trim())) classesInCol0++;
+  }
+
+  return classesInRow0 > classesInCol0 ? 'transposed' : 'rows';
 }
 
 // ─── Базовый парсер-заглушка ────────────────────────────────
@@ -100,9 +116,9 @@ async function parseScheduleFile(filePath, originalName) {
     case 'rows':
       schedule = tryParseRows(workbook);
       break;
-    // case 'transposed':
-    //   schedule = tryParseTransposed(workbook);   // US-0403
-    //   break;
+    case 'transposed':
+      schedule = tryParseTransposed(workbook);
+      break;
     default:
       schedule = basicParse(workbook);
       break;
