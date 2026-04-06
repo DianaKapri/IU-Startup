@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Тарифы — ШколаПлан</title>
+<link rel="stylesheet" href="/css/styles.css?v=2"/>
+<link rel="stylesheet" href="/css/subscription.css?v=2"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+</head>
+<body class="sub-page">
+
+<nav class="nav nav--dark" id="nav"><div class="nav__inner">
+  <a href="/" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
+  <div class="nav__center">
+    <a href="/#features" class="nav__link">Возможности</a>
+    <a href="/demo.html" class="nav__link">Демо</a>
+  </div>
+  <div class="nav__right">
+    <div id="navGuestLinks">
+      <a href="/login.html" class="nav__link nav__link--cta">Войти</a>
+    </div>
+    <div id="navUserLink" style="display:none">
+      <a href="/account.html" class="nav__user-link">
+        <span class="nav__avatar" id="navAvatar">У</span>
+        <span class="nav__user-name" id="navUserName"></span>
+      </a>
+    </div>
+  </div>
+</div></nav>
+
+<header class="sub-hero"><div class="sub-hero__inner">
+  <p class="sub-hero__eyebrow fade-in">Тарифы</p>
+  <h1 class="sub-hero__title fade-in fade-in--d1">Простое и честное ценообразование</h1>
+  <p class="sub-hero__sub fade-in fade-in--d2">Начните бесплатно. Перейдите на платный тариф, когда будете готовы.</p>
+</div></header>
+
+<main class="sub-main"><div class="sub-inner">
+
+  <div class="sub-plans">
+    <div class="sub-plan fade-in">
+      <div class="sub-plan__top">
+        <p class="sub-plan__name">Бесплатно</p>
+        <p class="sub-plan__price">0 <span>₽</span></p>
+        <p class="sub-plan__period">навсегда</p>
+      </div>
+      <ul class="sub-plan__features">
+        <li class="sub-plan__feature sub-plan__feature--ok">Загрузка расписания (.xlsx)</li>
+        <li class="sub-plan__feature sub-plan__feature--ok">Аудит СанПиН (7 проверок)</li>
+        <li class="sub-plan__feature sub-plan__feature--ok">Тепловая карта нагрузки</li>
+        <li class="sub-plan__feature sub-plan__feature--no">Рекомендации по перестановке</li>
+        <li class="sub-plan__feature sub-plan__feature--no">Составитель расписания</li>
+        <li class="sub-plan__feature sub-plan__feature--no">Экстренные замены</li>
+        <li class="sub-plan__feature sub-plan__feature--no">История и сравнение</li>
+      </ul>
+      <a href="/login.html?tab=register" class="btn btn--ghost btn--full">Начать бесплатно</a>
+    </div>
+
+    <div class="sub-plan sub-plan--featured fade-in fade-in--d1">
+      <div class="sub-plan__badge">Рекомендуется</div>
+      <div class="sub-plan__top">
+        <p class="sub-plan__name">Школа</p>
+        <p class="sub-plan__price">14 400 <span>₽</span></p>
+        <p class="sub-plan__period">в год · 1 200 ₽/мес</p>
+      </div>
+      <ul class="sub-plan__features">
+        <li class="sub-plan__feature sub-plan__feature--ok">Всё из бесплатного тарифа</li>
+        <li class="sub-plan__feature sub-plan__feature--ok">Все 23 проверки СанПиН</li>
+        <li class="sub-plan__feature sub-plan__feature--ok">Рекомендации по перестановке</li>
+        <li class="sub-plan__feature sub-plan__feature--ok">Составитель расписания</li>
+        <li class="sub-plan__feature sub-plan__feature--ok">Экстренные замены за 5 сек</li>
+        <li class="sub-plan__feature sub-plan__feature--ok">История загрузок и сравнение</li>
+        <li class="sub-plan__feature sub-plan__feature--ok">Приоритетная поддержка</li>
+      </ul>
+      <button class="btn btn--primary btn--full" id="buyBtn">Купить подписку</button>
+    </div>
+  </div>
+
+  <section class="sub-faq">
+    <h2 class="sub-faq__title fade-in">Вопросы и ответы</h2>
+    <div class="sub-faq__list" id="faqList">
+      <div class="faq-item fade-in"><button class="faq-item__q" type="button">Нужен ли интернет во время аудита?<span class="faq-item__icon">+</span></button><div class="faq-item__a">Нет. Аудит выполняется прямо в браузере — ваш файл не покидает устройство.</div></div>
+      <div class="faq-item fade-in fade-in--d1"><button class="faq-item__q" type="button">Какой формат файла поддерживается?<span class="faq-item__icon">+</span></button><div class="faq-item__a">.xlsx и .xls. Скачайте наш шаблон — это самый быстрый способ начать.</div></div>
+      <div class="faq-item fade-in fade-in--d2"><button class="faq-item__q" type="button">Можно ли попробовать перед покупкой?<span class="faq-item__icon">+</span></button><div class="faq-item__a">Да. 14 дней полного доступа — без банковской карты. После окончания триала сервис переходит на бесплатный тариф.</div></div>
+      <div class="faq-item fade-in fade-in--d3"><button class="faq-item__q" type="button">Как оформить оплату?<span class="faq-item__icon">+</span></button><div class="faq-item__a">Мы выставляем счёт для юридических лиц (ИНН, КПП). Оплата — банковским переводом или картой.</div></div>
+      <div class="faq-item fade-in"><button class="faq-item__q" type="button">Что произойдёт по окончании подписки?<span class="faq-item__icon">+</span></button><div class="faq-item__a">Аккаунт переходит на бесплатный тариф. Ваши данные сохраняются, расширенные функции замораживаются.</div></div>
+    </div>
+  </section>
+
+
+</div></main>
+
+<!-- Payment Modal -->
+<div class="pay-overlay" id="payOverlay"></div>
+<div class="pay-modal" id="payModal">
+  <div class="pay-modal__header">
+    <h2 class="pay-modal__title">Оформить подписку</h2>
+    <button class="pay-modal__close" id="payClose">✕</button>
+  </div>
+  <p class="pay-modal__plan">Тариф «Школа» — 14 400 ₽/год</p>
+  <div class="field"><label class="field__label" for="payOrg">Название организации</label><input class="field__input" id="payOrg" type="text" placeholder="МБОУ СОШ №42"/></div>
+  <div class="field"><label class="field__label" for="payInn">ИНН</label><input class="field__input" id="payInn" type="text" placeholder="1234567890"/></div>
+  <div class="field"><label class="field__label" for="payEmail">Email для счёта</label><input class="field__input" id="payEmail" type="email" placeholder="buh@school.ru"/></div>
+  <p class="pay-modal__err" id="payErr"></p>
+  <p class="pay-modal__ok" id="payOk"></p>
+  <button class="btn btn--primary btn--full" id="paySubmit" type="button">Запросить счёт</button>
+</div>
+
+<footer class="footer"><div class="footer__inner">
+  <span class="footer__logo">ШколаПлан</span><span class="footer__copy">© 2026 ШколаПлан</span>
+</div></footer>
+
+<script src="/js/auth.js"></script>
+<script src="/js/scripts.js"></script>
+<script>
+(function(){
+  document.querySelectorAll('.faq-item__q').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const item=btn.closest('.faq-item');
+      const isOpen=item.classList.contains('faq-item--open');
+      document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('faq-item--open'));
+      if(!isOpen) item.classList.add('faq-item--open');
+      btn.querySelector('.faq-item__icon').textContent=item.classList.contains('faq-item--open')?'−':'+';
+    });
+  });
+  const overlay=document.getElementById('payOverlay');
+  const modal=document.getElementById('payModal');
+  function openModal(){modal.classList.add('pay-modal--open');overlay.classList.add('pay-overlay--open');}
+  function closeModal(){modal.classList.remove('pay-modal--open');overlay.classList.remove('pay-overlay--open');}
+  document.getElementById('buyBtn').addEventListener('click',openModal);
+  document.getElementById('payClose').addEventListener('click',closeModal);
+  overlay.addEventListener('click',closeModal);
+  document.getElementById('paySubmit').addEventListener('click',()=>{
+    const org=document.getElementById('payOrg').value.trim();
+    const inn=document.getElementById('payInn').value.trim();
+    const email=document.getElementById('payEmail').value.trim();
+    const err=document.getElementById('payErr');
+    const ok=document.getElementById('payOk');
+    err.textContent='';ok.textContent='';
+    if(!org||!inn||!email){err.textContent='Заполните все поля.';return;}
+    ok.textContent='Счёт будет отправлен на '+email+' в течение 1 рабочего дня. Спасибо!';
+    document.getElementById('paySubmit').disabled=true;
+  });
+})();
+</script>
+</body>
+</html>
