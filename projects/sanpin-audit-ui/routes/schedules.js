@@ -9,8 +9,35 @@ const router = express.Router();
 const db = require('../config/database');
 const { uploadSingle, handleUploadErrors } = require('../middleware/upload');
 const { runParseInBackground } = require('../services/parser');
+const { createScheduleTemplateWorkbook } = require('../services/template/schedule-template');
 // const { authenticate } = require('../middleware/auth');  // EP-03
 
+// ─── GET /api/schedules/template ─────────────────────────────
+// Возвращает Excel-шаблон: 44 класса (1А–11Г), 6 дней × 10 уроков.
+router.get('/template', async (_req, res) => {
+  try {
+    const { workbook } = createScheduleTemplateWorkbook();
+    const fileName = 'schedule-template.xlsx';
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('[GET /template]', err);
+    return res.status(500).json({
+      success: false,
+      data: null,
+      error: { code: 'SERVER_ERROR', message: 'Не удалось сформировать шаблон.' },
+    });
+  }
+});
+
+// ─── POST /api/schedules/upload ─────────────────────────────
 // ─── POST /api/schedules/upload ─────────────────────────────
 // Принимает Excel-файл, сохраняет на диск (multer),
 // создаёт запись в БД, запускает парсинг в фоне.

@@ -23,7 +23,7 @@ function matchDayIndex(raw) {
   return null;
 }
 
-const WEEKDAY_COUNT = 5;
+const WEEKDAY_COUNT = 6;
 
 function normalizeMatrix(rows) {
   let maxC = 0;
@@ -137,7 +137,7 @@ function collapseMergedDuplicates(cells) {
 }
 
 /**
- * Собирает уроки по дням (Пн..Пт); столбцы «Сб» вне первых пяти дней пропускаются (как в basicParse).
+ * Собирает уроки по дням (Пн..Сб).
  * @param {string[]} row
  * @param {{ dayIndex: number, cols: number[] }[]} groups
  * @returns {string[][]}

@@ -4,7 +4,7 @@
 const XLSX = require('xlsx');
 const { matchDayIndex, expandMergedCells } = require('./try-parse-rows');
 
-const WEEKDAY_COUNT = 5;
+const WEEKDAY_COUNT = 6;
 const HEADER_HINT = /^(класс|class|урок|lesson|№|номер)$/i;
 const CLASS_NAME_PATTERN = /^\s*\d{1,2}\s*([а-яa-z]|[-/]\s*\d{1,2}\s*[а-яa-z]?)?\s*$/i;
 
@@ -106,7 +106,7 @@ function parseSheetIntoSchedule(sheet, sheetName, schedule) {
  * Транспонированный парсер:
  * - поддержка нескольких листов (часто лист = день),
  * - поддержка дня в первой колонке внутри листа,
- * - единый JSON-выход: { "5А": [Пн[], Вт[], Ср[], Чт[], Пт[]], ... }.
+ * - единый JSON-выход: { "5А": [Пн[], Вт[], Ср[], Чт[], Пт[], Сб[]], ... }.
  *
  * @param {import('xlsx').WorkBook} workbook
  * @returns {Record<string, string[][]>}

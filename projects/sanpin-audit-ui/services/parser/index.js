@@ -8,7 +8,7 @@ const XLSX = require('xlsx');
 const db = require('../../config/database');
 const { tryParseRows } = require('./try-parse-rows'); // US-0402
 const { tryParseTransposed } = require('./try-parse-transposed'); // US-0403
-// const { normSubj } = require('./norm-subj');                  // US-0404
+const { normSubj } = require('./norm-subj'); // US-0404
 
 // ─── Детекция стратегии ─────────────────────────────────────
 
@@ -78,10 +78,10 @@ function basicParse(workbook) {
     if (!className || /^(класс|урок|предмет|день|№)/i.test(className)) continue;
 
     const lessons = row.slice(1).map((c) => String(c || '').trim());
-    const perDay = Math.ceil(lessons.length / 5) || 1;
+    const perDay = Math.ceil(lessons.length / 6) || 1;
     const days = [];
 
-    for (let d = 0; d < 5; d++) {
+    for (let d = 0; d < 6; d++) {
       days.push(
         lessons.slice(d * perDay, (d + 1) * perDay).filter((l) => l !== '')
       );
@@ -124,7 +124,7 @@ async function parseScheduleFile(filePath, originalName) {
       break;
   }
 
-  // schedule = normSubj(schedule);  // US-0404
+  schedule = normSubj(schedule); // US-0404
 
   const classNames = Object.keys(schedule);
   if (classNames.length === 0) {

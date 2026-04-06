@@ -30,6 +30,7 @@ app.get('/', (_req, res) => {
     version: '0.1.0',
     endpoints: {
       health: 'GET /health',
+      template: 'GET /api/schedules/template',
       upload: 'POST /api/schedules/upload',
       status: 'GET /api/schedules/:id/status',
     },
