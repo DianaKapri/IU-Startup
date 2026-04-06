@@ -1,0 +1,117 @@
+/* ===== SUBSCRIPTION PAGE ===== */
+body.sub-page { background: #000; color: #f5f5f7; min-height: 100vh; }
+
+/* Hero */
+.sub-hero { background: #000; text-align: center; padding: 130px 24px 60px; }
+.sub-hero__eyebrow { font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: 12px; }
+.sub-hero__title { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.04em; color: #f5f5f7; margin-bottom: 14px; }
+.sub-hero__sub { font-size: 1.05rem; color: #86868b; }
+
+/* Plans grid */
+.sub-plans { padding: 20px 24px 80px; background: #000; }
+.sub-plans__inner { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+/* Plan card */
+.sub-card { background: #1c1c1e; border: 1px solid rgba(255,255,255,.1); border-radius: 24px; padding: 32px 28px; display: flex; flex-direction: column; }
+.sub-card--featured { border-color: rgba(0,113,227,.5); background: linear-gradient(160deg, rgba(0,113,227,.08) 0%, #1c1c1e 50%); }
+.sub-card__header { margin-bottom: 24px; }
+.sub-card__badge { display: inline-block; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 3px 10px; border-radius: 980px; margin-bottom: 12px; }
+.sub-card__badge--trial { background: rgba(255,255,255,.08); color: #86868b; }
+.sub-card__badge--paid { background: rgba(0,113,227,.18); color: #4da3ff; border: 1px solid rgba(0,113,227,.3); }
+.sub-card__name { font-size: 1.3rem; font-weight: 700; letter-spacing: -.03em; color: #f5f5f7; margin-bottom: 10px; }
+.sub-card__price { font-size: 2.6rem; font-weight: 800; letter-spacing: -.04em; color: #f5f5f7; line-height: 1; }
+.sub-card__price span { font-size: 1.6rem; }
+.sub-card__duration { font-size: .78rem; color: #86868b; margin-top: 6px; }
+
+/* Features list */
+.sub-features { list-style: none; margin-bottom: 28px; flex: 1; }
+.sub-features__item { font-size: .88rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
+.sub-features__item::before { flex-shrink: 0; margin-top: 1px; }
+.sub-features__item--ok { color: #d2d2d7; }
+.sub-features__item--ok::before { content: '✓'; color: #30d158; font-weight: 700; }
+.sub-features__item--no { color: #3a3a3c; }
+.sub-features__item--no::before { content: '–'; color: #3a3a3c; }
+
+/* CTA buttons */
+.sub-card__btn { display: block; width: 100%; text-align: center; padding: 14px; border-radius: 12px; font-family: var(--font); font-size: .95rem; font-weight: 600; cursor: pointer; border: none; transition: background .15s, border-color .15s; text-decoration: none; }
+.sub-card__btn--primary { background: var(--blue); color: #fff; }
+.sub-card__btn--primary:hover { background: var(--blue-hover); }
+.sub-card__btn--ghost { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); color: #d2d2d7; }
+.sub-card__btn--ghost:hover { background: rgba(255,255,255,.1); }
+.sub-card__hint { font-size: .72rem; color: #6e6e73; text-align: center; margin-top: 8px; }
+
+/* Benefits grid */
+.sub-benefits { padding: 80px 24px; background: #1c1c1e; }
+.sub-benefits__inner { max-width: 860px; margin: 0 auto; }
+.sub-benefits__title { font-size: 2rem; font-weight: 700; letter-spacing: -.04em; color: #f5f5f7; text-align: center; margin-bottom: 48px; }
+.sub-benefits__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.sub-benefit { padding: 24px; background: rgba(255,255,255,.04); border-radius: 16px; }
+.sub-benefit__icon { font-size: 1.8rem; margin-bottom: 10px; }
+.sub-benefit__title { font-size: 1rem; font-weight: 700; color: #f5f5f7; margin-bottom: 6px; letter-spacing: -.02em; }
+.sub-benefit__text { font-size: .82rem; color: #86868b; line-height: 1.5; }
+
+/* FAQ */
+.sub-faq { padding: 80px 24px; background: #000; }
+.sub-faq__inner { max-width: 640px; margin: 0 auto; }
+.sub-faq__title { font-size: 1.8rem; font-weight: 700; letter-spacing: -.04em; color: #f5f5f7; text-align: center; margin-bottom: 40px; }
+.sub-faq__list { display: flex; flex-direction: column; gap: 2px; }
+.sub-faq__item { border-bottom: 1px solid rgba(255,255,255,.08); }
+.sub-faq__q { padding: 18px 0; font-size: .95rem; font-weight: 600; color: #f5f5f7; cursor: pointer; list-style: none; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+.sub-faq__q::after { content: '+'; color: var(--blue); font-size: 1.2rem; flex-shrink: 0; }
+.sub-faq__item[open] .sub-faq__q::after { content: '−'; }
+.sub-faq__a { padding-bottom: 18px; font-size: .88rem; color: #86868b; line-height: 1.6; }
+
+/* Payment modal (OLD — hidden by default) */
+.pay-overlay { display: none; position: fixed; inset: 0; z-index: 1900; background: rgba(0,0,0,.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.pay-overlay--open { display: block; }
+.pay-modal { display: none; position: fixed; z-index: 2000; top: 50%; left: 50%; transform: translate(-50%,-50%); background: #1c1c1e; border: 1px solid rgba(255,255,255,.12); border-radius: 20px; padding: 28px 28px 24px; width: calc(100% - 32px); max-width: 400px; }
+.pay-modal--open { display: block; }
+.pay-modal__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.pay-modal__title { font-size: 1.1rem; font-weight: 700; color: #f5f5f7; }
+.pay-modal__close { background: rgba(255,255,255,.08); border: none; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; font-size: .8rem; color: #86868b; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.pay-modal__close:hover { background: rgba(255,255,255,.15); }
+.pay-modal__plan { font-size: .82rem; color: #86868b; margin-bottom: 20px; }
+.pay-modal__err { font-size: .8rem; color: var(--red); min-height: 14px; margin-bottom: 6px; display: block; }
+.pay-modal__ok { font-size: .8rem; color: #30d158; min-height: 14px; margin-bottom: 6px; display: block; }
+.pay-modal .field__label { color: #86868b; }
+.pay-modal .field__input { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1); color: #f5f5f7; }
+.pay-modal .field__input:focus { border-color: var(--blue); background: transparent; }
+.pay-modal .field__input::placeholder { color: rgba(255,255,255,.2); }
+
+/* ===== NEW SUBSCRIPTION PAGE CLASSES ===== */
+.sub-main { padding: 0 24px 80px; }
+.sub-inner { max-width: 860px; margin: 0 auto; }
+.sub-hero__inner { max-width: var(--max-w-narrow); margin: 0 auto; }
+
+.sub-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 40px 0 60px; }
+.sub-plan { background: #1c1c1e; border: 1px solid rgba(255,255,255,.1); border-radius: 24px; padding: 32px 28px; display: flex; flex-direction: column; position: relative; }
+.sub-plan--featured { border-color: rgba(0,113,227,.5); background: linear-gradient(160deg, rgba(0,113,227,.08) 0%, #1c1c1e 50%); }
+.sub-plan__badge { display: inline-block; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 3px 10px; border-radius: 980px; margin-bottom: 16px; background: rgba(0,113,227,.18); color: #4da3ff; border: 1px solid rgba(0,113,227,.3); }
+.sub-plan__top { margin-bottom: 24px; }
+.sub-plan__name { font-size: 1.2rem; font-weight: 700; color: #f5f5f7; margin-bottom: 8px; }
+.sub-plan__price { font-size: 2.4rem; font-weight: 800; letter-spacing: -.04em; color: #f5f5f7; }
+.sub-plan__price span { font-size: .45em; color: #86868b; }
+.sub-plan__period { font-size: .78rem; color: #86868b; margin-top: 4px; }
+.sub-plan__features { list-style: none; flex: 1; margin-bottom: 24px; }
+.sub-plan__feature { font-size: .88rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; align-items: flex-start; gap: 8px; line-height: 1.4; }
+.sub-plan__feature--ok { color: #d2d2d7; }
+.sub-plan__feature--ok::before { content: '✓'; color: #30d158; font-weight: 700; flex-shrink: 0; }
+.sub-plan__feature--no { color: #3a3a3c; }
+.sub-plan__feature--no::before { content: '–'; color: #3a3a3c; flex-shrink: 0; }
+
+/* FAQ */
+.sub-faq { padding: 20px 0 40px; }
+.sub-faq__title { font-size: 1.5rem; font-weight: 700; letter-spacing: -.04em; color: #f5f5f7; margin-bottom: 24px; }
+.sub-faq__list { display: flex; flex-direction: column; }
+.faq-item { border-bottom: 1px solid rgba(255,255,255,.07); }
+.faq-item__q { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 16px 0; font-family: var(--font); font-size: .92rem; font-weight: 600; color: #f5f5f7; background: none; border: none; cursor: pointer; text-align: left; gap: 12px; }
+.faq-item__icon { font-size: 1.1rem; color: var(--blue); flex-shrink: 0; }
+.faq-item__a { display: none; padding-bottom: 16px; font-size: .88rem; color: #86868b; line-height: 1.6; }
+.faq-item--open .faq-item__a { display: block; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .sub-plans { grid-template-columns: 1fr; }
+  .sub-plans__inner { grid-template-columns: 1fr; }
+  .sub-benefits__grid { grid-template-columns: 1fr; }
+}
