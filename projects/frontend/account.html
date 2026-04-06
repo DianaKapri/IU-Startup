@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Личный кабинет — ШколаПлан</title>
+<link rel="stylesheet" href="/css/styles.css"/>
+<link rel="stylesheet" href="/css/account.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+</head>
+<body class="acc-page">
+
+<nav class="nav nav--dark" id="nav"><div class="nav__inner">
+  <a href="/" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
+  <div class="nav__center">
+    <a href="/#features" class="nav__link">Возможности</a>
+    <a href="/demo.html" class="nav__link">Демо</a>
+  </div>
+  <div class="nav__right">
+    <a href="/subscription.html" class="nav__link nav__link--buy" id="navBuyBtn">Купить подписку</a>
+    <button class="nav__profile" id="navProfileBtn" type="button" aria-label="Профиль">
+      <div class="nav__avatar" id="accAvatar">У</div>
+      <div class="nav__profile-info">
+        <span class="nav__profile-name" id="accName">—</span>
+        <span class="nav__profile-school" id="accSchool">—</span>
+      </div>
+    </button>
+  </div>
+</div></nav>
+
+<main class="acc-main">
+  <header class="acc-header">
+    <h1 class="acc-header__title" id="accDashTitle">Личный кабинет</h1>
+    <p class="acc-header__sub" id="accWelcome">Загрузите расписание для аудита</p>
+  </header>
+
+  <section class="acc-upload">
+    <div class="acc-dropzone" id="accDropzone">
+      <input type="file" id="accFileInput" accept=".xlsx,.xls" hidden/>
+      <svg class="acc-dropzone__icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      <p class="acc-dropzone__title">Перетащите файл расписания</p>
+      <p class="acc-dropzone__sub">или <button class="acc-dropzone__btn" type="button" id="accDemoBtn">загрузить демо-файл</button></p>
+      <p class="acc-dropzone__fmt">Форматы: .xlsx, .xls · Максимум 5 МБ</p>
+    </div>
+    <p class="acc-error" id="accError"></p>
+    <div class="acc-actions" id="accActions" style="display:none">
+      <button class="btn btn--ghost btn--sm" type="button" id="resetBtn">← Загрузить другой файл</button>
+    </div>
+  </section>
+
+  <section class="acc-intro" id="accIntro">
+    <h2 class="acc-intro__title">Что вы получите после загрузки</h2>
+    <div class="acc-intro__grid">
+      <div class="acc-intro-card">
+        <div class="acc-intro-card__num">01</div>
+        <h3 class="acc-intro-card__name">Аудит по СанПиН</h3>
+        <p class="acc-intro-card__desc">23 автоматические проверки: дневная и недельная нагрузка, сдвоенные уроки, трудные предметы утром, пик нагрузки в середине недели.</p>
+        <div class="acc-intro-card__tags"><span>C-01</span><span>C-02</span><span>C-03</span><span>E-01</span><span>X-01</span></div>
+      </div>
+      <div class="acc-intro-card">
+        <div class="acc-intro-card__num">02</div>
+        <h3 class="acc-intro-card__name">Сетка расписания</h3>
+        <p class="acc-intro-card__desc">Визуальная таблица по всем классам и дням недели. Нарушения подсвечены красным, рекомендации — жёлтым, норма — зелёным.</p>
+        <div class="acc-intro-card__tags"><span>Все классы</span><span>Пн–Пт</span></div>
+      </div>
+      <div class="acc-intro-card">
+        <div class="acc-intro-card__num">03</div>
+        <h3 class="acc-intro-card__name">Тепловая карта</h3>
+        <p class="acc-intro-card__desc">Нагрузка в баллах по каждому дню и классу. Сразу видно, где перегруз и где есть резерв для перестановки уроков.</p>
+        <div class="acc-intro-card__tags"><span>Баллы нагрузки</span><span>По дням</span></div>
+      </div>
+      <div class="acc-intro-card">
+        <div class="acc-intro-card__num">04</div>
+        <h3 class="acc-intro-card__name">Рекомендации</h3>
+        <p class="acc-intro-card__desc">Конкретные советы по исправлению каждого нарушения: какой урок переставить, на какое место и почему.</p>
+        <div class="acc-intro-card__tags"><span>Нарушения</span><span>Рекомендации</span></div>
+      </div>
+    </div>
+    <div class="acc-tip">
+      <div class="acc-tip__icon">📋</div>
+      <div>
+        <p class="acc-tip__title">Требования к формату файла</p>
+        <p class="acc-tip__text">Файл Excel должен содержать отдельный лист для каждого класса (например «5А», «7Б»). Первый столбец — номер урока (1–7), остальные столбцы — предметы по дням недели (Пн, Вт, Ср, Чт, Пт).</p>
+        <a href="/assets/shablon-raspisaniya.xlsx" class="btn btn--ghost btn--sm" download>Скачать шаблон .xlsx</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="acc-results" id="accResults" style="display:none">
+    <div class="acc-tabs" id="accTabs">
+      <button class="acc-tab acc-tab--active" data-tab="audit">Аудит</button>
+      <button class="acc-tab" data-tab="grid">Сетка расписания</button>
+      <button class="acc-tab" data-tab="heat">Тепловая карта</button>
+      <button class="acc-tab" data-tab="recs">Рекомендации</button>
+    </div>
+    <div id="tabAudit" class="acc-tab-panel"></div>
+    <div id="tabGrid" class="acc-tab-panel" style="display:none"></div>
+    <div id="tabHeat" class="acc-tab-panel" style="display:none"></div>
+    <div id="tabRecs" class="acc-tab-panel" style="display:none"></div>
+  </section>
+</main>
+
+<!-- Profile Modal -->
+<div class="profile-overlay" id="profileOverlay"></div>
+<aside class="profile-modal" id="profileModal" aria-hidden="true">
+  <div class="profile-modal__header">
+    <h2 class="profile-modal__title">Профиль</h2>
+    <button class="profile-modal__close" id="profileClose" aria-label="Закрыть">✕</button>
+  </div>
+  <form class="profile-modal__form" id="profileForm">
+    <div class="field">
+      <label class="field__label" for="profileName">Имя</label>
+      <input class="field__input" id="profileName" type="text" placeholder="Ваше имя"/>
+      <span class="field__err" id="profileNameErr"></span>
+    </div>
+    <div class="field">
+      <label class="field__label" for="profileSchool">Школа</label>
+      <input class="field__input" id="profileSchool" type="text" placeholder="Название школы"/>
+      <span class="field__err" id="profileSchoolErr"></span>
+    </div>
+    <div class="field">
+      <label class="field__label" for="profileEmail">Email</label>
+      <input class="field__input" id="profileEmail" type="email"/>
+      <span class="field__err" id="profileEmailErr"></span>
+    </div>
+    <div class="field">
+      <label class="field__label" for="profilePassword">Новый пароль <span style="opacity:.5;font-weight:400">(необязательно)</span></label>
+      <input class="field__input" id="profilePassword" type="password" placeholder="оставьте пустым, чтобы не менять"/>
+      <span class="field__err" id="profilePasswordErr"></span>
+    </div>
+    <p class="profile-modal__err" id="profileGlobalErr"></p>
+    <p class="profile-modal__ok" id="profileSuccess" style="display:none">Изменения сохранены!</p>
+    <button class="btn btn--primary btn--full" type="submit">Сохранить</button>
+  </form>
+  <div class="profile-modal__footer">
+    <button class="profile-modal__logout" id="profileLogout" type="button">Выйти из аккаунта</button>
+  </div>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/engine.js"></script>
+<script src="/js/account.js"></script>
+</body>
+</html>
