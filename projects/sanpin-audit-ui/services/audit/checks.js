@@ -1,8 +1,8 @@
 // Модуль: audit/checks
-// Задачи: US-0502 (X-01 окна), US-0503 (C-01 макс. уроков/день, C-02 недельная нагрузка)
+// Задачи: US-0502 (X-01 окна), US-0503 (C-01/C-02), US-0505 (D-01 трудность по дням)
 // Описание: Функции проверки расписания на соответствие СанПиН.
 
-const { getMaxLessonsPerDay, getMaxWeeklyHours } = require('../sanpin-norms');
+const { getMaxLessonsPerDay, getMaxWeeklyHours, getDifficulty } = require('../sanpin-norms');
 
 const DAY_LABELS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
@@ -120,6 +120,127 @@ function checkMaxWeeklyHours(classSchedule, grade, weekDays = 5) {
   return null;
 }
 
+// ─── D-01: Распределение трудности по дням ────────────────────
+
+/**
+ * Рекомендуемый профиль трудности по дням недели (шкала Сивкова).
+ * СанПиН 1.2.3685-21, МР 2.4.0331-23:
+ * - Нарастание нагрузки к середине недели (Вт–Ср)
+ * - Облегчённый день — Чт или Пт
+ * - Пн — вкатывание, не максимальная нагрузка
+ *
+ * Нормализованный профиль (доля от суммарной недельной трудности):
+ * Пн: 0.18, Вт: 0.23, Ср: 0.22, Чт: 0.19, Пт: 0.18
+ * При 6-дн: Пн: 0.16, Вт: 0.20, Ср: 0.20, Чт: 0.17, Пт: 0.16, Сб: 0.11
+ */
+const RECOMMENDED_PROFILE_5 = [0.18, 0.23, 0.22, 0.19, 0.18];
+const RECOMMENDED_PROFILE_6 = [0.16, 0.20, 0.20, 0.17, 0.16, 0.11];
+
+/**
+ * US-0505: Проверяет равномерность распределения трудности по дням недели.
+ *
+ * Рассчитывает балл трудности каждого дня (сумма баллов предметов по Сивкову),
+ * сравнивает фактический профиль с рекомендуемым.
+ *
+ * @param {string[][]} classSchedule — массив дней
+ * @param {number} grade — номер параллели (1–11)
+ * @param {5|6} [weekDays=5]
+ * @returns {{
+ *   dailyScores: number[],
+ *   weeklyTotal: number,
+ *   actualProfile: number[],
+ *   recommendedProfile: number[],
+ *   peakDay: { day: number, dayLabel: string, score: number },
+ *   lightestDay: { day: number, dayLabel: string, score: number },
+ *   deviation: number,
+ *   issues: string[]
+ * }}
+ */
+function checkDifficultyDistribution(classSchedule, grade, weekDays = 5) {
+  const recommended = weekDays === 6 ? RECOMMENDED_PROFILE_6 : RECOMMENDED_PROFILE_5;
+
+  // Рассчитать балл трудности каждого дня
+  const dailyScores = [];
+  for (let dayIdx = 0; dayIdx < classSchedule.length; dayIdx++) {
+    const lessons = classSchedule[dayIdx];
+    if (!lessons) { dailyScores.push(0); continue; }
+    let dayScore = 0;
+    for (const subj of lessons) {
+      if (subj && subj.trim()) {
+        dayScore += getDifficulty(subj, grade);
+      }
+    }
+    dailyScores.push(dayScore);
+  }
+
+  const weeklyTotal = dailyScores.reduce((a, b) => a + b, 0);
+  if (weeklyTotal === 0) {
+    return {
+      dailyScores, weeklyTotal, actualProfile: [], recommendedProfile: recommended,
+      peakDay: null, lightestDay: null, deviation: 0, issues: [],
+    };
+  }
+
+  // Фактический профиль (нормализованный)
+  const actualProfile = dailyScores.map((s) => +(s / weeklyTotal).toFixed(3));
+
+  // Пиковый и самый лёгкий активный день
+  const activeDays = dailyScores
+    .map((score, i) => ({ day: i, dayLabel: DAY_LABELS[i], score }))
+    .filter((d) => d.score > 0);
+
+  const peakDay = activeDays.reduce((a, b) => (b.score > a.score ? b : a), activeDays[0]);
+  const lightestDay = activeDays.reduce((a, b) => (b.score < a.score ? b : a), activeDays[0]);
+
+  // Среднеквадратичное отклонение от рекомендуемого профиля
+  let sumSqDiff = 0;
+  const len = Math.min(actualProfile.length, recommended.length);
+  for (let i = 0; i < len; i++) {
+    sumSqDiff += (actualProfile[i] - recommended[i]) ** 2;
+  }
+  const deviation = +(Math.sqrt(sumSqDiff / len) * 100).toFixed(1);
+
+  // Выявление конкретных проблем
+  const issues = [];
+
+  // Пик не на Вт/Ср
+  if (peakDay && peakDay.day !== 1 && peakDay.day !== 2) {
+    issues.push(`Пик нагрузки в ${peakDay.dayLabel} (${peakDay.score} б.) — рекомендуется Вт или Ср`);
+  }
+
+  // Самый лёгкий день не в конце недели (Чт/Пт для 5-дн, Пт/Сб для 6-дн)
+  if (weekDays === 5) {
+    if (lightestDay && lightestDay.day !== 3 && lightestDay.day !== 4) {
+      issues.push(`Самый лёгкий день — ${lightestDay.dayLabel} (${lightestDay.score} б.) — рекомендуется Чт или Пт`);
+    }
+  } else {
+    if (lightestDay && lightestDay.day !== 4 && lightestDay.day !== 5) {
+      issues.push(`Самый лёгкий день — ${lightestDay.dayLabel} (${lightestDay.score} б.) — рекомендуется Пт или Сб`);
+    }
+  }
+
+  // Пн тяжелее Вт (нет нарастания)
+  if (dailyScores[0] > 0 && dailyScores[1] > 0 && dailyScores[0] > dailyScores[1]) {
+    issues.push(`Пн (${dailyScores[0]} б.) тяжелее Вт (${dailyScores[1]} б.) — нет нарастания к середине недели`);
+  }
+
+  // Большой разброс — deviation > 5%
+  if (deviation > 5) {
+    issues.push(`Отклонение от рекомендуемого профиля: ${deviation}% (норма ≤ 5%)`);
+  }
+
+  return {
+    dailyScores,
+    weeklyTotal,
+    actualProfile,
+    recommendedProfile: recommended,
+    peakDay,
+    lightestDay,
+    deviation,
+    issues,
+  };
+}
+
 // ─── Агрегатор: запуск всех проверок для расписания ───────────
 
 /**
@@ -173,6 +294,25 @@ function runChecks(schedule, opts = {}) {
         details: { actual: weeklyViolation.actual, max: weeklyViolation.max },
       });
     }
+
+    // D-01: распределение трудности по дням
+    const dist = checkDifficultyDistribution(days, grade, weekDays);
+    if (dist.issues.length > 0) {
+      results.push({
+        ruleId: 'D-01',
+        severity: 'soft',
+        class: className,
+        message: `${className}: ${dist.issues[0]}`,
+        details: {
+          dailyScores: dist.dailyScores,
+          weeklyTotal: dist.weeklyTotal,
+          actualProfile: dist.actualProfile,
+          recommendedProfile: dist.recommendedProfile,
+          deviation: dist.deviation,
+          issues: dist.issues,
+        },
+      });
+    }
   }
 
   return results;
@@ -182,6 +322,7 @@ module.exports = {
   checkGaps,
   checkMaxLessonsPerDay,
   checkMaxWeeklyHours,
+  checkDifficultyDistribution,
   runChecks,
   parseGrade,
 };
