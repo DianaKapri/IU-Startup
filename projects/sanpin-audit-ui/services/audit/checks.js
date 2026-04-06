@@ -1,5 +1,5 @@
 // Модуль: audit/checks
-// Задачи: US-0502 (X-01 окна), US-0503 (C-01/C-02), US-0505 (D-01 трудность по дням)
+// Задачи: US-0502 (X-01), US-0503 (C-01/C-02), US-0505 (D-01), US-0506 (E-01)
 // Описание: Функции проверки расписания на соответствие СанПиН.
 
 const { getMaxLessonsPerDay, getMaxWeeklyHours, getDifficulty } = require('../sanpin-norms');
@@ -241,6 +241,63 @@ function checkDifficultyDistribution(classSchedule, grade, weekDays = 5) {
   };
 }
 
+// ─── E-01: Горка трудности внутри дня ─────────────────────────
+
+/**
+ * US-0506: Проверяет, что пик трудности внутри каждого дня приходится на 2–3 урок.
+ *
+ * По СанПиН рекомендуемый профиль внутри дня — «горка»:
+ * нарастание на 2–3 уроке, снижение к концу.
+ * Пик на 1-м или последнем уроке — нарушение.
+ *
+ * @param {string[][]} classSchedule — массив дней
+ * @param {number} grade — номер параллели (1–11)
+ * @returns {{ day: number, dayLabel: string, peakLesson: number, peakScore: number, issue: string }[]}
+ */
+function checkIntradayPeak(classSchedule, grade) {
+  const violations = [];
+
+  for (let dayIdx = 0; dayIdx < classSchedule.length; dayIdx++) {
+    const lessons = classSchedule[dayIdx];
+    if (!lessons) continue;
+
+    // Собрать баллы только непустых уроков с их позициями
+    const scored = [];
+    for (let i = 0; i < lessons.length; i++) {
+      if (lessons[i] && lessons[i].trim()) {
+        scored.push({ idx: i, score: getDifficulty(lessons[i], grade) });
+      }
+    }
+
+    if (scored.length < 3) continue; // слишком мало уроков для анализа горки
+
+    // Найти позицию максимума (при равных — первый)
+    let peakPos = 0;
+    for (let i = 1; i < scored.length; i++) {
+      if (scored[i].score > scored[peakPos].score) peakPos = i;
+    }
+
+    const peakLessonNum = scored[peakPos].idx + 1; // 1-based
+    const isFirst = peakPos === 0;
+    const isLast = peakPos === scored.length - 1;
+
+    // Пик на 2-м или 3-м уроке (позиции 1–2 в 0-based среди непустых) = ОК
+    // Пик на 1-м или последнем = нарушение
+    if (isFirst || isLast) {
+      const where = isFirst ? 'на 1-м уроке' : 'на последнем уроке';
+      violations.push({
+        day: dayIdx,
+        dayLabel: DAY_LABELS[dayIdx] || `День ${dayIdx + 1}`,
+        peakLesson: peakLessonNum,
+        peakScore: scored[peakPos].score,
+        issue: `Пик трудности ${where} (урок ${peakLessonNum}, ${scored[peakPos].score} б.) — рекомендуется 2–3 урок`,
+      });
+    }
+  }
+
+  return violations;
+}
+
 // ─── Агрегатор: запуск всех проверок для расписания ───────────
 
 /**
@@ -313,6 +370,18 @@ function runChecks(schedule, opts = {}) {
         },
       });
     }
+
+    // E-01: горка трудности внутри дня
+    const peaks = checkIntradayPeak(days, grade);
+    for (const p of peaks) {
+      results.push({
+        ruleId: 'E-01',
+        severity: 'soft',
+        class: className,
+        message: `${className}, ${p.dayLabel}: ${p.issue}`,
+        details: { day: p.day, dayLabel: p.dayLabel, peakLesson: p.peakLesson, peakScore: p.peakScore },
+      });
+    }
   }
 
   return results;
@@ -323,6 +392,7 @@ module.exports = {
   checkMaxLessonsPerDay,
   checkMaxWeeklyHours,
   checkDifficultyDistribution,
+  checkIntradayPeak,
   runChecks,
   parseGrade,
 };
