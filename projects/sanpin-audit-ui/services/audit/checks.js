@@ -1,5 +1,5 @@
 // Модуль: audit/checks
-// Задачи: US-0502 (X-01), US-0503 (C-01/C-02), US-0505 (D-01), US-0506 (E-01), US-0507 (E-02)
+// Задачи: US-0502 (X-01), US-0503 (C-01/C-02), US-0505 (D-01), US-0506 (E-01), US-0507 (E-02), US-0508 (E-03)
 // Описание: Функции проверки расписания на соответствие СанПиН.
 
 const { getMaxLessonsPerDay, getMaxWeeklyHours, getDifficulty } = require('../sanpin-norms');
@@ -348,6 +348,72 @@ function checkLightDay(classSchedule, grade) {
   return null;
 }
 
+// ─── E-03: Подряд сложные предметы ────────────────────────────
+
+/**
+ * US-0508: Находит серии из 2+ сложных предметов подряд внутри дня.
+ *
+ * Сложный предмет — балл трудности ≥ порога для данного класса.
+ * 2 подряд → level 'yellow', penalty 2
+ * 3+ подряд → level 'orange', penalty 5
+ *
+ * @param {string[][]} classSchedule — массив дней
+ * @param {number} grade — номер параллели (1–11)
+ * @returns {{ day: number, dayLabel: string, startLesson: number, length: number, subjects: string[], level: string, penalty: number }[]}
+ */
+function checkConsecutiveHard(classSchedule, grade) {
+  const threshold = grade <= 4 ? 7 : 8;
+  const violations = [];
+
+  for (let dayIdx = 0; dayIdx < classSchedule.length; dayIdx++) {
+    const lessons = classSchedule[dayIdx];
+    if (!lessons) continue;
+
+    // Собрать непустые уроки с их позициями и баллами
+    const active = [];
+    for (let i = 0; i < lessons.length; i++) {
+      if (lessons[i] && lessons[i].trim()) {
+        active.push({ idx: i, subj: lessons[i], score: getDifficulty(lessons[i], grade) });
+      }
+    }
+
+    // Найти серии сложных подряд
+    let streak = [];
+    for (let i = 0; i < active.length; i++) {
+      if (active[i].score >= threshold) {
+        streak.push(active[i]);
+      } else {
+        if (streak.length >= 2) {
+          violations.push({
+            day: dayIdx,
+            dayLabel: DAY_LABELS[dayIdx] || `День ${dayIdx + 1}`,
+            startLesson: streak[0].idx + 1,
+            length: streak.length,
+            subjects: streak.map((s) => s.subj),
+            level: streak.length >= 3 ? 'orange' : 'yellow',
+            penalty: streak.length >= 3 ? 5 : 2,
+          });
+        }
+        streak = [];
+      }
+    }
+    // Финальная серия
+    if (streak.length >= 2) {
+      violations.push({
+        day: dayIdx,
+        dayLabel: DAY_LABELS[dayIdx] || `День ${dayIdx + 1}`,
+        startLesson: streak[0].idx + 1,
+        length: streak.length,
+        subjects: streak.map((s) => s.subj),
+        level: streak.length >= 3 ? 'orange' : 'yellow',
+        penalty: streak.length >= 3 ? 5 : 2,
+      });
+    }
+  }
+
+  return violations;
+}
+
 // ─── Агрегатор: запуск всех проверок для расписания ───────────
 
 /**
@@ -444,6 +510,22 @@ function runChecks(schedule, opts = {}) {
         details: { wedScore: light.wedScore, thuScore: light.thuScore, avgOther: light.avgOther },
       });
     }
+
+    // E-03: подряд сложные предметы
+    const streaks = checkConsecutiveHard(days, grade);
+    for (const s of streaks) {
+      results.push({
+        ruleId: 'E-03',
+        severity: 'soft',
+        class: className,
+        message: `${className}, ${s.dayLabel}: ${s.length} сложных подряд с урока ${s.startLesson} (${s.subjects.join(' → ')})`,
+        details: {
+          day: s.day, dayLabel: s.dayLabel,
+          startLesson: s.startLesson, length: s.length,
+          subjects: s.subjects, level: s.level, penalty: s.penalty,
+        },
+      });
+    }
   }
 
   return results;
@@ -456,6 +538,7 @@ module.exports = {
   checkDifficultyDistribution,
   checkIntradayPeak,
   checkLightDay,
+  checkConsecutiveHard,
   runChecks,
   parseGrade,
 };
