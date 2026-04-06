@@ -1,5 +1,5 @@
 // Модуль: audit/checks
-// Задачи: US-0502 (X-01), US-0503 (C-01/C-02), US-0505 (D-01), US-0506 (E-01)
+// Задачи: US-0502 (X-01), US-0503 (C-01/C-02), US-0505 (D-01), US-0506 (E-01), US-0507 (E-02)
 // Описание: Функции проверки расписания на соответствие СанПиН.
 
 const { getMaxLessonsPerDay, getMaxWeeklyHours, getDifficulty } = require('../sanpin-norms');
@@ -298,6 +298,56 @@ function checkIntradayPeak(classSchedule, grade) {
   return violations;
 }
 
+// ─── E-02: Лёгкий день в середине недели (Ср/Чт) ─────────────
+
+/**
+ * US-0507: Проверяет наличие облегчённого дня в середине недели.
+ *
+ * По СанПиН один из дней Ср/Чт должен быть облегчённым:
+ * min(трудность Ср, трудность Чт) ≤ avg(остальные дни).
+ * Если оба дня тяжелее среднего — предупреждение.
+ *
+ * @param {string[][]} classSchedule — массив дней
+ * @param {number} grade — номер параллели (1–11)
+ * @returns {{ wedScore: number, thuScore: number, avgOther: number, issue: string } | null}
+ */
+function checkLightDay(classSchedule, grade) {
+  // Нужно минимум 4 дня (Пн–Чт) для анализа
+  if (classSchedule.length < 4) return null;
+
+  // Рассчитать балл трудности каждого дня
+  const dailyScores = classSchedule.map((lessons) => {
+    if (!lessons) return 0;
+    let score = 0;
+    for (const subj of lessons) {
+      if (subj && subj.trim()) score += getDifficulty(subj, grade);
+    }
+    return score;
+  });
+
+  const wedScore = dailyScores[2] || 0; // Ср — индекс 2
+  const thuScore = dailyScores[3] || 0; // Чт — индекс 3
+
+  // Среднее остальных активных дней (кроме Ср и Чт)
+  const otherScores = dailyScores.filter((_, i) => i !== 2 && i !== 3 && dailyScores[i] > 0);
+  if (otherScores.length === 0) return null;
+
+  const avgOther = otherScores.reduce((a, b) => a + b, 0) / otherScores.length;
+  const minMidweek = Math.min(wedScore, thuScore);
+
+  if (minMidweek > avgOther) {
+    const roundAvg = Math.round(avgOther * 10) / 10;
+    return {
+      wedScore,
+      thuScore,
+      avgOther: roundAvg,
+      issue: `Нет облегчённого дня: Ср (${wedScore} б.) и Чт (${thuScore} б.) оба тяжелее среднего (${roundAvg} б.)`,
+    };
+  }
+
+  return null;
+}
+
 // ─── Агрегатор: запуск всех проверок для расписания ───────────
 
 /**
@@ -382,6 +432,18 @@ function runChecks(schedule, opts = {}) {
         details: { day: p.day, dayLabel: p.dayLabel, peakLesson: p.peakLesson, peakScore: p.peakScore },
       });
     }
+
+    // E-02: лёгкий день в середине недели
+    const light = checkLightDay(days, grade);
+    if (light) {
+      results.push({
+        ruleId: 'E-02',
+        severity: 'soft',
+        class: className,
+        message: `${className}: ${light.issue}`,
+        details: { wedScore: light.wedScore, thuScore: light.thuScore, avgOther: light.avgOther },
+      });
+    }
   }
 
   return results;
@@ -393,6 +455,7 @@ module.exports = {
   checkMaxWeeklyHours,
   checkDifficultyDistribution,
   checkIntradayPeak,
+  checkLightDay,
   runChecks,
   parseGrade,
 };
