@@ -6,13 +6,15 @@
 
 const XLSX = require('xlsx');
 const db = require('../../config/database');
-// const { tryParseRows } = require('./try-parse-rows');         // US-0402
+const { tryParseRows } = require('./try-parse-rows'); // US-0402
 // const { tryParseTransposed } = require('./try-parse-transposed'); // US-0403
 // const { normSubj } = require('./norm-subj');                  // US-0404
 
 // ─── Детекция стратегии ─────────────────────────────────────
 
-const DAY_PATTERN = /^(пн|вт|ср|чт|пт|сб|понедельник|вторник|среда|четверг|пятница|суббота)/i;
+// Без \\b: в JS граница «слова» не работает с кириллицей.
+const DAY_PATTERN =
+  /^\s*(понедельник|вторник|среда|четверг|пятница|суббота|пн|вт|ср|чт|пт|сб)(?:$|(?=\s)|(?=[^а-яёa-z0-9])|[.,;:])/i;
 
 /**
  * @param {XLSX.WorkBook} workbook
@@ -95,9 +97,9 @@ async function parseScheduleFile(filePath, originalName) {
   let schedule;
 
   switch (strategy) {
-    // case 'rows':
-    //   schedule = tryParseRows(workbook);        // US-0402
-    //   break;
+    case 'rows':
+      schedule = tryParseRows(workbook);
+      break;
     // case 'transposed':
     //   schedule = tryParseTransposed(workbook);   // US-0403
     //   break;
