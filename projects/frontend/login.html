@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Войти — ШколаПлан</title>
+<link rel="stylesheet" href="/css/styles.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+</head>
+<body class="login-page">
+
+<nav class="nav nav--dark" id="nav"><div class="nav__inner">
+  <a href="/" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
+  <div class="nav__center">
+    <a href="/#features" class="nav__link">Возможности</a>
+    <a href="/demo.html" class="nav__link">Демо</a>
+  </div>
+  <div class="nav__right">
+    <a href="/" class="nav__link">← На главную</a>
+  </div>
+</div></nav>
+
+<main class="auth-wrap"><div class="auth-box">
+  <div class="auth-tabs" id="authTabs">
+    <button class="auth-tab auth-tab--active" data-tab="login" id="tabLogin">Войти</button>
+    <button class="auth-tab" data-tab="register" id="tabRegister">Регистрация</button>
+  </div>
+
+  <form class="auth-form" id="loginForm">
+    <h2 class="auth-form__title">С возвращением</h2>
+    <div class="field">
+      <label class="field__label" for="loginEmail">Email</label>
+      <input class="field__input" id="loginEmail" type="email" placeholder="school@example.ru" autocomplete="email"/>
+    </div>
+    <div class="field">
+      <label class="field__label" for="loginPass">Пароль</label>
+      <input class="field__input" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <p class="auth-form__err" id="loginErr"></p>
+    <button class="btn btn--primary btn--full" type="submit" id="loginBtn">Войти</button>
+    <p class="auth-form__switch">Нет аккаунта? <button type="button" class="auth-form__link" data-switch="register">Зарегистрироваться</button></p>
+  </form>
+
+  <form class="auth-form" id="registerForm" style="display:none">
+    <h2 class="auth-form__title">Создать аккаунт</h2>
+    <div class="field">
+      <label class="field__label" for="regName">Имя</label>
+      <input class="field__input" id="regName" type="text" placeholder="Мария Петровна" autocomplete="name"/>
+    </div>
+    <div class="field">
+      <label class="field__label" for="regSchool">Школа</label>
+      <input class="field__input" id="regSchool" type="text" placeholder="МБОУ СОШ №42"/>
+    </div>
+    <div class="field">
+      <label class="field__label" for="regEmail">Email</label>
+      <input class="field__input" id="regEmail" type="email" placeholder="school@example.ru" autocomplete="email"/>
+    </div>
+    <div class="field">
+      <label class="field__label" for="regPass">Пароль</label>
+      <input class="field__input" id="regPass" type="password" placeholder="минимум 6 символов" autocomplete="new-password"/>
+    </div>
+    <p class="auth-form__err" id="regErr"></p>
+    <button class="btn btn--primary btn--full" type="submit" id="regBtn">Зарегистрироваться</button>
+    <p class="auth-form__switch">Уже есть аккаунт? <button type="button" class="auth-form__link" data-switch="login">Войти</button></p>
+  </form>
+</div></main>
+
+<script src="/js/auth.js"></script>
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  if(params.get('tab')==='register'){
+    document.getElementById('tabLogin').classList.remove('auth-tab--active');
+    document.getElementById('tabRegister').classList.add('auth-tab--active');
+    document.getElementById('loginForm').style.display='none';
+    document.getElementById('registerForm').style.display='';
+  }
+  document.querySelectorAll('.auth-tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.auth-tab').forEach(b=>b.classList.remove('auth-tab--active'));
+      btn.classList.add('auth-tab--active');
+      const t=btn.dataset.tab;
+      document.getElementById('loginForm').style.display=t==='login'?'':'none';
+      document.getElementById('registerForm').style.display=t==='register'?'':'none';
+    });
+  });
+  document.querySelectorAll('[data-switch]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const t=btn.dataset.switch;
+      document.querySelectorAll('.auth-tab').forEach(b=>{
+        b.classList.toggle('auth-tab--active',b.dataset.tab===t);
+      });
+      document.getElementById('loginForm').style.display=t==='login'?'':'none';
+      document.getElementById('registerForm').style.display=t==='register'?'':'none';
+    });
+  });
+  document.getElementById('loginForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    const email=document.getElementById('loginEmail').value.trim();
+    const pass=document.getElementById('loginPass').value;
+    const err=document.getElementById('loginErr');
+    err.textContent='';
+    const res=spLogin(email,pass);
+    if(res.ok){ location.href='/account.html'; }
+    else { err.textContent=res.error; }
+  });
+  document.getElementById('registerForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    const name=document.getElementById('regName').value.trim();
+    const school=document.getElementById('regSchool').value.trim();
+    const email=document.getElementById('regEmail').value.trim();
+    const pass=document.getElementById('regPass').value;
+    const err=document.getElementById('regErr');
+    err.textContent='';
+    if(!name||!school){ err.textContent='Введите имя и название школы.'; return; }
+    if(pass.length<6){ err.textContent='Пароль должен содержать минимум 6 символов.'; return; }
+    const res=spRegister(name,school,email,pass);
+    if(res.ok){ location.href='/account.html'; }
+    else { err.textContent=res.error; }
+  });
+})();
+</script>
+</body>
+</html>
