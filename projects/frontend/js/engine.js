@@ -438,7 +438,7 @@ function renderGrid(sch,cg,au,tbl){
     var tipHtml=tipParts.length?tipParts.join(', '):'Нарушений нет';
 
     h+='<tr class="'+rowBdr+'">';
-    h+='<td class="tbl-cls-cell" style="color:'+clsColor+'" data-grid-tip="'+_esc(tipHtml+(tipIssues?'<hr class=grid-tip__hr>'+tipIssues:''))+'">'+cl+'</td>';
+    h+='<td class="tbl-cls-cell tbl-cls-cell--click" style="color:'+clsColor+'" data-cls="'+cl+'" data-grid-tip="'+_esc(tipHtml+(tipIssues?'<hr class=grid-tip__hr>'+tipIssues:''))+'">'+cl+'</td>';
 
     sch[cl].forEach(function(dayArr,di){
       var filled=[];for(var i=0;i<dayArr.length;i++){if(dayArr[i])filled.push(dayArr[i]);}
@@ -477,6 +477,13 @@ function renderGrid(sch,cg,au,tbl){
 
   /* Attach tooltip */
   _attachGridTooltip(tbl.parentNode.parentNode);
+
+  /* Attach class click → detail panel */
+  tbl.addEventListener('click',function(e){
+    var cell=e.target.closest('[data-cls]');
+    if(!cell)return;
+    _showClassDetail(cell.dataset.cls,sch,cg,au);
+  });
 }
 
 function _plural(n,one,few,many){var m=n%10,d=n%100;if(d>=11&&d<=19)return many;if(m===1)return one;if(m>=2&&m<=4)return few;return many;}
@@ -509,6 +516,191 @@ function _attachGridTooltip(container){
     if(t&&t.closest&&t.closest('[data-grid-tip]'))return;
     _gridTipEl.style.display='none';
   });
+}
+
+/* ═══ T-0511: Детальный отчёт по классу ═══ */
+
+var _detailOverlay=null, _detailPanel=null;
+
+function _ensureDetailDOM(){
+  if(_detailOverlay)return;
+  _detailOverlay=document.createElement('div');
+  _detailOverlay.className='cls-detail-overlay';
+  _detailOverlay.addEventListener('click',_closeClassDetail);
+  _detailPanel=document.createElement('div');
+  _detailPanel.className='cls-detail';
+  document.body.appendChild(_detailOverlay);
+  document.body.appendChild(_detailPanel);
+}
+
+function _closeClassDetail(){
+  if(_detailOverlay)_detailOverlay.classList.remove('cls-detail-overlay--open');
+  if(_detailPanel)_detailPanel.classList.remove('cls-detail--open');
+}
+
+function _showClassDetail(cl,sch,cg,au){
+  _ensureDetailDOM();
+  var g=cg[cl]||5, r=au.cr[cl], days=sch[cl], th2=g<=4?7:8;
+  if(!r||!days)return;
+
+  var viols=r.ch.filter(function(c){return c.st==='v';});
+  var warns=r.ch.filter(function(c){return c.st==='w';});
+  var clsColor=viols.length>0?'#ff453a':warns.length>0?'#ff9f0a':'#30d158';
+  var statusText=viols.length>0?'Есть нарушения':warns.length>0?'Есть рекомендации':'Всё в порядке';
+
+  var h='<div class="cls-detail__header">';
+  h+='<div class="cls-detail__title"><span style="color:'+clsColor+'">'+cl+'</span> <span class="cls-detail__grade">'+g+' класс</span></div>';
+  h+='<button class="cls-detail__close" onclick="_closeClassDetail()">✕</button>';
+  h+='</div>';
+
+  /* Status badge */
+  h+='<div class="cls-detail__status" style="border-color:'+clsColor+'33;background:'+clsColor+'0d"><span style="color:'+clsColor+'">'+statusText+'</span>';
+  h+=' — '+viols.length+' нарушени'+_plural(viols.length,'е','я','й')+', '+warns.length+' рекомендаци'+_plural(warns.length,'я','и','й');
+  h+='</div>';
+
+  /* Schedule mini-grid */
+  h+='<div class="cls-detail__section"><div class="cls-detail__section-title">Расписание</div>';
+  h+='<div class="cls-detail__grid-wrap"><table class="cls-detail__grid"><thead><tr><th></th>';
+  var ml=0;days.forEach(function(d){var n=d.filter(function(s){return s;}).length;if(n>ml)ml=n;});
+  for(var i=0;i<ml;i++)h+='<th>'+(i+1)+'</th>';
+  h+='<th>Σ</th></tr></thead><tbody>';
+  days.forEach(function(dayArr,di){
+    var filled=dayArr.filter(function(s){return s;});
+    var dayScore=filled.reduce(function(s,sub){return s+gd(sub,g);},0);
+    h+='<tr><td class="cls-detail__day">'+DN[di]+'</td>';
+    for(var li=0;li<ml;li++){
+      var s=li<filled.length?filled[li]:'';
+      if(!s){h+='<td></td>';continue;}
+      var df=gd(s,g),bg=CL[s]||'#666';
+      var bad=df>=th2&&(li<1||li>3);
+      var prevS=li>0&&li-1<filled.length?filled[li-1]:'';
+      var pair=prevS&&df>=th2&&gd(prevS,g)>=th2;
+      var bdr=(bad||pair)?'border:2px solid #ff9f0a':'';
+      h+='<td><div class="demo__cell" style="background:'+bg+'cc;'+bdr+'"><span>'+s+'</span><span class="demo__cell-score">'+df+'</span></div></td>';
+    }
+    h+='<td class="cls-detail__day-sum">'+dayScore+'</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div></div>';
+
+  /* Difficulty profile */
+  h+='<div class="cls-detail__section"><div class="cls-detail__section-title">Профиль трудности по дням</div>';
+  h+='<div class="cls-detail__profile">';
+  var maxDD=Math.max.apply(null,r.dd);
+  r.dd.forEach(function(d,i){
+    var pct=maxDD>0?Math.round(d/maxDD*100):0;
+    var isLight=d>0&&d===Math.min.apply(null,r.dd.filter(function(x){return x>0;}));
+    var isPeak=d===maxDD&&d>0;
+    var barCol=isLight?'#30d158':isPeak?'#ff453a':'#0071e3';
+    h+='<div class="cls-detail__bar-col"><div class="cls-detail__bar" style="height:'+pct+'%;background:'+barCol+'"></div>';
+    h+='<div class="cls-detail__bar-val">'+d+'</div>';
+    h+='<div class="cls-detail__bar-day">'+DN[i]+'</div></div>';
+  });
+  h+='</div></div>';
+
+  /* Violations list */
+  if(viols.length>0){
+    h+='<div class="cls-detail__section"><div class="cls-detail__section-title" style="color:#ff453a">Нарушения</div>';
+    viols.forEach(function(c){
+      h+='<div class="cls-detail__issue cls-detail__issue--v">';
+      h+='<div class="cls-detail__issue-head"><span class="cls-detail__issue-badge cls-detail__issue-badge--v">'+c.id+'</span><span class="cls-detail__issue-name">'+c.nm+'</span></div>';
+      h+='<div class="cls-detail__issue-desc">'+c.ds+'</div>';
+      if(c.sg)h+='<div class="cls-detail__issue-sug">'+c.sg+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  /* Warnings list */
+  if(warns.length>0){
+    h+='<div class="cls-detail__section"><div class="cls-detail__section-title" style="color:#ffd60a">Рекомендации</div>';
+    warns.forEach(function(c){
+      h+='<div class="cls-detail__issue cls-detail__issue--w">';
+      h+='<div class="cls-detail__issue-head"><span class="cls-detail__issue-badge cls-detail__issue-badge--w">'+c.id+'</span><span class="cls-detail__issue-name">'+c.nm+'</span></div>';
+      h+='<div class="cls-detail__issue-desc">'+c.ds+'</div>';
+      if(c.sg)h+='<div class="cls-detail__issue-sug">'+c.sg+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  /* Download button */
+  h+='<div class="cls-detail__actions">';
+  h+='<button class="cls-detail__dl-btn" id="clsDetailDl">Скачать отчёт</button>';
+  h+='</div>';
+
+  _detailPanel.innerHTML=h;
+  _detailOverlay.classList.add('cls-detail-overlay--open');
+  _detailPanel.classList.add('cls-detail--open');
+
+  /* Download handler */
+  var dlBtn=document.getElementById('clsDetailDl');
+  if(dlBtn){
+    dlBtn.addEventListener('click',function(){
+      _downloadClassReport(cl,g,days,r,au);
+    });
+  }
+}
+
+function _downloadClassReport(cl,g,days,r,au){
+  var lines=[];
+  lines.push('ОТЧЁТ ПО КЛАССУ: '+cl+' ('+g+' класс)');
+  lines.push('Дата: '+new Date().toLocaleDateString('ru-RU'));
+  lines.push('═'.repeat(50));
+  lines.push('');
+
+  /* Schedule */
+  lines.push('РАСПИСАНИЕ:');
+  days.forEach(function(dayArr,di){
+    var filled=dayArr.filter(function(s){return s;});
+    if(!filled.length)return;
+    var items=filled.map(function(s,i){return (i+1)+'. '+(SF[s]||s)+' ('+gd(s,g)+' б.)';});
+    lines.push('  '+DN[di]+': '+items.join(', '));
+  });
+  lines.push('');
+
+  /* Difficulty profile */
+  lines.push('ПРОФИЛЬ ТРУДНОСТИ:');
+  r.dd.forEach(function(d,i){lines.push('  '+DN[i]+': '+d+' баллов');});
+  lines.push('  Итого: '+r.wt+' ч/нед');
+  lines.push('');
+
+  /* Issues */
+  var viols=r.ch.filter(function(c){return c.st==='v';});
+  var warns=r.ch.filter(function(c){return c.st==='w';});
+  if(viols.length){
+    lines.push('НАРУШЕНИЯ ('+viols.length+'):');
+    viols.forEach(function(c,i){
+      lines.push('  '+(i+1)+'. ['+c.id+'] '+c.nm);
+      lines.push('     '+c.ds);
+      if(c.sg)lines.push('     Рекомендация: '+c.sg);
+    });
+    lines.push('');
+  }
+  if(warns.length){
+    lines.push('РЕКОМЕНДАЦИИ ('+warns.length+'):');
+    warns.forEach(function(c,i){
+      lines.push('  '+(i+1)+'. ['+c.id+'] '+c.nm);
+      lines.push('     '+c.ds);
+      if(c.sg)lines.push('     Совет: '+c.sg);
+    });
+    lines.push('');
+  }
+  if(!viols.length&&!warns.length){
+    lines.push('Нарушений не обнаружено.');
+    lines.push('');
+  }
+
+  lines.push('─'.repeat(50));
+  lines.push('Сформировано: ШколаПлан');
+
+  var blob=new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='audit-'+cl+'.txt';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function renderHeat(sch,cg,au,tbl){
