@@ -123,6 +123,42 @@ body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
   background: rgba(255,255,255,.04); font-weight: 600; color: #86868b;
 }
 
+/* ─── T-0510: Grid sort bar ─── */
+.grid-sort {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 10px; font-size: .78rem;
+}
+.grid-sort__label { color: #86868b; font-weight: 500; margin-right: 4px; }
+.grid-sort__btn {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
+  color: #86868b; font-family: var(--font); font-size: .72rem; font-weight: 600;
+  padding: 4px 12px; border-radius: 980px; cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.grid-sort__btn:hover { color: #f5f5f7; border-color: rgba(255,255,255,.18); }
+.grid-sort__btn--active { color: #f5f5f7; background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.2); }
+
+/* ─── T-0510: Row severity borders ─── */
+.grid-row--hard td { border-bottom: 2px solid rgba(255,69,58,.35) !important; }
+.grid-row--soft td { border-bottom: 2px solid rgba(255,159,10,.25) !important; }
+.demo__cell--warn { border: 2px solid #ff9f0a !important; }
+
+/* ─── T-0510: Floating tooltip ─── */
+.grid-tip {
+  display: none; position: fixed; z-index: 9000;
+  background: #1c1c1e; border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: .76rem; color: #e5e5e7; line-height: 1.55;
+  max-width: 320px; pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,.7);
+}
+.grid-tip b { color: #f5f5f7; font-weight: 700; }
+.grid-tip__hr { border: none; border-top: 1px solid rgba(255,255,255,.08); margin: 6px 0; }
+.grid-tip__issue { margin-bottom: 4px; line-height: 1.4; }
+.grid-tip__issue span { color: #86868b; font-size: .7rem; }
+.grid-tip__issue--v { color: #ff453a; }
+.grid-tip__issue--w { color: #ffd60a; }
+
 /* ─── Recommendations ─── */
 .rec-item { border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
 .rec-item--v { background: rgba(255,69,58,.07); border: 1px solid rgba(255,69,58,.18); }
