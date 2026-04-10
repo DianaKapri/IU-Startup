@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ШколаПлан — Настройка школы</title>
+<link rel="stylesheet" href="/css/styles.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<style>
+/* ===== ONBOARDING PAGE ===== */
+body.ob-page {
+  background: #0a0a0a;
+  color: #f5f5f7;
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.ob-main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 88px 24px 100px;
+}
+
+/* ─── Progress steps ─── */
+.ob-steps {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 48px;
+}
+.ob-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.ob-step-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.ob-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  background: #111;
+  flex-shrink: 0;
+  transition: all .25s;
+}
+.ob-step.active .ob-circle {
+  background: #2997ff;
+  border-color: #2997ff;
+  color: #fff;
+}
+.ob-step.done .ob-circle {
+  background: #30d158;
+  border-color: #30d158;
+  color: #fff;
+  font-size: 16px;
+}
+.ob-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,.08);
+  margin: 0 4px;
+  margin-top: -1px;
+}
+.ob-step-label {
+  font-size: 11px;
+  color: #86868b;
+  text-align: center;
+  white-space: nowrap;
+}
+.ob-step.active .ob-step-label { color: #2997ff; }
+.ob-step.done .ob-step-label { color: #30d158; }
+
+/* ─── Panel ─── */
+.ob-panel { display: none; }
+.ob-panel.active { display: block; }
+
+.ob-panel-title {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  font-weight: 600;
+  letter-spacing: -.03em;
+  color: #f5f5f7;
+  margin-bottom: 6px;
+  line-height: 1.15;
+}
+.ob-panel-sub {
+  font-size: .95rem;
+  color: #86868b;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+/* ─── Fields ─── */
+.ob-field {
+  margin-bottom: 20px;
+}
+.ob-field label {
+  display: block;
+  font-size: 13px;
+  color: #86868b;
+  margin-bottom: 8px;
+  letter-spacing: .01em;
+}
+.ob-field input[type=text],
+.ob-field input[type=number],
+.ob-field input[type=time],
+.ob-field select,
+.ob-field textarea {
+  width: 100%;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  color: #f5f5f7;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color .2s;
+  box-sizing: border-box;
+}
+.ob-field input:focus,
+.ob-field select:focus,
+.ob-field textarea:focus {
+  border-color: #2997ff;
+}
+.ob-field select option { background: #1a1a1a; }
+.ob-field textarea { min-height: 72px; resize: vertical; }
+.ob-hint {
+  font-size: 12px;
+  color: #555;
+  margin-top: 6px;
+}
+
+.ob-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ─── Tags ─── */
+.ob-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ob-tag {
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.12);
+  font-size: 13px;
+  color: #86868b;
+  cursor: pointer;
+  background: #111;
+  transition: all .15s;
+  user-select: none;
+}
+.ob-tag.sel {
+  background: rgba(41,151,255,.15);
+  border-color: #2997ff;
+  color: #2997ff;
+}
+
+/* ─── Checkboxes ─── */
+.ob-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #ccc;
+  cursor: pointer;
+}
+.ob-check input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2997ff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* ─── Cards (teacher / room) ─── */
+.ob-card {
+  background: #141414;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+.ob-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.ob-card-num {
+  font-size: 12px;
+  color: #555;
+  letter-spacing: .03em;
+}
+.ob-remove {
+  font-size: 12px;
+  color: #ff453a;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  padding: 0;
+}
+.ob-add {
+  width: 100%;
+  background: none;
+  border: 1px dashed rgba(41,151,255,.35);
+  border-radius: 10px;
+  color: #2997ff;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  padding: 11px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background .15s;
+}
+.ob-add:hover { background: rgba(41,151,255,.06); }
+
+/* ─── Nav buttons ─── */
+.ob-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.ob-btn-back {
+  font-size: 14px;
+  color: #86868b;
+  background: none;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  padding: 11px 24px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color .2s;
+}
+.ob-btn-back:hover { border-color: rgba(255,255,255,.25); }
+.ob-btn-next {
+  font-size: 14px;
+  color: #fff;
+  background: #2997ff;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 28px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  transition: opacity .15s;
+}
+.ob-btn-next:hover { opacity: .85; }
+
+/* ─── Success ─── */
+.ob-success {
+  text-align: center;
+  padding: 48px 0;
+}
+.ob-success-check {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(48,209,88,.15);
+  border: 1.5px solid #30d158;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 28px;
+  color: #30d158;
+}
+.ob-success h2 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -.03em;
+  margin-bottom: 10px;
+}
+.ob-success p {
+  font-size: .95rem;
+  color: #86868b;
+  max-width: 400px;
+  margin: 0 auto 32px;
+  line-height: 1.6;
+}
+
+/* ─── Divider ─── */
+.ob-divider {
+  height: 1px;
+  background: rgba(255,255,255,.06);
+  margin: 24px 0;
+}
+
+@media (max-width: 520px) {
+  .ob-row2 { grid-template-columns: 1fr; }
+  .ob-steps { gap: 0; }
+}
+</style>
+</head>
+<body class="ob-page">
+
+<!-- Навигация (такая же как на других страницах) -->
+<nav class="nav" id="nav"><div class="nav__inner">
+  <a href="/" class="nav__logo">
+    <svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/>
+      <rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/>
+      <rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/>
+      <rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/>
+    </svg>
+    ШколаПлан
+  </a>
+  <div class="nav__right">
+    <a href="/account.html" class="nav__link">Мой аккаунт</a>
+  </div>
+</div></nav>
+
+<main class="ob-main">
+
+  <!-- Прогресс-шаги -->
+  <div class="ob-steps" id="obSteps">
+    <div class="ob-step active" id="obStep0">
+      <div class="ob-step-row">
+        <div class="ob-circle" id="obc0">1</div>
+        <div class="ob-line"></div>
+      </div>
+      <div class="ob-step-label">Школа</div>
+    </div>
+    <div class="ob-step" id="obStep1">
+      <div class="ob-step-row">
+        <div class="ob-circle" id="obc1">2</div>
+        <div class="ob-line"></div>
+      </div>
+      <div class="ob-step-label">Учителя</div>
+    </div>
+    <div class="ob-step" id="obStep2">
+      <div class="ob-step-row">
+        <div class="ob-circle" id="obc2">3</div>
+        <div class="ob-line"></div>
+      </div>
+      <div class="ob-step-label">Кабинеты</div>
+    </div>
+    <div class="ob-step" id="obStep3">
+      <div class="ob-step-row">
+        <div class="ob-circle" id="obc3">4</div>
+        <div style="height:1px;flex:1;opacity:0;"></div>
+      </div>
+      <div class="ob-step-label">Режим</div>
+    </div>
+  </div>
+
+  <!-- ШАГ 1: СТРУКТУРА ШКОЛЫ -->
+  <div class="ob-panel active" id="obPanel0">
+    <div class="ob-panel-title">Структура школы</div>
+    <div class="ob-panel-sub">Расскажите об основных параметрах — займёт не больше двух минут</div>
+
+    <div class="ob-field">
+      <label>Название школы</label>
+      <input type="text" id="schoolName" placeholder="ГБОУ Школа № 1234, г. Москва"/>
+    </div>
+
+    <div class="ob-row2">
+      <div class="ob-field">
+        <label>Количество классов</label>
+        <input type="number" id="classCount" placeholder="32" min="1" max="200"/>
+      </div>
+      <div class="ob-field">
+        <label>Учебная неделя</label>
+        <select id="weekDays">
+          <option value="5">5 дней</option>
+          <option value="6">6 дней</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ob-field">
+      <label>Ступени обучения</label>
+      <div class="ob-tags">
+        <div class="ob-tag sel" data-val="primary" onclick="toggleTag(this)">Начальная (1–4)</div>
+        <div class="ob-tag sel" data-val="middle" onclick="toggleTag(this)">Основная (5–9)</div>
+        <div class="ob-tag sel" data-val="senior" onclick="toggleTag(this)">Старшая (10–11)</div>
+      </div>
+    </div>
+
+    <div class="ob-field">
+      <label>Особые классы</label>
+      <label class="ob-check"><input type="checkbox" id="chkProfile"> Профильные классы (физмат, гуманитарный, медицинский)</label>
+      <label class="ob-check"><input type="checkbox" id="chkDeep"> Классы с углублённым изучением предметов</label>
+      <label class="ob-check"><input type="checkbox" id="chkIncl"> Инклюзивные / коррекционные классы</label>
+      <label class="ob-check"><input type="checkbox" id="chkIup"> Индивидуальные учебные планы (ИУП) в 10–11 классах</label>
+      <div class="ob-hint">ИУП — самый сложный сценарий, потребует отдельной настройки</div>
+    </div>
+
+    <div class="ob-field">
+      <label>Смены</label>
+      <div class="ob-tags" id="shiftTags">
+        <div class="ob-tag sel" data-val="1" onclick="selectShift(this)">Одна смена</div>
+        <div class="ob-tag" data-val="2" onclick="selectShift(this)">Две смены</div>
+      </div>
+    </div>
+
+    <div class="ob-nav">
+      <div></div>
+      <button class="ob-btn-next" onclick="goStep(1)">Далее →</button>
+    </div>
+  </div>
+
+  <!-- ШАГ 2: УЧИТЕЛЯ -->
+  <div class="ob-panel" id="obPanel1">
+    <div class="ob-panel-title">Учителя</div>
+    <div class="ob-panel-sub">Добавьте учителей вручную — или загрузите списком из Excel на следующем шаге</div>
+
+    <div id="teachersList"></div>
+    <button class="ob-add" onclick="addTeacher()">+ Добавить учителя</button>
+
+    <div class="ob-nav">
+      <button class="ob-btn-back" onclick="goStep(0)">← Назад</button>
+      <button class="ob-btn-next" onclick="goStep(2)">Далее →</button>
+    </div>
+  </div>
+
+  <!-- ШАГ 3: КАБИНЕТЫ -->
+  <div class="ob-panel" id="obPanel2">
+    <div class="ob-panel-title">Кабинеты и помещения</div>
+    <div class="ob-panel-sub">Специализированные кабинеты (физика, химия, спортзал) добавьте обязательно — они влияют на расписание</div>
+
+    <div id="roomsList"></div>
+    <button class="ob-add" onclick="addRoom()">+ Добавить кабинет</button>
+
+    <div class="ob-nav">
+      <button class="ob-btn-back" onclick="goStep(1)">← Назад</button>
+      <button class="ob-btn-next" onclick="goStep(3)">Далее →</button>
+    </div>
+  </div>
+
+  <!-- ШАГ 4: РЕЖИМ -->
+  <div class="ob-panel" id="obPanel3">
+    <div class="ob-panel-title">Расписание звонков</div>
+    <div class="ob-panel-sub">Временная структура учебного дня</div>
+
+    <div class="ob-row2">
+      <div class="ob-field">
+        <label>Начало первого урока</label>
+        <input type="time" id="startTime" value="08:00"/>
+      </div>
+      <div class="ob-field">
+        <label>Длина урока (мин)</label>
+        <input type="number" id="lessonLen" value="45" min="30" max="90"/>
+      </div>
+    </div>
+
+    <div class="ob-row2">
+      <div class="ob-field">
+        <label>Большая перемена (мин)</label>
+        <input type="number" id="bigBreak" value="20" min="10" max="60"/>
+      </div>
+      <div class="ob-field">
+        <label>После какого урока</label>
+        <input type="number" id="bigBreakAfter" value="3" min="1" max="8"/>
+      </div>
+    </div>
+
+    <div class="ob-divider"></div>
+
+    <div class="ob-field">
+      <label>Предметы с делением на подгруппы</label>
+      <div class="ob-tags">
+        <div class="ob-tag" onclick="toggleTag(this)">Иностранный язык</div>
+        <div class="ob-tag" onclick="toggleTag(this)">Информатика</div>
+        <div class="ob-tag" onclick="toggleTag(this)">Физкультура</div>
+        <div class="ob-tag" onclick="toggleTag(this)">Технология</div>
+      </div>
+      <div class="ob-hint">При делении классу нужны два кабинета и два учителя одновременно</div>
+    </div>
+
+    <div class="ob-field">
+      <label>Сдвоенные уроки (пары) допустимы для</label>
+      <div class="ob-tags">
+        <div class="ob-tag" onclick="toggleTag(this)">Физкультура</div>
+        <div class="ob-tag" onclick="toggleTag(this)">Технология</div>
+        <div class="ob-tag" onclick="toggleTag(this)">Изобразительное искусство</div>
+        <div class="ob-tag" onclick="toggleTag(this)">Другие предметы</div>
+      </div>
+    </div>
+
+    <div class="ob-field">
+      <label>Дополнительные ограничения</label>
+      <label class="ob-check"><input type="checkbox"> Не ставить контрольные по двум предметам в один день</label>
+      <label class="ob-check"><input type="checkbox"> Физкультура — не первым и не последним уроком</label>
+      <label class="ob-check"><input type="checkbox"> Математика — только в первой половине дня</label>
+      <label class="ob-check"><input type="checkbox"> Группы продлённого дня (блокирует кабинеты после уроков)</label>
+    </div>
+
+    <div class="ob-nav">
+      <button class="ob-btn-back" onclick="goStep(2)">← Назад</button>
+      <button class="ob-btn-next" onclick="submitForm()">Сохранить →</button>
+    </div>
+  </div>
+
+  <!-- УСПЕХ -->
+  <div class="ob-panel" id="obPanel4">
+    <div class="ob-success">
+      <div class="ob-success-check">✓</div>
+      <h2>Данные сохранены</h2>
+      <p>Теперь загрузите текущее расписание в формате Excel — и мы проверим его по СанПиН за 15 секунд</p>
+      <a href="/account.html" class="ob-btn-next" style="display:inline-block;text-decoration:none;">Загрузить расписание →</a>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ─── Навигация по шагам ─────────────────────────────────────
+function goStep(n) {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('obPanel' + i).classList.toggle('active', i === n);
+    const step = document.getElementById('obStep' + i);
+    const circle = document.getElementById('obc' + i);
+    step.classList.remove('active', 'done');
+    if (i < n) {
+      step.classList.add('done');
+      circle.textContent = '✓';
+    } else if (i === n) {
+      step.classList.add('active');
+      circle.textContent = i + 1;
+    } else {
+      circle.textContent = i + 1;
+    }
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Теги ───────────────────────────────────────────────────
+function toggleTag(el) {
+  el.classList.toggle('sel');
+}
+
+function selectShift(el) {
+  document.querySelectorAll('#shiftTags .ob-tag').forEach(t => t.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ─── Учителя ────────────────────────────────────────────────
+let teacherCount = 0;
+
+function addTeacher() {
+  teacherCount++;
+  const n = teacherCount;
+  const div = document.createElement('div');
+  div.className = 'ob-card';
+  div.id = 'tc' + n;
+  div.innerHTML = `
+    <div class="ob-card-head">
+      <span class="ob-card-num">УЧИТЕЛЬ ${n}</span>
+      <button class="ob-remove" onclick="document.getElementById('tc${n}').remove()">Удалить</button>
+    </div>
+    <div class="ob-row2">
+      <div class="ob-field">
+        <label>ФИО</label>
+        <input type="text" placeholder="Иванова М.П."/>
+      </div>
+      <div class="ob-field">
+        <label>Ставка</label>
+        <select>
+          <option>1.0 — полная ставка</option>
+          <option>0.5 — полставки</option>
+          <option>Совместитель</option>
+        </select>
+      </div>
+    </div>
+    <div class="ob-field">
+      <label>Предметы</label>
+      <input type="text" placeholder="Математика, Алгебра, Геометрия"/>
+    </div>
+    <div class="ob-field">
+      <label>Недоступен (дни или часы)</label>
+      <input type="text" placeholder="Среда весь день; Пятница после 14:00"/>
+      <div class="ob-hint">Особенно важно для совместителей — часто приезжают 1–2 дня в неделю</div>
+    </div>
+  `;
+  document.getElementById('teachersList').appendChild(div);
+}
+
+// ─── Кабинеты ───────────────────────────────────────────────
+let roomCount = 0;
+
+function addRoom() {
+  roomCount++;
+  const n = roomCount;
+  const div = document.createElement('div');
+  div.className = 'ob-card';
+  div.id = 'rc' + n;
+  div.innerHTML = `
+    <div class="ob-card-head">
+      <span class="ob-card-num">КАБИНЕТ ${n}</span>
+      <button class="ob-remove" onclick="document.getElementById('rc${n}').remove()">Удалить</button>
+    </div>
+    <div class="ob-row2">
+      <div class="ob-field">
+        <label>Номер / название</label>
+        <input type="text" placeholder="214 или «Спортзал»"/>
+      </div>
+      <div class="ob-field">
+        <label>Вместимость (чел.)</label>
+        <input type="number" placeholder="30" min="1"/>
+      </div>
+    </div>
+    <div class="ob-row2">
+      <div class="ob-field">
+        <label>Специализация</label>
+        <select>
+          <option>Обычный</option>
+          <option>Физика</option>
+          <option>Химия</option>
+          <option>Биология</option>
+          <option>Информатика</option>
+          <option>Спортзал</option>
+          <option>Актовый зал</option>
+          <option>Мастерская</option>
+          <option>Бассейн</option>
+        </select>
+      </div>
+      <div class="ob-field">
+        <label>Закреплён за учителем</label>
+        <input type="text" placeholder="ФИО или оставьте пустым"/>
+      </div>
+    </div>
+  `;
+  document.getElementById('roomsList').appendChild(div);
+}
+
+// ─── Сабмит ─────────────────────────────────────────────────
+function submitForm() {
+  // Собираем данные
+  const data = {
+    schoolName: document.getElementById('schoolName').value,
+    classCount: document.getElementById('classCount').value,
+    weekDays: document.getElementById('weekDays').value,
+    startTime: document.getElementById('startTime').value,
+    lessonLen: document.getElementById('lessonLen').value,
+    savedAt: new Date().toISOString()
+  };
+  // Сохраняем локально (потом заменить на API-запрос)
+  localStorage.setItem('shkolaplan_school', JSON.stringify(data));
+  // Переходим на экран успеха
+  document.getElementById('obPanel3').classList.remove('active');
+  document.getElementById('obPanel4').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
