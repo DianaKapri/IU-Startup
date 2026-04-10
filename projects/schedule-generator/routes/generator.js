@@ -1,22 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const validateInput = require('../services/generator/validate-input');
 
-// тестовый endpoint
 router.post('/validate-input', (req, res) => {
-  const data = req.body;
+  const result = validateInput(req.body);
 
-  if (!data || Object.keys(data).length === 0) {
-    return res.json({
-      ok: false,
-      errors: ['Пустой input']
-    });
-  }
-
-  return res.json({
-    ok: true,
-    message: 'Input получен',
-    receivedKeys: Object.keys(data)
-  });
+  return res.json(result);
 });
 
 module.exports = router;
