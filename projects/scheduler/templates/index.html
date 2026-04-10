@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>School Scheduler</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    h1 {
+      margin-bottom: 16px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .status {
+      margin: 16px 0;
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+    }
+
+    .class-block {
+      margin-top: 24px;
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+
+    th, td {
+      border: 1px solid #dbe2ea;
+      padding: 8px;
+      text-align: center;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eef3ff;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Генератор школьного расписания</h1>
+
+  <button onclick="generateSchedule()">Сгенерировать расписание</button>
+
+  <div class="status" id="status">Нажми кнопку, чтобы построить расписание.</div>
+  <div id="result"></div>
+
+  <script>
+    async function generateSchedule() {
+      const status = document.getElementById("status");
+      const result = document.getElementById("result");
+
+      status.textContent = "Строю расписание...";
+      result.innerHTML = "";
+
+      try {
+        const response = await fetch("/api/generate");
+        const data = await response.json();
+
+        if (!data.ok) {
+          status.textContent = data.message || "Ошибка генерации.";
+          return;
+        }
+
+        status.textContent = "Расписание успешно построено.";
+        renderSchedule(data.schedule);
+      } catch (error) {
+        status.textContent = "Ошибка запроса: " + error.message;
+      }
+    }
+
+    function renderSchedule(schedule) {
+      const result = document.getElementById("result");
+      const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+      const byClass = {};
+      for (const row of schedule) {
+        if (!byClass[row.class]) {
+          byClass[row.class] = [];
+        }
+        byClass[row.class].push(row);
+      }
+
+      for (const className of Object.keys(byClass).sort()) {
+        const lessons = byClass[className];
+        const maxPeriod = Math.max(...lessons.map(x => x.period), 0);
+
+        const table = document.createElement("table");
+
+        let html = "<tr><th>Урок</th>";
+        for (const day of days) {
+          html += `<th>${day}</th>`;
+        }
+        html += "</tr>";
+
+        for (let p = 0; p <= maxPeriod; p++) {
+          html += `<tr><td><b>${p + 1}</b></td>`;
+
+          for (const day of days) {
+            const lesson = lessons.find(x => x.day === day && x.period === p);
+            if (lesson) {
+              html += `
+                <td>
+                  <div><b>${lesson.subject}</b></div>
+                  <div class="small">${lesson.teacher}</div>
+                  <div class="small">каб. ${lesson.room}</div>
+                </td>
+              `;
+            } else {
+              html += "<td></td>";
+            }
+          }
+
+          html += "</tr>";
+        }
+
+        table.innerHTML = html;
+
+        const block = document.createElement("div");
+        block.className = "class-block";
+        block.innerHTML = `<h2>${className}</h2>`;
+        block.appendChild(table);
+
+        result.appendChild(block);
+      }
+    }
+  </script>
+</body>
+</html>
