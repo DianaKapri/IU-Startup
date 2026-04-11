@@ -111,48 +111,47 @@ function spRegister(name, school, city, email, password) {
 
       var confirmRequired = !session;
 
-      // 1. Создаём запись в public.schools
-      return sb.from('schools')
-        .insert({ name: school.trim(), city: (city || '').trim(), mode: '5day' })
-        .select()
-        .single()
-        .then(function (schoolRes) {
-          if (schoolRes.error) {
-            console.warn('[spRegister] schools insert error:', schoolRes.error.message);
-            // Не блокируем — Supabase Auth уже создан
-            return { ok: true, confirmRequired: confirmRequired, user: { id: u.id, email: email, name: name, school: school, plan: 'free' } };
-          }
-
-          var schoolId = schoolRes.data.id;
-
-          // 2. Создаём запись в public.users
-          return sb.from('users')
-            .insert({
-              id: u.id,
-              email: u.email,
-              password_hash: 'supabase_auth',
-              name: name.trim(),
-              school_id: schoolId,
-              role: 'admin',
-              plan: 'free',
-            })
-            .then(function (userRes) {
-              if (userRes.error) {
-                console.warn('[spRegister] users insert error:', userRes.error.message);
-              }
-              return {
-                ok: true,
-                confirmRequired: confirmRequired,
-                user: {
-                  id: u.id,
-                  email: email,
-                  name: name,
-                  school: school,
-                  plan: 'free',
-                },
-              };
-            });
-        });
+      return fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: u.id,
+          email: u.email,
+          name: name.trim(),
+          schoolName: school.trim(),
+          city: (city || '').trim(),
+        }),
+      }).then(function (r) {
+        return r.json();
+      }).then(function (data) {
+        if (!data.ok) {
+          console.warn('[spRegister] backend register error:', data.error);
+        }
+        return {
+          ok: true,
+          confirmRequired: confirmRequired,
+          user: {
+            id: u.id,
+            email: email,
+            name: name,
+            school: school,
+            plan: 'free',
+          },
+        };
+      }).catch(function (err) {
+        console.warn('[spRegister] backend register fetch error:', err.message);
+        return {
+          ok: true,
+          confirmRequired: confirmRequired,
+          user: {
+            id: u.id,
+            email: email,
+            name: name,
+            school: school,
+            plan: 'free',
+          },
+        };
+      });
     });
   });
 }
