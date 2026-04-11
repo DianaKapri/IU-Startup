@@ -226,7 +226,6 @@ a { text-decoration: none; color: inherit; }
 /* ===== CARDS ===== */
 .cards { background: var(--gray-bg); padding: 100px 24px; }
 .cards__inner { max-width: var(--max-w); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.cards__section-eyebrow { grid-column: 1 / -1; font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--gray-mid); margin-bottom: 4px; }
 .card { background: var(--white); border-radius: 18px; padding: 44px 36px; transition: transform .3s; }
 .card:hover { transform: translateY(-4px); }
 .card--wide { grid-column: 1 / -1; }
