@@ -45,16 +45,16 @@
   <form class="auth-form" id="registerForm" style="display:none">
     <h2 class="auth-form__title">Создать аккаунт</h2>
     <div class="field">
-      <label class="field__label" for="regName">Имя</label>
-      <input class="field__input" id="regName" type="text" placeholder="Мария Петровна" autocomplete="name"/>
+      <label class="field__label" for="userName">ФИО</label>
+      <input class="field__input" id="userName" type="text" placeholder="Мария Петровна" autocomplete="name"/>
     </div>
     <div class="field">
-      <label class="field__label" for="regSchool">Название школы</label>
-      <input class="field__input" id="regSchool" type="text" placeholder="МБОУ СОШ №42"/>
+      <label class="field__label" for="schoolName">Название школы</label>
+      <input class="field__input" id="schoolName" type="text" placeholder="МБОУ СОШ №42"/>
     </div>
     <div class="field">
-      <label class="field__label" for="regCity">Город</label>
-      <input class="field__input" id="regCity" type="text" placeholder="Москва"/>
+      <label class="field__label" for="city">Город</label>
+      <input class="field__input" id="city" type="text" placeholder="Москва"/>
     </div>
     <div class="field">
       <label class="field__label" for="regEmail">Email</label>
@@ -141,15 +141,15 @@
 
   document.getElementById('registerForm').addEventListener('submit', function(e){
     e.preventDefault();
-    var name   = document.getElementById('regName').value.trim();
-    var school = document.getElementById('regSchool').value.trim();
-    var city   = document.getElementById('regCity').value.trim();
+    var name   = document.getElementById('userName').value.trim();
+    var school = document.getElementById('schoolName').value.trim();
+    var city   = document.getElementById('city').value.trim();
     var email  = document.getElementById('regEmail').value.trim();
     var pass   = document.getElementById('regPass').value;
     var err    = document.getElementById('regErr');
     var btn    = document.getElementById('regBtn');
     err.textContent = '';
-    if(!name || !school){ err.textContent = 'Введите имя и название школы.'; return; }
+    if(!name || !school){ err.textContent = 'Введите ФИО и название школы.'; return; }
     if(pass.length < 6){ err.textContent = 'Пароль должен содержать минимум 6 символов.'; return; }
     btn.disabled = true;
     btn.textContent = 'Регистрируем…';

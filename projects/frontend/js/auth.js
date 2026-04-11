@@ -109,40 +109,50 @@ function spRegister(name, school, city, email, password) {
       var session = res.data.session;
       if (!u) return { ok: false, error: 'Не удалось создать пользователя. Попробуйте ещё раз.' };
 
-      // Создаём записи в public.schools и public.users
-      return fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: u.id,
-          email: email.trim().toLowerCase(),
-          name: name.trim(),
-          schoolName: school.trim(),
-          city: (city || '').trim(),
-        }),
-      }).then(function (r) { return r.json(); }).then(function (dbRes) {
-        if (!dbRes.ok) {
-          console.warn('[spRegister] DB insert warning:', dbRes.error);
-        }
-        var meta = u.user_metadata || {};
-        var confirmRequired = !session;
-        return {
-          ok: true,
-          confirmRequired: confirmRequired,
-          user: {
-            id: u.id,
-            email: email,
-            name: meta.name || name,
-            school: meta.school || school,
-            plan: 'free',
-          },
-        };
-      }).catch(function (fetchErr) {
-        console.warn('[spRegister] DB fetch error:', fetchErr.message);
-        // Не блокируем пользователя — Supabase Auth уже создан
-        var confirmRequired = !session;
-        return { ok: true, confirmRequired: confirmRequired, user: { id: u.id, email: email, name: name, school: school, plan: 'free' } };
-      });
+      var confirmRequired = !session;
+
+      // 1. Создаём запись в public.schools
+      return sb.from('schools')
+        .insert({ name: school.trim(), city: (city || '').trim(), mode: '5day' })
+        .select()
+        .single()
+        .then(function (schoolRes) {
+          if (schoolRes.error) {
+            console.warn('[spRegister] schools insert error:', schoolRes.error.message);
+            // Не блокируем — Supabase Auth уже создан
+            return { ok: true, confirmRequired: confirmRequired, user: { id: u.id, email: email, name: name, school: school, plan: 'free' } };
+          }
+
+          var schoolId = schoolRes.data.id;
+
+          // 2. Создаём запись в public.users
+          return sb.from('users')
+            .insert({
+              id: u.id,
+              email: u.email,
+              password_hash: 'supabase_auth',
+              name: name.trim(),
+              school_id: schoolId,
+              role: 'admin',
+              plan: 'free',
+            })
+            .then(function (userRes) {
+              if (userRes.error) {
+                console.warn('[spRegister] users insert error:', userRes.error.message);
+              }
+              return {
+                ok: true,
+                confirmRequired: confirmRequired,
+                user: {
+                  id: u.id,
+                  email: email,
+                  name: name,
+                  school: school,
+                  plan: 'free',
+                },
+              };
+            });
+        });
     });
   });
 }
