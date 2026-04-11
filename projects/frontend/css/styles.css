@@ -55,28 +55,26 @@ a { text-decoration: none; color: inherit; }
   transition: background .3s;
 }
 .nav__inner {
-  position: relative;
   max-width: var(--max-w);
   margin: 0 auto;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   height: 48px;
   padding: 0 22px;
 }
 .nav__logo {
-  position: absolute; left: 22px;
   display: flex; align-items: center; gap: 8px;
   font-size: .88rem; font-weight: 600; color: var(--black);
-  letter-spacing: -.01em;
+  letter-spacing: -.01em; flex-shrink: 0;
 }
 .nav__logo-icon { color: var(--black); }
 .nav__center {
   display: flex; align-items: center; gap: 24px;
+  position: absolute; left: 50%; transform: translateX(-50%);
 }
 .nav__right {
-  position: absolute; right: 22px;
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
 }
 .nav__link {
   font-size: .8rem; font-weight: 400; color: var(--black); opacity: .8;
