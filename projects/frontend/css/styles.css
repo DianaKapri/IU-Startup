@@ -204,8 +204,8 @@ a { text-decoration: none; color: inherit; }
 
 /* ===== RIBBON ===== */
 .ribbon { background: var(--surface-dark); padding: 0 24px 112px; }
-.ribbon__inner { max-width: var(--max-w); margin: 0 auto; display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; }
-.ribbon__stat { text-align: center; }
+.ribbon__inner { max-width: var(--max-w); margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 60px; flex-wrap: wrap; }
+.ribbon__stat { text-align: center; display: flex; flex-direction: column; align-items: center; }
 .ribbon__number { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.03em; color: #fff; }
 .ribbon__headline { display: block; font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.03em; color: #fff; line-height: 1.05; }
 .ribbon__unit { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; color: #fff; }
@@ -244,6 +244,19 @@ a { text-decoration: none; color: inherit; }
 .price__amount span { font-size: .4em; color: var(--gray-mid); }
 .price__note { font-size: 1.05rem; color: var(--gray-dark); font-weight: 300; margin-bottom: 28px; }
 .price__actions { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+
+/* ===== JOIN CTA ===== */
+.join-section { background: var(--blue); padding: 112px 24px; text-align: center; color: #fff; }
+.join__inner { max-width: var(--max-w-narrow); margin: 0 auto; }
+.join__eyebrow { font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: rgba(255,255,255,.6); margin-bottom: 16px; }
+.join__title { font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.1; margin-bottom: 20px; }
+.join__desc { font-size: clamp(.95rem, 2vw, 1.1rem); font-weight: 300; color: rgba(255,255,255,.75); line-height: 1.65; margin-bottom: 36px; }
+.join__actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn--lg { padding: 16px 32px; font-size: 1rem; }
+.btn--white { background: #fff; color: var(--blue); }
+.btn--white:hover { background: rgba(255,255,255,.9); }
+.btn--ghost-light { background: rgba(255,255,255,.15); color: #fff; border: 1.5px solid rgba(255,255,255,.3); }
+.btn--ghost-light:hover { background: rgba(255,255,255,.25); }
 
 /* ===== FOOTER ===== */
 .footer { background: var(--surface-dark); border-top: .5px solid rgba(255,255,255,.06); padding: 20px 24px; }
@@ -344,8 +357,8 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .wizard-section{padding:112px 1.5rem;background:#000;}
 .wizard-inner{max-width:640px;margin:0 auto;}
 .wiz-eyebrow{font-size:10px;letter-spacing:2px;color:#555;margin:0 0 10px;}
-.wiz-title{font-size:28px;font-weight:700;margin:0 0 8px;color:#fff;line-height:1.15;text-align:center;}
-.wiz-sub{font-size:13px;color:#777;margin:0 0 28px;text-align:center;}
+.wiz-title{font-size:clamp(2rem,6vw,3.6rem);font-weight:700;margin:0 0 16px;color:#fff;line-height:1.07;letter-spacing:-.04em;text-align:center;}
+.wiz-sub{font-size:clamp(.95rem,2vw,1.18rem);font-weight:300;color:#888;margin:0 0 40px;text-align:center;line-height:1.6;}
 .wiz-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:480px;margin:0 auto 20px;}
 .wiz-card{background:#111;border-radius:10px;padding:16px;border:1px solid #222;cursor:pointer;transition:border-color .2s;}
 .wiz-card:hover{border-color:#444;}
