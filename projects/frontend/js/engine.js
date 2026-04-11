@@ -717,21 +717,26 @@ function renderRecs(top,el){
     var items=classMap[cl];
     var viols=items.filter(function(t){return t.st==='v';});
     var warns=items.filter(function(t){return t.st==='w';});
-    var clsColor=viols.length>0?'#ff453a':warns.length>0?'#ff9f0a':'#30d158';
+    var meta='';
+    if(viols.length)meta+=viols.length+' нарушени'+_plural(viols.length,'е','я','й');
+    if(viols.length&&warns.length)meta+=' · ';
+    if(warns.length)meta+=warns.length+' рекомендаци'+_plural(warns.length,'я','и','й');
     var h='<div class="rec-class-group">';
-    h+='<div class="rec-class-group__hdr"><span class="rec-class-group__name" style="color:'+clsColor+'">'+cl+'</span>';
-    if(viols.length)h+='<span class="rec-class-group__badge rec-class-group__badge--v">❌ '+viols.length+' нарушени'+_plural(viols.length,'е','я','й')+'</span>';
-    if(warns.length)h+='<span class="rec-class-group__badge rec-class-group__badge--w">⚠️ '+warns.length+' рекомендаци'+_plural(warns.length,'я','и','й')+'</span>';
+    h+='<div class="rec-class-group__hdr" onclick="this.parentNode.classList.toggle(\'rec-class-group--open\')">';
+    h+='<span class="rec-class-group__name">'+cl+'</span>';
+    h+='<span class="rec-class-group__meta">'+meta+'</span>';
+    h+='<span class="rec-class-group__arrow">›</span>';
     h+='</div>';
+    h+='<div class="rec-class-group__body">';
     items.forEach(function(t){
       var iv=t.st==='v';
-      h+='<div class="rec-item '+(iv?'rec-item--v':'rec-item--w')+'">';
-      h+='<div class="rec-item__head"><span class="rec-item__badge '+(iv?'rec-item__badge--v':'rec-item__badge--w')+'">'+(iv?'❌':'⚠️')+' '+t.id+'</span><span class="rec-item__name">'+t.nm+'</span></div>';
+      h+='<div class="rec-item'+(iv?' rec-item--v':'')+'">';
+      h+='<div class="rec-item__head"><span class="rec-item__badge">'+t.id+'</span><span class="rec-item__name">'+t.nm+'</span></div>';
       h+='<div class="rec-item__desc">'+t.ds+'</div>';
-      if(t.sg)h+='<div class="rec-item__suggest">💡 '+t.sg+'</div>';
+      if(t.sg)h+='<div class="rec-item__suggest">'+t.sg+'</div>';
       h+='</div>';
     });
-    h+='</div>';
+    h+='</div></div>';
     return h;
   }).join('');
 }
