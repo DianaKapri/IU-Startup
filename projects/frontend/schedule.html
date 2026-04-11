@@ -20,18 +20,15 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .sch-back:hover{color:#f5f5f7;}
 .sch-back svg{flex-shrink:0;}
 .sch-panel{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;margin-bottom:20px;}
-.sch-panel__title{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#86868b;margin-bottom:14px;}
 .sch-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-.sch-tabs{display:flex;gap:6px;margin-bottom:18px;}
-.sch-tab{padding:6px 14px;border-radius:20px;font-size:.78rem;font-weight:500;border:1px solid rgba(255,255,255,.1);background:transparent;color:#86868b;cursor:pointer;transition:all .15s;}
-.sch-tab--active{background:rgba(0,113,227,.15);border-color:#0071e3;color:#0071e3;}
 .sch-cta-bar{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;}
-.sch-btn{padding:10px 22px;border-radius:8px;font-size:.86rem;font-weight:500;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s;font-family:var(--font);}
-.sch-btn--primary{background:#0071e3;color:#fff;border:none;}
+.sch-btn{padding:10px 22px;border-radius:8px;font-size:.86rem;font-weight:500;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:7px;transition:all .15s;font-family:var(--font);border:none;}
+.sch-btn--primary{background:#0071e3;color:#fff;}
 .sch-btn--primary:hover{background:#0077ed;}
+.sch-btn--green{background:#22c55e;color:#fff;}
+.sch-btn--green:hover{background:#16a34a;}
 .sch-btn--ghost{background:transparent;color:#f5f5f7;border:1px solid rgba(255,255,255,.2);}
 .sch-btn--ghost:hover{border-color:rgba(255,255,255,.4);}
-.sch-empty{text-align:center;padding:60px 24px;color:#555;font-size:.9rem;}
 .sch-stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
 .sch-stat{flex:1;min-width:100px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;}
 .sch-stat__val{font-size:1.4rem;font-weight:700;color:#f5f5f7;line-height:1;}
@@ -56,16 +53,15 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
   <div class="sch-stat-row" id="schStats"></div>
 
   <div class="sch-panel">
-    <div class="sch-tabs">
-      <button class="sch-tab sch-tab--active" data-st="grid">Сетка расписания</button>
-      <button class="sch-tab" data-st="recs">Анализ нарушений</button>
-    </div>
     <div id="schGrid"><div class="sch-tbl-wrap"><table class="acc-grid-tbl" id="schGridTbl"></table></div></div>
-    <div id="schRecs" style="display:none"></div>
   </div>
 
   <div class="sch-cta-bar">
-    <button class="sch-btn sch-btn--primary" onclick="window.print()">Распечатать</button>
+    <button class="sch-btn sch-btn--green" onclick="downloadExcel()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v9m0 0L4 7.5m3.5 3.5L11 7.5M2 12.5h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Скачать .xlsx
+    </button>
+    <button class="sch-btn sch-btn--ghost" onclick="window.print()">Распечатать</button>
     <a href="/login.html?tab=register" class="sch-btn sch-btn--ghost">Сохранить и войти</a>
   </div>
 </div>
@@ -73,6 +69,8 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="/js/engine.js"></script>
 <script>
+var _schData=null;
+
 (function(){
   var raw;
   try{raw=sessionStorage.getItem('wizSchedule');}catch(e){}
@@ -82,6 +80,7 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
     return;
   }
   var data=JSON.parse(raw);
+  _schData=data;
   var sch=data.sch,cg=data.cg,school=data.school||'';
 
   if(school){
@@ -93,7 +92,7 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
   var totalLessons=0;
   Object.keys(sch).forEach(function(c){sch[c].forEach(function(d){d.forEach(function(l){if(l)totalLessons++;});});});
   var audit=doAudit(sch,cg);
-  var violations=audit.vi?audit.vi.length:0,warnings=audit.wa?audit.wa.length:0;
+  var violations=audit.vi?audit.vi.length:0;
 
   var statsEl=document.getElementById('schStats');
   statsEl.innerHTML=[
@@ -107,22 +106,74 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 
   var tbl=document.getElementById('schGridTbl');
   renderGrid(sch,cg,audit,tbl);
+})();
 
-  var recsEl=document.getElementById('schRecs');
-  if(audit.top&&audit.top.length){renderRecs(audit.top,recsEl);}
-  else{recsEl.innerHTML='<p style="color:#555;font-size:.85rem;padding:20px 0">Нарушений не обнаружено — расписание соответствует нормам СанПиН</p>';}
+function downloadExcel(){
+  if(!_schData){return;}
+  var sch=_schData.sch,school=_schData.school||'Расписание';
+  var days=['Понедельник','Вторник','Среда','Четверг','Пятница'];
+  var wb=XLSX.utils.book_new();
 
-  document.querySelectorAll('.sch-tab').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      document.querySelectorAll('.sch-tab').forEach(function(b){b.classList.remove('sch-tab--active');});
-      this.classList.add('sch-tab--active');
-      var which=this.getAttribute('data-st');
-      document.getElementById('schGrid').style.display=which==='grid'?'':'none';
-      document.getElementById('schRecs').style.display=which==='recs'?'':'none';
-    });
+  /* One sheet per class */
+  var classes=Object.keys(sch).sort(function(a,b){
+    var na=parseInt(a)||0,nb=parseInt(b)||0;
+    return na!==nb?na-nb:a.localeCompare(b,'ru');
   });
 
-})();
+  classes.forEach(function(cls){
+    var dayArrays=sch[cls];
+    var maxLessons=0;
+    dayArrays.forEach(function(d){if(d.length>maxLessons)maxLessons=d.length;});
+    if(maxLessons<1)maxLessons=7;
+
+    /* Header row */
+    var rows=[['Урок'].concat(days.slice(0,dayArrays.length))];
+    for(var i=0;i<maxLessons;i++){
+      var row=[i+1];
+      dayArrays.forEach(function(d){
+        var code=d[i]||'';
+        row.push(SF[code]||code||'');
+      });
+      rows.push(row);
+    }
+
+    var ws=XLSX.utils.aoa_to_sheet(rows);
+
+    /* Column widths */
+    ws['!cols']=[{wch:6}].concat(days.slice(0,dayArrays.length).map(function(){return{wch:22};}));
+
+    /* Style header row bold */
+    var range=XLSX.utils.decode_range(ws['!ref']);
+    for(var C=range.s.c;C<=range.e.c;C++){
+      var addr=XLSX.utils.encode_cell({r:0,c:C});
+      if(ws[addr]&&!ws[addr].s)ws[addr].s={font:{bold:true},fill:{fgColor:{rgb:'1A1A2E'}}};
+    }
+
+    var safeName=cls.replace(/[\/\\?*\[\]]/g,'');
+    XLSX.utils.book_append_sheet(wb,ws,safeName);
+  });
+
+  /* Summary sheet with all classes */
+  var sumRows=[['Класс'].concat(days)];
+  classes.forEach(function(cls){
+    var dayArrays=sch[cls];
+    var maxLessons=0;
+    dayArrays.forEach(function(d){if(d.length>maxLessons)maxLessons=d.length;});
+    sumRows.push([cls]);
+    for(var i=0;i<maxLessons;i++){
+      var row=['  Урок '+(i+1)];
+      dayArrays.forEach(function(d){row.push(SF[d[i]||'']||d[i]||'');});
+      sumRows.push(row);
+    }
+    sumRows.push([]);
+  });
+  var wsSummary=XLSX.utils.aoa_to_sheet(sumRows);
+  wsSummary['!cols']=[{wch:14}].concat(days.map(function(){return{wch:22};}));
+  XLSX.utils.book_append_sheet(wb,wsSummary,'Все классы');
+
+  var filename=(school?school.replace(/[\/\\?*\[\]:]/g,''):'Расписание')+'.xlsx';
+  XLSX.writeFile(wb,filename);
+}
 </script>
 </body>
 </html>
