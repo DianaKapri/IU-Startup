@@ -128,13 +128,7 @@
         var next = new URLSearchParams(location.search).get('next') || '/account.html';
         location.href = next;
       } else {
-        var msg = res.error;
-        if(msg && (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('email_not_confirmed'))){
-          msg = 'Email не подтверждён. Проверьте почту и перейдите по ссылке в письме.';
-        } else if(msg && msg.toLowerCase().includes('invalid login credentials')){
-          msg = 'Неверный email или пароль.';
-        }
-        err.textContent = msg;
+        err.textContent = res.error;
         btn.disabled = false;
         btn.textContent = 'Войти';
       }

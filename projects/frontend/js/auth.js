@@ -1,5 +1,25 @@
 /* ШколаПлан — Authentication via Supabase */
 
+function _translateError(msg) {
+  if (!msg) return 'Неизвестная ошибка. Попробуйте ещё раз.';
+  var m = msg.toLowerCase();
+  if (m.includes('rate limit') || m.includes('over_email_send_rate_limit') || m.includes('security purposes'))
+    return 'Слишком много попыток. Supabase ограничивает отправку писем — подождите несколько минут и попробуйте снова.';
+  if (m.includes('email not confirmed') || m.includes('email_not_confirmed'))
+    return 'Email не подтверждён. Проверьте почту и перейдите по ссылке в письме.';
+  if (m.includes('invalid login credentials') || m.includes('invalid_credentials'))
+    return 'Неверный email или пароль.';
+  if (m.includes('user already registered') || m.includes('already been registered'))
+    return 'Этот email уже зарегистрирован. Войдите или восстановите пароль.';
+  if (m.includes('password should be at least'))
+    return 'Пароль должен содержать не менее 6 символов.';
+  if (m.includes('unable to validate email address') || m.includes('email address') || m.includes('email_address_invalid'))
+    return 'Некорректный email-адрес.';
+  if (m.includes('network') || m.includes('fetch'))
+    return 'Ошибка сети. Проверьте подключение к интернету.';
+  return msg;
+}
+
 var _supabase = null;
 var _configPromise = null;
 
@@ -49,7 +69,7 @@ function spLogin(email, password) {
   return _initSupabase().then(function (sb) {
     return sb.auth.signInWithPassword({ email: email, password: password })
       .then(function (res) {
-        if (res.error) return { ok: false, error: res.error.message };
+        if (res.error) return { ok: false, error: _translateError(res.error.message) };
         var u = res.data.user;
         var meta = u.user_metadata || {};
         return {
@@ -84,7 +104,7 @@ function spRegister(name, school, email, password) {
         data: { name: name.trim(), school: school.trim(), plan: 'trial' },
       },
     }).then(function (res) {
-      if (res.error) return { ok: false, error: res.error.message };
+      if (res.error) return { ok: false, error: _translateError(res.error.message) };
       var u = res.data.user;
       var session = res.data.session;
       var meta = (u && u.user_metadata) || {};
