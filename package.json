@@ -1,0 +1,14 @@
+{
+  "name": "shkolaplan",
+  "version": "0.1.0",
+  "description": "ШколаПлан — Automated school scheduling system",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "http-proxy-middleware": "^3.0.3"
+  }
+}
