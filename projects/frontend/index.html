@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>ШколаПлан — Расписание. Переосмыслено.</title>
 <link rel="stylesheet" href="/css/styles.css"/>
-<link rel="stylesheet" href="/css/demo.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
@@ -50,23 +49,22 @@
 </div></section>
 
 <section class="showcase showcase--dark"><div class="showcase__inner">
-  <p class="showcase__eyebrow fade-in">Киллер-фича</p>
   <h2 class="showcase__title fade-in">СанПиН&#8209;аудит<br/>в один клик.</h2>
   <p class="showcase__text fade-in fade-in--d1">23 проверки. Менее 5 мс. Цветовые маркеры для каждого класса, каждого дня, каждого правила.</p>
-  <section class="demo-results fade-in fade-in--d2" id="demoResults" style="margin-top:32px;text-align:left">
-    <div class="demo-badge">Тестовые данные · Школа №42</div>
-    <div class="demo-tabs" id="demoTabs">
-      <button class="demo-tab demo-tab--active" data-tab="audit">Аудит</button>
-      <button class="demo-tab" data-tab="grid">Сетка</button>
-      <button class="demo-tab" data-tab="heat">Тепловая карта</button>
-      <button class="demo-tab" data-tab="recs">Рекомендации</button>
-    </div>
-    <div class="demo-tab-desc" id="demoTabDesc"></div>
-    <div id="demoTabAudit" class="demo-tab-panel"></div>
-    <div id="demoTabGrid" class="demo-tab-panel" style="display:none"></div>
-    <div id="demoTabHeat" class="demo-tab-panel" style="display:none"></div>
-    <div id="demoTabRecs" class="demo-tab-panel" style="display:none"></div>
-  </section>
+  <div class="audit-upload-wrap fade-in fade-in--d2">
+    <label class="audit-upload-btn" for="auditFileInput">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="18" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M14 11v8M10 15l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.6"/></svg>
+      <span>Загрузить своё расписание (.xlsx)</span>
+    </label>
+    <input type="file" id="auditFileInput" accept=".xlsx,.xls" style="display:none"/>
+    <a href="/demo.html" class="link-cta link-cta--muted audit-demo-link">Смотреть аудит на демо-данных ›</a>
+  </div>
+  <div class="audit-template-row fade-in fade-in--d3">
+    <a href="/assets/shablon-raspisaniya.xlsx" download class="audit-template-link">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v9M3.5 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Скачать шаблон расписания
+    </a>
+  </div>
 </div></section>
 
 <!-- ═══ WIZARD: С чего начнём? ═══ -->
@@ -224,89 +222,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
-<script src="/js/engine.js"></script>
 <script src="/js/scripts.js"></script>
 <script>spInitNav();</script>
-<script>
-(function(){
-  var TAB_DESCS = {
-    audit: 'Сводный балл по СанПиН для каждого класса. Красный — нарушение, жёлтый — рекомендация, зелёный — норма.',
-    grid:  'Полная сетка расписания с подсветкой проблемных слотов по каждому классу и дню.',
-    heat:  'Тепловая карта нагрузки: насыщенность цвета показывает интенсивность занятий в течение дня.',
-    recs:  'Конкретные советы по перестановке уроков для устранения нарушений СанПиН.'
-  };
-  var tabDesc = document.getElementById('demoTabDesc');
-
-  function showTab(name) {
-    ['audit','grid','heat','recs'].forEach(function(t) {
-      var el = document.getElementById('demoTab' + t.charAt(0).toUpperCase() + t.slice(1));
-      if (el) el.style.display = t === name ? '' : 'none';
-    });
-    document.querySelectorAll('#demoTabs .demo-tab').forEach(function(b) {
-      b.classList.toggle('demo-tab--active', b.dataset.tab === name);
-    });
-    if (tabDesc) tabDesc.textContent = TAB_DESCS[name] || '';
-  }
-
-  document.querySelectorAll('#demoTabs .demo-tab').forEach(function(btn) {
-    btn.addEventListener('click', function() { showTab(btn.dataset.tab); });
-  });
-
-  function renderDemoResults(sch, cg) {
-    var audit = doAudit(sch, cg);
-
-    var auditEl = document.getElementById('demoTabAudit');
-    if (auditEl) {
-      var classes = Object.keys(sch);
-      var h = '<div class="acc-audit-summary' + ((!audit.vi.length && !audit.wa.length) ? ' acc-audit-summary--ok' : '') + '">'
-            + '<span class="acc-audit-stat">Балл: ' + audit.score + '/100</span>'
-            + ' <span class="acc-audit-stat acc-audit-stat--v">❌ ' + audit.vi.length + ' нарушений</span>'
-            + ' <span class="acc-audit-stat acc-audit-stat--w">⚠️ ' + audit.wa.length + ' рекомендаций</span>'
-            + '</div>';
-      h += '<div class="acc-audit-scores">';
-      classes.forEach(function(cl) {
-        var r = audit.cr[cl]; if (!r) return;
-        var hv = r.ch.some(function(c) { return c.st === 'v'; });
-        var hw = r.ch.some(function(c) { return c.st === 'w'; });
-        var col = hv ? '#ff453a' : hw ? '#ff9f0a' : '#30d158';
-        var issues = r.ch.map(function(c) {
-          return '<div class="acc-issue acc-issue--' + c.st + '"><span class="acc-issue__id">' + c.id + '</span> ' + c.nm + '</div>';
-        }).join('');
-        h += '<div class="acc-score-card"><div class="acc-score-card__name" style="color:' + col + '">' + cl + '</div>'
-           + (issues || '<div class="acc-issue acc-issue--ok">✓ Норма</div>') + '</div>';
-      });
-      h += '</div>';
-      auditEl.innerHTML = h;
-    }
-
-    var gridEl = document.getElementById('demoTabGrid');
-    if (gridEl) {
-      var tbl = document.createElement('table');
-      tbl.className = 'acc-grid-tbl';
-      gridEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
-      gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
-      renderGrid(sch, cg, audit, tbl);
-    }
-
-    var heatEl = document.getElementById('demoTabHeat');
-    if (heatEl) {
-      var htbl = document.createElement('table');
-      htbl.className = 'acc-heat-tbl';
-      heatEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
-      heatEl.querySelector('.acc-tbl-wrap').appendChild(htbl);
-      renderHeat(sch, cg, audit, htbl);
-    }
-
-    var recsEl = document.getElementById('demoTabRecs');
-    if (recsEl) renderRecs(audit.top, recsEl);
-
-    showTab('audit');
-  }
-
-  if (typeof DEM !== 'undefined' && typeof DCG !== 'undefined') {
-    renderDemoResults(DEM, DCG);
-  }
-})();
-</script>
 </body>
 </html>

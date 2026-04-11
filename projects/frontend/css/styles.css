@@ -410,3 +410,14 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .wiz-done__title{font-size:15px;color:#fff;margin:0 0 4px;font-weight:500;}
 .wiz-done__desc{font-size:12px;color:#666;margin:0;}
 @media(max-width:500px){.wiz-cards{grid-template-columns:1fr;}.wiz-row-2{grid-template-columns:1fr;}}
+
+/* ── Audit upload block ── */
+.audit-upload-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:28px;}
+.audit-upload-btn{display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border:1.5px solid rgba(255,255,255,.18);border-radius:12px;color:#fff;cursor:pointer;font-size:.95rem;font-weight:500;transition:border-color .2s,background .2s;}
+.audit-upload-btn:hover{border-color:#3b82f6;background:rgba(59,130,246,.08);}
+.audit-upload-btn svg{flex-shrink:0;opacity:.85;}
+.audit-demo-link{font-size:.85rem;opacity:.65;}
+.audit-demo-link:hover{opacity:1;}
+.audit-template-row{margin-top:20px;text-align:center;}
+.audit-template-link{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;color:#555;text-decoration:none;transition:color .2s;}
+.audit-template-link:hover{color:#3b82f6;}
