@@ -122,7 +122,7 @@ function wizShowStep(){
   if(lbl)lbl.textContent=wizLabels[wizStep];
   var prog=document.getElementById('wizProgress');
   if(prog)prog.style.display=wizStep===0?'none':'';
-  for(var i=0;i<=4;i++){var el=document.getElementById('wizStep'+i);if(el)el.style.display=i===wizStep?'':'none';}
+  for(var i=0;i<=4;i++){var el=document.getElementById('wizStep'+i);if(el)el.style.display=i===wizStep?'block':'none';}
   for(var j=1;j<=4;j++){
     var s=document.getElementById('ws'+j);
     if(s){var dot=s.querySelector('.wiz-progress__dot'),p2=s.querySelector('p');
