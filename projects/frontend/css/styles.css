@@ -336,3 +336,77 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
   .auth-card { padding: 28px 20px; }
   .ribbon__inner { flex-direction: column; gap: 24px; }
 }
+
+/* ═══ WIZARD ═══ */
+.wizard-section{padding:4rem 1.5rem;background:#000;}
+.wizard-inner{max-width:640px;margin:0 auto;}
+.wiz-eyebrow{font-size:10px;letter-spacing:2px;color:#555;margin:0 0 10px;}
+.wiz-title{font-size:28px;font-weight:700;margin:0 0 8px;color:#fff;line-height:1.15;}
+.wiz-sub{font-size:13px;color:#777;margin:0 0 28px;}
+.wiz-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:480px;margin:0 auto 20px;}
+.wiz-card{background:#111;border-radius:10px;padding:16px;border:1px solid #222;cursor:pointer;transition:border-color .2s;}
+.wiz-card:hover{border-color:#444;}
+.wiz-card__icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
+.wiz-card__icon--blue{background:rgba(59,130,246,.15);}
+.wiz-card__icon--green{background:rgba(34,197,94,.15);}
+.wiz-card__title{font-size:14px;font-weight:600;margin:0 0 4px;color:#fff;}
+.wiz-card__desc{font-size:11px;color:#666;margin:0;line-height:1.4;}
+.wiz-cta{max-width:480px;margin:0 auto;padding:12px 0;border-radius:8px;font-size:13px;text-align:center;transition:all .2s;cursor:pointer;}
+.wiz-cta--disabled{background:rgba(255,255,255,.08);color:#555;pointer-events:none;}
+.wiz-landing{background:#0a0a0a;border-radius:12px;padding:2.5rem 2rem;}
+.wiz-flow{background:#0a0a0a;border-radius:12px;padding:2rem;max-width:540px;margin:0 auto;}
+.wiz-flow__head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.wiz-flow__label{font-size:13px;color:#888;margin:0;}
+.wiz-flow__close{color:#555;cursor:pointer;font-size:16px;}
+.wiz-flow__btns{margin-top:18px;display:flex;justify-content:flex-end;gap:8px;}
+.wiz-progress{margin-bottom:22px;}
+.wiz-progress__track{display:flex;position:relative;}
+.wiz-progress__bg{position:absolute;top:12px;left:12px;right:12px;height:2px;background:#222;z-index:0;}
+.wiz-progress__bar{position:absolute;top:12px;left:12px;width:0%;height:2px;background:#3b82f6;z-index:1;transition:width .3s;}
+.wiz-progress__step{flex:1;text-align:center;position:relative;z-index:2;}
+.wiz-progress__step p{font-size:10px;margin:0;color:#555;}
+.wiz-progress__dot{width:24px;height:24px;border-radius:50%;background:#222;color:#555;font-size:11px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:3px;}
+.wiz-progress__step.active .wiz-progress__dot{background:#3b82f6;color:#fff;}
+.wiz-progress__step.active p{color:#3b82f6;}
+.wiz-step{display:none;}
+.wiz-step.active{display:block;}
+.wiz-btn{padding:9px 22px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;text-decoration:none;display:inline-block;}
+.wiz-btn--primary{background:#3b82f6;color:#fff;}
+.wiz-btn--ghost{color:#888;border:1px solid #222;}
+.wiz-auth-box{background:#111;border:1px solid #222;border-radius:10px;padding:20px;text-align:center;}
+.wiz-auth-box__icon{width:40px;height:40px;border-radius:50%;background:rgba(59,130,246,.12);display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.wiz-auth-box__title{font-size:14px;font-weight:500;color:#fff;margin:0 0 6px;}
+.wiz-auth-box__desc{font-size:12px;color:#666;margin:0 0 18px;line-height:1.5;}
+.wiz-auth-box__btns{display:flex;gap:8px;justify-content:center;}
+.wiz-field{margin-bottom:16px;}
+.wiz-label{font-size:10px;letter-spacing:1px;color:#555;display:block;margin-bottom:4px;}
+.wiz-input{background:#1a1a1a;border:1px solid #222;border-radius:6px;padding:8px 10px;font-size:12px;color:#666;}
+.wiz-upload-row{display:flex;gap:8px;align-items:stretch;}
+.wiz-dropzone{flex:1;border:1px dashed #333;border-radius:8px;padding:16px;text-align:center;cursor:pointer;}
+.wiz-dropzone p{font-size:11px;color:#888;margin:0 0 2px;}
+.wiz-dropzone__hint{font-size:10px!important;color:#444!important;}
+.wiz-upload-side{display:flex;flex-direction:column;justify-content:center;gap:6px;}
+.wiz-dl-btn{border:1px solid #222;border-radius:6px;padding:8px 14px;font-size:11px;color:#3b82f6;cursor:pointer;text-align:center;display:flex;align-items:center;gap:6px;text-decoration:none;}
+.wiz-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.wiz-toggle{display:flex;gap:6px;}
+.wiz-toggle__opt{padding:5px 12px;border-radius:5px;border:1px solid #222;color:#555;font-size:11px;}
+.wiz-toggle__opt--on{border-color:#3b82f6;color:#3b82f6;background:rgba(59,130,246,.1);}
+.wiz-hint{font-size:10px;color:#555;margin:0 0 8px;}
+.wiz-table{background:#1a1a1a;border-radius:8px;border:1px solid #1f1f1f;overflow:hidden;}
+.wiz-table__hdr{display:grid;grid-template-columns:1.3fr .9fr .4fr 1fr .5fr 1.1fr;font-size:9px;color:#555;padding:7px 10px;border-bottom:1px solid #222;}
+.wiz-table__row{display:grid;grid-template-columns:1.3fr .9fr .4fr 1fr .5fr 1.1fr;font-size:11px;color:#888;padding:6px 10px;border-bottom:1px solid #1a1a1a;}
+.wiz-table--rooms .wiz-table__hdr,.wiz-table--rooms .wiz-table__row{grid-template-columns:.5fr 1fr .5fr 1fr;}
+.wiz-table__add{padding:6px 10px;font-size:10px;color:#333;cursor:pointer;}
+.wiz-table__add:hover{color:#3b82f6;}
+.wiz-warn{font-size:10px;color:#f59e0b;}
+.wiz-floor{margin-bottom:12px;}
+.wiz-floor__label{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.wiz-floor__dot{width:6px;height:6px;border-radius:2px;}
+.wiz-floor__label p{font-size:11px;font-weight:500;color:#aaa;margin:0;}
+.wiz-add-floor{border:1px dashed #333;border-radius:6px;padding:8px;text-align:center;font-size:10px;color:#444;cursor:pointer;margin-top:8px;}
+.wiz-add-floor:hover{color:#3b82f6;border-color:#3b82f6;}
+.wiz-done{text-align:center;padding:16px 0;}
+.wiz-done__icon{width:48px;height:48px;border-radius:50%;background:rgba(34,197,94,.15);display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;}
+.wiz-done__title{font-size:15px;color:#fff;margin:0 0 4px;font-weight:500;}
+.wiz-done__desc{font-size:12px;color:#666;margin:0;}
+@media(max-width:500px){.wiz-cards{grid-template-columns:1fr;}.wiz-row-2{grid-template-columns:1fr;}}

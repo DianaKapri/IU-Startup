@@ -86,3 +86,56 @@ if (ttip) {
 }
 
 });
+
+/* ═══ WIZARD ═══ */
+var wizSel=-1,wizStep=0;
+var wizLabels=['','Шаг 1 из 4 — Школа и учебный план','Шаг 2 из 4 — Учителя','Шаг 3 из 4 — Кабинеты','Шаг 4 из 4 — Готово'];
+
+function wizSelect(i){
+  wizSel=i;
+  var c1=document.getElementById('wizCard1'),c2=document.getElementById('wizCard2');
+  if(c1)c1.style.borderColor=i===0?'#3b82f6':'#222';
+  if(c2)c2.style.borderColor=i===1?'#22c55e':'#222';
+  var cta=document.getElementById('wizCta');
+  if(cta){cta.style.pointerEvents='auto';cta.style.background=i===0?'#3b82f6':'#22c55e';cta.style.color='#fff';cta.className='wiz-cta';}
+}
+
+function wizOpen(){
+  if(wizSel<0)return;
+  /* Path 0 = audit → redirect to demo page */
+  if(wizSel===0){window.location.href='/demo.html';return;}
+  /* Path 1 = generation → open wizard */
+  var l=document.getElementById('wizLanding'),f=document.getElementById('wizFlow');
+  if(l)l.style.display='none';
+  if(f)f.style.display='block';
+  wizStep=0;wizShowStep();
+}
+
+function wizClose(){
+  var l=document.getElementById('wizLanding'),f=document.getElementById('wizFlow');
+  if(f)f.style.display='none';
+  if(l)l.style.display='block';
+}
+
+function wizShowStep(){
+  var lbl=document.getElementById('wizStepLabel');
+  if(lbl)lbl.textContent=wizLabels[wizStep];
+  var prog=document.getElementById('wizProgress');
+  if(prog)prog.style.display=wizStep===0?'none':'';
+  for(var i=0;i<=4;i++){var el=document.getElementById('wizStep'+i);if(el)el.style.display=i===wizStep?'':'none';}
+  for(var j=1;j<=4;j++){
+    var s=document.getElementById('ws'+j);
+    if(s){var dot=s.querySelector('.wiz-progress__dot'),p2=s.querySelector('p');
+      if(j<=wizStep){s.classList.add('active');if(dot){dot.style.background='#3b82f6';dot.style.color='#fff';}if(p2)p2.style.color='#3b82f6';}
+      else{s.classList.remove('active');if(dot){dot.style.background='#222';dot.style.color='#555';}if(p2)p2.style.color='#555';}
+    }
+  }
+  var bar=document.getElementById('wizProgbar');
+  if(bar)bar.style.width=wizStep>0?((wizStep-1)*25+12.5)+'%':'0%';
+  var back=document.getElementById('wizBack'),next=document.getElementById('wizNext');
+  if(back)back.style.display=wizStep>0?'block':'none';
+  if(next){next.style.display=wizStep===0?'none':'block';next.textContent=wizStep===4?'Сгенерировать':'Далее \u2192';}
+}
+
+function wizNext(){if(wizStep<4){wizStep++;wizShowStep();}}
+function wizPrev(){if(wizStep>0){wizStep--;wizShowStep();}}
