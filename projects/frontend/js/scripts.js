@@ -137,5 +137,8 @@ function wizShowStep(){
   if(next){next.style.display=wizStep===0?'none':'block';next.textContent=wizStep===4?'Сгенерировать':'Далее \u2192';}
 }
 
-function wizNext(){if(wizStep<4){wizStep++;wizShowStep();}}
+function wizNext(){
+  if(wizStep===4){window.location.href='/login.html?tab=register';return;}
+  if(wizStep<4){wizStep++;wizShowStep();}
+}
 function wizPrev(){if(wizStep>0){wizStep--;wizShowStep();}}
