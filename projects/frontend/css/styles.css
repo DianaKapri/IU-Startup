@@ -505,6 +505,15 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .wiz-add-floor{border:1px dashed #333;border-radius:6px;padding:8px;text-align:center;font-size:10px;color:#444;cursor:pointer;margin-top:8px;}
 .wiz-add-floor:hover{color:#3b82f6;border-color:#3b82f6;}
 .wiz-done{text-align:center;padding:16px 0;}
+/* Generation screen */
+.wiz-gen{padding:8px 0 4px;}
+.wiz-gen__title{font-size:14px;font-weight:600;color:#fff;margin:0 0 4px;}
+.wiz-gen__school{font-size:11px;color:#555;margin:0 0 18px;}
+.wiz-gen__bar-wrap{height:4px;background:#1f1f1f;border-radius:4px;overflow:hidden;margin-bottom:10px;}
+.wiz-gen__bar{height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#22c55e);border-radius:4px;transition:width .6s ease;}
+.wiz-gen__status{font-size:11px;color:#555;margin:0 0 16px;min-height:16px;}
+.wiz-gen__done{display:none;align-items:center;gap:8px;font-size:13px;color:#22c55e;font-weight:500;margin-bottom:14px;}
+.wiz-gen__cta{display:none;background:#3b82f6;color:#fff;padding:9px 22px;border-radius:7px;font-size:12px;font-weight:500;text-decoration:none;}
 .wiz-done__icon{width:48px;height:48px;border-radius:50%;background:rgba(34,197,94,.15);display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;}
 .wiz-done__title{font-size:15px;color:#fff;margin:0 0 4px;font-weight:500;}
 .wiz-done__desc{font-size:12px;color:#666;margin:0;}

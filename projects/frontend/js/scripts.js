@@ -213,12 +213,50 @@ function wizShowStep(){
   var bar=document.getElementById('wizProgbar');
   if(bar)bar.style.width=wizStep>0?((wizStep-1)*25+12.5)+'%':'0%';
   var back=document.getElementById('wizBack'),next=document.getElementById('wizNext');
-  if(back)back.style.display=wizStep>0?'block':'none';
-  if(next){next.style.display=wizStep===0?'none':'block';next.textContent=wizStep===4?'Сгенерировать':'Далее \u2192';}
+  if(back)back.style.display=(wizStep>0&&wizStep<4)?'block':'none';
+  if(next){next.style.display=(wizStep===0||wizStep===4)?'none':'block';next.textContent=wizStep===3?'Сгенерировать \u2192':'Далее \u2192';}
 }
 
 function wizNext(){
-  if(wizStep===4){window.location.href='/login.html?tab=register';return;}
   if(wizStep<4){wizStep++;wizShowStep();}
+  if(wizStep===4){wizStartGeneration();}
+}
+
+function wizStartGeneration(){
+  var el=document.getElementById('wizStep4');if(!el)return;
+  var school=escH(wizData.schoolName||'школы');
+  el.innerHTML='<div class="wiz-gen">'
+    +'<p class="wiz-gen__title">Генерация расписания</p>'
+    +'<p class="wiz-gen__school">'+school+'</p>'
+    +'<div class="wiz-gen__bar-wrap"><div class="wiz-gen__bar" id="wizGenBar"></div></div>'
+    +'<p class="wiz-gen__status" id="wizGenStatus">Анализируем учителей и кабинеты…</p>'
+    +'<div class="wiz-gen__done" id="wizGenDone" style="display:none">'
+    +'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="#22c55e" stroke-width="1.5"/><path d="M6 11l3.5 3.5 6.5-7" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    +'<span>Расписание готово!</span></div>'
+    +'<a href="/login.html?tab=register" class="wiz-gen__cta" id="wizGenCta" style="display:none">Открыть расписание →</a>'
+    +'</div>';
+  var steps=[
+    {pct:15,msg:'Анализируем учителей и кабинеты…'},
+    {pct:32,msg:'Проверяем ограничения по СанПиН…'},
+    {pct:55,msg:'Распределяем нагрузку по дням…'},
+    {pct:74,msg:'Разрешаем конфликты кабинетов…'},
+    {pct:90,msg:'Финальная проверка нарушений…'},
+    {pct:100,msg:'Готово'}
+  ];
+  var bar=document.getElementById('wizGenBar'),st=document.getElementById('wizGenStatus');
+  var i=0;
+  function tick(){
+    if(i>=steps.length){
+      var done=document.getElementById('wizGenDone'),cta=document.getElementById('wizGenCta');
+      if(done)done.style.display='flex';
+      if(cta)cta.style.display='inline-block';
+      return;
+    }
+    var s=steps[i++];
+    if(bar)bar.style.width=s.pct+'%';
+    if(st&&s.msg!=='Готово')st.textContent=s.msg;
+    setTimeout(tick,i===steps.length?600:900);
+  }
+  setTimeout(tick,300);
 }
 function wizPrev(){if(wizStep>0){wizStep--;wizShowStep();}}
