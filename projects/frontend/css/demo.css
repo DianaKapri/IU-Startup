@@ -349,3 +349,20 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .rules-card__title { font-size: .92rem; font-weight: 600; color: #f5f5f7; margin-bottom: 6px; letter-spacing: -.01em; }
 .rules-card__text { font-size: .78rem; color: rgba(255,255,255,.55); line-height: 1.55; }
 .rules-card__src { font-size: .65rem; color: #555; margin-top: 8px; }
+
+/* ═══ Grid tooltip (floating on hover) ═══ */
+.grid-tip {
+  display: none; position: fixed; z-index: 200;
+  background: #1a1d23; border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: .78rem; color: rgba(255,255,255,.75);
+  max-width: 320px; line-height: 1.5;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  pointer-events: none;
+}
+.grid-tip b { color: #f5f5f7; font-weight: 700; }
+.grid-tip__hr { border: none; border-top: 1px solid rgba(255,255,255,.08); margin: 6px 0; }
+.grid-tip__issue { margin-bottom: 4px; line-height: 1.4; }
+.grid-tip__issue span { color: #86868b; font-size: .7rem; }
+.grid-tip__issue--v { color: #ff453a; }
+.grid-tip__issue--w { color: #ffd60a; }
