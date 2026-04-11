@@ -450,7 +450,7 @@ function renderGrid(sch,cg,au,tbl){
         var bg=CL[s]||'#666';
         var bdrCls=bad||pair?'demo__cell--warn':'';
         /* Build rich tooltip */
-        var tipLines=[(SF[s]||s)+' — '+df+' б. (урок '+(li+1)+')'];
+        var tipLines=[];
         if(bad)tipLines.push('⚠ E-01: сложный предмет ('+df+' б.) на '+(li+1)+'-м уроке — рекомендуется 2–4');
         if(pair)tipLines.push('⚠ E-03: '+(SF[prevS]||prevS)+' ('+gd(prevS,g)+') и '+(SF[s]||s)+' ('+df+') подряд — чередуйте сложные и лёгкие');
         /* Check if this day has C-01 violation */
@@ -458,8 +458,8 @@ function renderGrid(sch,cg,au,tbl){
           if(iss.id==='C-01'&&iss.ds&&iss.ds.indexOf(DN[di])!==-1)tipLines.push('❌ C-01: '+iss.ds);
           if(iss.id==='X-01')tipLines.push('❌ X-01: окна в расписании');
         });}
-        var cellTip=_esc(tipLines.join('\n'));
-        h+='<td class="'+cls2+'"><div class="demo__cell '+bdrCls+'" style="background:'+bg+'cc" data-grid-tip="'+cellTip+'"><span>'+s+'</span><span class="demo__cell-score">'+df+'</span></div></td>';
+        var tipAttr=tipLines.length?' data-grid-tip="'+_esc((SF[s]||s)+' — '+df+' б. (урок '+(li+1)+')\n'+tipLines.join('\n'))+'"':'';
+        h+='<td class="'+cls2+'"><div class="demo__cell '+bdrCls+'" style="background:'+bg+'cc"'+tipAttr+'><span>'+s+'</span><span class="demo__cell-score">'+df+'</span></div></td>';
       }
     });
     h+='</tr>';

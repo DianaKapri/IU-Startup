@@ -81,11 +81,13 @@
     <div class="demo-badge">Тестовые данные · Школа №42</div>
     <div class="demo-tabs" id="inlineDemoTabs">
       <button class="demo-tab demo-tab--active" data-tab="grid">Сетка уроков</button>
+      <button class="demo-tab" data-tab="optimized">Рекомендованное</button>
       <button class="demo-tab" data-tab="recs">Рекомендации</button>
       <button class="demo-tab" data-tab="rules">Правила аудита</button>
     </div>
     <div class="demo-tab-desc" id="inlineDemoTabDesc"></div>
     <div id="inlineDemoTabGrid" class="demo-tab-panel"></div>
+    <div id="inlineDemoTabOptimized" class="demo-tab-panel" style="display:none"></div>
     <div id="inlineDemoTabRecs" class="demo-tab-panel" style="display:none"></div>
     <div id="inlineDemoTabRules" class="demo-tab-panel" style="display:none">
       <div class="rules-hero">
@@ -423,6 +425,40 @@
 <script>
 spInitNav();
 
+
+function _renderOptimizedTab(sch, cg, origAudit) {
+  var el = document.getElementById('inlineDemoTabOptimized');
+  if (!el) return;
+  try {
+    var opt = optSchedule(sch, cg, 'bell');
+    var optAudit = doAudit(opt, cg);
+    var diffV = origAudit.vi.length - optAudit.vi.length;
+    var diffW = origAudit.wa.length - optAudit.wa.length;
+    var diffS = optAudit.score - origAudit.score;
+
+    var h = '<div style="margin-bottom:16px;padding:14px 18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px">';
+    h += '<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:10px">';
+    h += '<div style="text-align:center"><div style="font-size:.7rem;color:#86868b;margin-bottom:2px">Было</div><div style="font-size:1.3rem;font-weight:700;color:#ff453a">' + origAudit.score + '</div></div>';
+    h += '<div style="font-size:1.2rem;color:#555">→</div>';
+    h += '<div style="text-align:center"><div style="font-size:.7rem;color:#86868b;margin-bottom:2px">Стало</div><div style="font-size:1.3rem;font-weight:700;color:' + (optAudit.score >= 90 ? '#30d158' : optAudit.score >= 70 ? '#ffd60a' : '#ff453a') + '">' + optAudit.score + '</div></div>';
+    if (diffS > 0) h += '<div style="font-size:.85rem;font-weight:600;color:#30d158;padding:4px 12px;background:rgba(48,209,88,.1);border-radius:8px">+' + diffS + ' баллов</div>';
+    h += '</div>';
+    h += '<div style="display:flex;gap:14px;font-size:.78rem;flex-wrap:wrap">';
+    if (diffV > 0) h += '<span style="color:#30d158">−' + diffV + ' нарушений</span>';
+    if (diffW > 0) h += '<span style="color:#30d158">−' + diffW + ' рекомендаций</span>';
+    if (optAudit.vi.length > 0) h += '<span style="color:#ff453a">' + optAudit.vi.length + ' неисправимых нарушений (структурные — нужна ручная корректировка)</span>';
+    h += '</div></div>';
+
+    var tbl = document.createElement('table');
+    tbl.className = 'acc-grid-tbl';
+    el.innerHTML = h + '<div class="acc-tbl-wrap"></div>';
+    el.querySelector('.acc-tbl-wrap').appendChild(tbl);
+    renderGrid(opt, cg, optAudit, tbl);
+  } catch (err) {
+    el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
+  }
+}
+
 var _inlineDemoReady = false;
 function toggleInlineDemo() {
   var panel = document.getElementById('inlineDemo');
@@ -440,6 +476,7 @@ function toggleInlineDemo() {
       renderGrid(DEM, DCG, audit, tbl);
       var recsEl = document.getElementById('inlineDemoTabRecs');
       renderRecs(audit.top, recsEl);
+      _renderOptimizedTab(DEM, DCG, audit);
     } catch(e) { console.warn('Demo init error:', e); }
   }
   if (!visible) {
@@ -474,6 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
           renderGrid(result.sch, result.cg, audit, tbl);
           var recsEl = document.getElementById('inlineDemoTabRecs');
           renderRecs(audit.top, recsEl);
+          _renderOptimizedTab(result.sch, result.cg, audit);
           /* Show summary above grid */
           var summary = '<div style="margin-bottom:16px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">';
           summary += '<span style="font-size:1.2rem;font-weight:700;color:'+(audit.score>=90?'#30d158':audit.score>=70?'#ffd60a':'#ff453a')+'">Score: '+audit.score+'</span>';
@@ -509,6 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
       this.classList.add('demo-tab--active');
       var which = this.getAttribute('data-tab');
       document.getElementById('inlineDemoTabGrid').style.display = which === 'grid' ? '' : 'none';
+      document.getElementById('inlineDemoTabOptimized').style.display = which === 'optimized' ? '' : 'none';
       document.getElementById('inlineDemoTabRecs').style.display = which === 'recs' ? '' : 'none';
       document.getElementById('inlineDemoTabRules').style.display = which === 'rules' ? '' : 'none';
     });
