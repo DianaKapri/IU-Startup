@@ -80,8 +80,8 @@
     <div class="demo-badge">Тестовые данные · Школа №42</div>
     <div class="demo-tabs" id="inlineDemoTabs">
       <button class="demo-tab demo-tab--active" data-tab="grid">Сетка уроков</button>
-      <button class="demo-tab" data-tab="optimized">Рекомендованное</button>
-      <button class="demo-tab" data-tab="recs">Рекомендации</button>
+      <button class="demo-tab" data-tab="optimized">Улучшенная сетка уроков</button>
+      <button class="demo-tab" data-tab="recs">Требует корректировки</button>
       <button class="demo-tab" data-tab="rules">Правила аудита</button>
     </div>
     <div class="demo-tab-desc" id="inlineDemoTabDesc"></div>
@@ -452,7 +452,7 @@ function _renderOptimizedTab(sch, cg, origAudit) {
     tbl.className = 'acc-grid-tbl';
     el.innerHTML = h + '<div class="acc-tbl-wrap"></div>';
     el.querySelector('.acc-tbl-wrap').appendChild(tbl);
-    renderGrid(opt, cg, optAudit, tbl);
+    renderGrid(opt, cg, optAudit, tbl, true);
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }

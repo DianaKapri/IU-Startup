@@ -408,7 +408,7 @@ function _sortClasses(classes,cg,au){
   return sorted;
 }
 
-function renderGrid(sch,cg,au,tbl){
+function renderGrid(sch,cg,au,tbl,clean){
   var classes=Object.keys(sch),ml=6;
   classes.forEach(function(c){sch[c].forEach(function(d){var n=0;for(var i=0;i<d.length;i++){if(d[i])n++;}if(n>ml)ml=n;});});
 
@@ -423,21 +423,23 @@ function renderGrid(sch,cg,au,tbl){
 
   sorted.forEach(function(cl){
     var m=_gridClassMeta(cl,cg,au), g=m.g, th2=g<=4?7:8;
-    var clsColor=m.viol>0?'#ff453a':m.warn>0?'#ff9f0a':'#f5f5f7';
-    var rowBdr=m.viol>0?'grid-row--hard':m.warn>0?'grid-row--soft':'';
+    var clsColor=clean?'#f5f5f7':(m.viol>0?'#ff453a':m.warn>0?'#ff9f0a':'#f5f5f7');
+    var rowBdr=clean?'':(m.viol>0?'grid-row--hard':m.warn>0?'grid-row--soft':'');
 
     /* Build tooltip HTML for class name */
-    var tipParts=[];
-    if(m.viol>0)tipParts.push(m.viol+' нарушени'+_plural(m.viol,'е','я','й'));
-    if(m.warn>0)tipParts.push(m.warn+' рекомендаци'+_plural(m.warn,'я','и','й'));
-    var tipIssues='';
-    m.issues.forEach(function(c){
-      tipIssues+='<div class="grid-tip__issue grid-tip__issue--'+c.st+'"><b>'+c.id+'</b> '+_esc(c.nm)+'<br><span>'+_esc(c.ds)+'</span></div>';
-    });
+    var tipParts=[],tipIssues='';
+    if(!clean){
+      if(m.viol>0)tipParts.push(m.viol+' нарушени'+_plural(m.viol,'е','я','й'));
+      if(m.warn>0)tipParts.push(m.warn+' рекомендаци'+_plural(m.warn,'я','и','й'));
+      m.issues.forEach(function(c){
+        tipIssues+='<div class="grid-tip__issue grid-tip__issue--'+c.st+'"><b>'+c.id+'</b> '+_esc(c.nm)+'<br><span>'+_esc(c.ds)+'</span></div>';
+      });
+    }
     var tipHtml=tipParts.length?tipParts.join(', '):'Нарушений нет';
+    var clsTipAttr=clean?'':' data-grid-tip="'+_esc(tipHtml+(tipIssues?'<hr class=grid-tip__hr>'+tipIssues:''))+'"';
 
     h+='<tr class="'+rowBdr+'">';
-    h+='<td class="tbl-cls-cell tbl-cls-cell--click" style="color:'+clsColor+'" data-cls="'+cl+'" data-grid-tip="'+_esc(tipHtml+(tipIssues?'<hr class=grid-tip__hr>'+tipIssues:''))+'">'+cl+'</td>';
+    h+='<td class="tbl-cls-cell'+(clean?'':' tbl-cls-cell--click')+'" style="color:'+clsColor+'"'+(clean?'':' data-cls="'+cl+'"')+clsTipAttr+'>'+cl+'</td>';
 
     sch[cl].forEach(function(dayArr,di){
       var filled=[];for(var i=0;i<dayArr.length;i++){if(dayArr[i])filled.push(dayArr[i]);}
@@ -446,19 +448,20 @@ function renderGrid(sch,cg,au,tbl){
         var s=li<filled.length?filled[li]:'';
         if(!s){h+='<td class="'+cls2+'"></td>';continue;}
         var df=gd(s,g),prevS=li>0&&li-1<filled.length?filled[li-1]:'';
-        var bad=df>=th2&&(li<1||li>3),pair=prevS&&df>=th2&&gd(prevS,g)>=th2;
+        var bad=clean?false:(df>=th2&&(li<1||li>3)),pair=clean?false:(prevS&&df>=th2&&gd(prevS,g)>=th2);
         var bg=CL[s]||'#666';
-        var bdrCls=bad||pair?'demo__cell--warn':'';
-        /* Build rich tooltip */
-        var tipLines=[];
-        if(bad)tipLines.push('⚠ E-01: сложный предмет ('+df+' б.) на '+(li+1)+'-м уроке — рекомендуется 2–4');
-        if(pair)tipLines.push('⚠ E-03: '+(SF[prevS]||prevS)+' ('+gd(prevS,g)+') и '+(SF[s]||s)+' ('+df+') подряд — чередуйте сложные и лёгкие');
-        /* Check if this day has C-01 violation */
-        if(m.issues){m.issues.forEach(function(iss){
-          if(iss.id==='C-01'&&iss.ds&&iss.ds.indexOf(DN[di])!==-1)tipLines.push('❌ C-01: '+iss.ds);
-          if(iss.id==='X-01')tipLines.push('❌ X-01: окна в расписании');
-        });}
-        var tipAttr=tipLines.length?' data-grid-tip="'+_esc((SF[s]||s)+' — '+df+' б. (урок '+(li+1)+')\n'+tipLines.join('\n'))+'"':'';
+        var bdrCls=(bad||pair)?'demo__cell--warn':'';
+        var tipAttr='';
+        if(!clean){
+          var tipLines=[];
+          if(bad)tipLines.push('⚠ E-01: сложный предмет ('+df+' б.) на '+(li+1)+'-м уроке — рекомендуется 2–4');
+          if(pair)tipLines.push('⚠ E-03: '+(SF[prevS]||prevS)+' ('+gd(prevS,g)+') и '+(SF[s]||s)+' ('+df+') подряд — чередуйте сложные и лёгкие');
+          if(m.issues){m.issues.forEach(function(iss){
+            if(iss.id==='C-01'&&iss.ds&&iss.ds.indexOf(DN[di])!==-1)tipLines.push('❌ C-01: '+iss.ds);
+            if(iss.id==='X-01')tipLines.push('❌ X-01: окна в расписании');
+          });}
+          if(tipLines.length)tipAttr=' data-grid-tip="'+_esc((SF[s]||s)+' — '+df+' б. (урок '+(li+1)+')\n'+tipLines.join('\n'))+'"';
+        }
         h+='<td class="'+cls2+'"><div class="demo__cell '+bdrCls+'" style="background:'+bg+'cc"'+tipAttr+'><span>'+s+'</span><span class="demo__cell-score">'+df+'</span></div></td>';
       }
     });
