@@ -49,12 +49,12 @@ function doAudit(sch,cg){
     if(wt>wm)ch.push({id:'C-02',nm:'Недельная нагрузка',st:'v',ds:cls+': '+wt+' ч (макс. '+wm+')',sg:'Уберите '+(wt-wm)+' ч'});
     /* C-03 */
     var ac=dt.filter(function(c){return c>0;});
-    if(ac.length>1){var diff=Math.max.apply(null,ac)-Math.min.apply(null,ac);if(diff>1)ch.push({id:'C-03',nm:'Равномерность нагрузки',st:'v',ds:cls+': разница '+diff+' ур.',sg:'Перераспределите уроки между днями'});}
+    if(ac.length>1){var diff=Math.max.apply(null,ac)-Math.min.apply(null,ac);if(diff>1)ch.push({id:'C-03',nm:'Равномерность нагрузки',st:'v',ds:cls+': разница '+diff+' ур. ('+dt.join('\u2013')+')',sg:'Перераспределите уроки между днями'});}
     /* E-02 */
     var activeDiffs=dd.filter(function(d){return d>0;});
     if(activeDiffs.length>2){
       var sorted=dd.map(function(d,i){return{d:d,i:i};}).filter(function(x){return x.d>0;}).sort(function(a,b){return a.d-b.d;});
-      if(sorted[0].i!==2&&sorted[0].i!==3)ch.push({id:'E-02',nm:'Облегчённый день',st:'v',ds:cls+': самый лёгкий — '+DN[sorted[0].i]+', не Ср/Чт',sg:'Разгрузите Ср или Чт'});
+      if(sorted[0].i!==2&&sorted[0].i!==3)ch.push({id:'E-02',nm:'Облегчённый день',st:'v',ds:cls+': самый лёгкий — '+DN[sorted[0].i]+' ('+sorted[0].d+' б.), не Ср/Чт',sg:'Разгрузите Ср или Чт'});
     }
     /* E-01 */
     var badSlots=0;
