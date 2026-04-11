@@ -241,13 +241,17 @@ spRequireAuth(function () {
     var recsEl = document.getElementById('tabRecs');
     if (recsEl) { renderRecs(audit.top, recsEl); }
 
+    /* --- Fixed tab --- */
+    var fixedEl = document.getElementById('tabFixed');
+    if (fixedEl) { renderFixed(sch, cg, audit, fixedEl); }
+
     /* --- Switch to audit tab --- */
     switchTab('audit');
   }
 
   /* ═══ Tab switching ═══ */
   function switchTab(name) {
-    var panels = { audit: 'tabAudit', grid: 'tabGrid', heat: 'tabHeat', recs: 'tabRecs' };
+    var panels = { audit: 'tabAudit', grid: 'tabGrid', heat: 'tabHeat', recs: 'tabRecs', fixed: 'tabFixed' };
     for (var key in panels) {
       var el = document.getElementById(panels[key]);
       if (el) el.style.display = key === name ? '' : 'none';

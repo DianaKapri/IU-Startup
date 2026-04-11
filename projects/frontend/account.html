@@ -60,7 +60,7 @@
       </div>
       <div class="acc-intro-card">
         <div class="acc-intro-card__num">02</div>
-        <h3 class="acc-intro-card__name">Сетка расписания</h3>
+        <h3 class="acc-intro-card__name">Сетка уроков</h3>
         <p class="acc-intro-card__desc">Визуальная таблица по всем классам и дням недели. Нарушения подсвечены красным, рекомендации — жёлтым, норма — зелёным.</p>
         <div class="acc-intro-card__tags"><span>Все классы</span><span>Пн–Пт</span></div>
       </div>
@@ -90,14 +90,16 @@
   <section class="acc-results" id="accResults" style="display:none">
     <div class="acc-tabs" id="accTabs">
       <button class="acc-tab acc-tab--active" data-tab="audit">Аудит</button>
-      <button class="acc-tab" data-tab="grid">Сетка расписания</button>
+      <button class="acc-tab" data-tab="grid">Сетка уроков</button>
       <button class="acc-tab" data-tab="heat">Тепловая карта</button>
       <button class="acc-tab" data-tab="recs">Рекомендации</button>
+      <button class="acc-tab" data-tab="fixed">Исправленный вариант</button>
     </div>
     <div id="tabAudit" class="acc-tab-panel"></div>
     <div id="tabGrid" class="acc-tab-panel" style="display:none"></div>
     <div id="tabHeat" class="acc-tab-panel" style="display:none"></div>
     <div id="tabRecs" class="acc-tab-panel" style="display:none"></div>
+    <div id="tabFixed" class="acc-tab-panel" style="display:none"></div>
   </section>
 </main>
 

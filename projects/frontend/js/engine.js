@@ -405,15 +405,6 @@ function renderGrid(sch,cg,au,tbl){
   classes.forEach(function(c){sch[c].forEach(function(d){var n=0;for(var i=0;i<d.length;i++){if(d[i])n++;}if(n>ml)ml=n;});});
 
   var sorted=_sortClasses(classes,cg,au);
-  var arrow=_gridSortAsc?' ↑':' ↓';
-
-  /* Sort bar */
-  var sb='<div class="grid-sort">';
-  sb+='<span class="grid-sort__label">Сортировка:</span>';
-  sb+='<button class="grid-sort__btn'+(_gridSort==='name'?' grid-sort__btn--active':'')+'" data-gsort="name">Класс'+(_gridSort==='name'?arrow:'')+'</button>';
-  sb+='<button class="grid-sort__btn'+(_gridSort==='score'?' grid-sort__btn--active':'')+'" data-gsort="score">Нарушения'+(_gridSort==='score'?arrow:'')+'</button>';
-  sb+='<button class="grid-sort__btn'+(_gridSort==='count'?' grid-sort__btn--active':'')+'" data-gsort="count">Кол-во'+(_gridSort==='count'?arrow:'')+'</button>';
-  sb+='</div>';
 
   /* Table header */
   var h='<thead><tr><th></th>';
@@ -459,21 +450,8 @@ function renderGrid(sch,cg,au,tbl){
     h+='</tr>';
   });
 
-  /* Insert sort bar before table, table body into table */
-  var wrap=tbl.parentNode;
-  var existBar=wrap.parentNode.querySelector('.grid-sort');
-  if(existBar)existBar.remove();
+  /* Insert table body */
   tbl.innerHTML=h+'</tbody>';
-  wrap.parentNode.insertBefore(_htmlToEl(sb),wrap);
-
-  /* Attach sort handlers */
-  wrap.parentNode.querySelectorAll('[data-gsort]').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var key=btn.dataset.gsort;
-      if(_gridSort===key){_gridSortAsc=!_gridSortAsc;}else{_gridSort=key;_gridSortAsc=true;}
-      renderGrid(sch,cg,au,tbl);
-    });
-  });
 
   /* Attach tooltip */
   _attachGridTooltip(tbl.parentNode.parentNode);
@@ -725,11 +703,59 @@ function renderHeat(sch,cg,au,tbl){
 }
 
 function renderRecs(top,el){
-  el.innerHTML=top.map(function(t){
-    var iv=t.st==='v';
-    var cls=(t.classes.length>3?t.classes.slice(0,3).join(', ')+' +'+(t.classes.length-3):t.classes.join(', '));
-    return '<div class="rec-item '+(iv?'rec-item--v':'rec-item--w')+'"><div class="rec-item__head"><span class="rec-item__badge '+(iv?'rec-item__badge--v':'rec-item__badge--w')+'">'+(iv?'❌':'⚠️')+' '+t.id+'</span><span class="rec-item__name">'+t.nm+'</span><span class="rec-item__classes">'+cls+'</span></div><div class="rec-item__desc">'+t.ds+'</div>'+(t.sg?'<div class="rec-item__suggest">💡 '+t.sg+'</div>':'')+'</div>';
+  if(!top.length){el.innerHTML='<p class="rec-empty">Нарушений и рекомендаций не обнаружено.</p>';return;}
+  /* Group by class */
+  var classMap={};
+  top.forEach(function(t){
+    t.classes.forEach(function(cl){
+      if(!classMap[cl])classMap[cl]=[];
+      classMap[cl].push(t);
+    });
+  });
+  var classes=Object.keys(classMap).sort(function(a,b){return a.localeCompare(b,'ru');});
+  el.innerHTML=classes.map(function(cl){
+    var items=classMap[cl];
+    var viols=items.filter(function(t){return t.st==='v';});
+    var warns=items.filter(function(t){return t.st==='w';});
+    var clsColor=viols.length>0?'#ff453a':warns.length>0?'#ff9f0a':'#30d158';
+    var h='<div class="rec-class-group">';
+    h+='<div class="rec-class-group__hdr"><span class="rec-class-group__name" style="color:'+clsColor+'">'+cl+'</span>';
+    if(viols.length)h+='<span class="rec-class-group__badge rec-class-group__badge--v">❌ '+viols.length+' нарушени'+_plural(viols.length,'е','я','й')+'</span>';
+    if(warns.length)h+='<span class="rec-class-group__badge rec-class-group__badge--w">⚠️ '+warns.length+' рекомендаци'+_plural(warns.length,'я','и','й')+'</span>';
+    h+='</div>';
+    items.forEach(function(t){
+      var iv=t.st==='v';
+      h+='<div class="rec-item '+(iv?'rec-item--v':'rec-item--w')+'">';
+      h+='<div class="rec-item__head"><span class="rec-item__badge '+(iv?'rec-item__badge--v':'rec-item__badge--w')+'">'+(iv?'❌':'⚠️')+' '+t.id+'</span><span class="rec-item__name">'+t.nm+'</span></div>';
+      h+='<div class="rec-item__desc">'+t.ds+'</div>';
+      if(t.sg)h+='<div class="rec-item__suggest">💡 '+t.sg+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+    return h;
   }).join('');
+}
+
+function renderFixed(sch,cg,origAud,el){
+  var vFixed=optSchedule(sch,cg,'soft');
+  var aFixed=doAudit(vFixed,cg);
+  function vc(v,base){return v<base?'color:#30d158':v>base?'color:#ff453a':'color:#86868b';}
+  function vci(v,base){return v>base?'color:#30d158':v<base?'color:#ff453a':'color:#86868b';}
+  var h='<div class="fix-header">';
+  h+='<div class="fix-header__title">Исправленный вариант</div>';
+  h+='<div class="fix-header__desc">Минимальное число перестановок уроков для устранения нарушений СанПиН</div>';
+  h+='</div>';
+  h+='<div class="fix-compare">';
+  h+='<div class="fix-compare__row fix-compare__row--hdr"><span class="fix-compare__lbl"></span><span class="fix-compare__col">До</span><span class="fix-compare__arrow"></span><span class="fix-compare__col fix-compare__col--after">После</span></div>';
+  [['Score',origAud.score,aFixed.score,true],['❌ Нарушений',origAud.vi.length,aFixed.vi.length,false],['⚠️ Рекомендаций',origAud.wa.length,aFixed.wa.length,false]].forEach(function(row){
+    var ca=row[3]?vci(row[2],row[1]):vc(row[2],row[1]);
+    h+='<div class="fix-compare__row"><span class="fix-compare__lbl">'+row[0]+'</span><span class="fix-compare__col fix-compare__col--before">'+row[1]+'</span><span class="fix-compare__arrow">→</span><span class="fix-compare__col fix-compare__col--after" style="'+ca+'">'+row[2]+'</span></div>';
+  });
+  h+='</div>';
+  h+='<div class="fix-grid-wrap"><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="tFixedGrid"></table></div></div>';
+  el.innerHTML=h;
+  var tbl=document.getElementById('tFixedGrid');
+  if(tbl)renderGrid(vFixed,cg,aFixed,tbl);
 }
 
 function renderPopup(items,el,col){

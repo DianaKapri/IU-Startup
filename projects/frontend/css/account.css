@@ -265,6 +265,40 @@ body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .rec-item__classes { font-size: .72rem; color: #86868b; }
 .rec-item__desc { font-size: .82rem; color: rgba(255,255,255,.55); line-height: 1.55; }
 .rec-item__suggest { font-size: .80rem; color: #30d158; margin-top: 5px; }
+.rec-empty { color: #86868b; font-size: .88rem; padding: 24px 0; }
+
+/* ─── Recommendations by class ─── */
+.rec-class-group { margin-bottom: 20px; }
+.rec-class-group__hdr {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.rec-class-group__name { font-size: 1.05rem; font-weight: 700; }
+.rec-class-group__badge { font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 980px; }
+.rec-class-group__badge--v { background: rgba(255,69,58,.18); color: #ff453a; }
+.rec-class-group__badge--w { background: rgba(255,159,10,.18); color: #ff9f0a; }
+
+/* ─── Fixed variant screen ─── */
+.fix-header { margin-bottom: 20px; }
+.fix-header__title { font-size: 1.15rem; font-weight: 700; color: #f5f5f7; margin-bottom: 4px; }
+.fix-header__desc { font-size: .82rem; color: #86868b; }
+.fix-compare {
+  display: inline-flex; flex-direction: column; gap: 0;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px; overflow: hidden; margin-bottom: 24px; min-width: 280px;
+}
+.fix-compare__row {
+  display: flex; align-items: center; gap: 0;
+  padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.fix-compare__row:last-child { border-bottom: none; }
+.fix-compare__row--hdr { background: rgba(255,255,255,.04); }
+.fix-compare__lbl { flex: 1; font-size: .82rem; color: #86868b; font-weight: 500; }
+.fix-compare__col { width: 64px; text-align: center; font-size: .88rem; font-weight: 600; color: #f5f5f7; }
+.fix-compare__col--after { color: #30d158; }
+.fix-compare__arrow { width: 28px; text-align: center; color: rgba(255,255,255,.25); font-size: .8rem; }
+.fix-grid-wrap { margin-top: 8px; }
 
 /* ─── Intro Section ─── */
 .acc-intro { margin-top: 40px; }
