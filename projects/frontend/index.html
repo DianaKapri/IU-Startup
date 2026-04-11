@@ -171,7 +171,7 @@
   </div>
 </div>
 <div id="wizStep1" class="wiz-step" style="display:none">
-  <div class="wiz-field"><label class="wiz-label">НАЗВАНИЕ ШКОЛЫ</label><div class="wiz-input">Школа №42, г. Москва</div></div>
+  <div class="wiz-field"><label class="wiz-label">НАЗВАНИЕ ШКОЛЫ</label><input class="wiz-input wiz-input--native" id="wizSchoolNameInput" value="Школа №42, г. Москва" placeholder="Название школы" onchange="wizData.schoolName=this.value"/></div>
   <div class="wiz-field"><label class="wiz-label">УЧЕБНЫЙ ПЛАН</label>
     <div class="wiz-upload-row">
       <div class="wiz-dropzone"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2v12m0 0l-4-4m4 4l4-4M3 16h14" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><p>Загрузить .xlsx</p><p class="wiz-dropzone__hint">перетащите или выберите</p></div>
@@ -179,8 +179,8 @@
     </div>
   </div>
   <div class="wiz-row-2">
-    <div class="wiz-field"><label class="wiz-label">СМЕНЫ</label><div class="wiz-toggle"><span class="wiz-toggle__opt wiz-toggle__opt--on">1</span><span class="wiz-toggle__opt">2</span></div></div>
-    <div class="wiz-field"><label class="wiz-label">ДНЕЙ В НЕДЕЛЕ</label><div class="wiz-toggle"><span class="wiz-toggle__opt wiz-toggle__opt--on">5</span><span class="wiz-toggle__opt">6</span></div></div>
+    <div class="wiz-field"><label class="wiz-label">СМЕНЫ</label><div class="wiz-toggle" id="wizShiftsToggle"><span class="wiz-toggle__opt wiz-toggle__opt--on" data-val="1">1</span><span class="wiz-toggle__opt" data-val="2">2</span></div></div>
+    <div class="wiz-field"><label class="wiz-label">ДНЕЙ В НЕДЕЛЕ</label><div class="wiz-toggle" id="wizDaysToggle"><span class="wiz-toggle__opt wiz-toggle__opt--on" data-val="5">5</span><span class="wiz-toggle__opt" data-val="6">6</span></div></div>
   </div>
 </div>
 <div id="wizStep2" class="wiz-step" style="display:none">
@@ -189,32 +189,12 @@
     <div class="wiz-upload-side"><a class="wiz-dl-btn"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v10M2 9l5 5 5-5" stroke="#3b82f6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg> Скачать шаблон</a></div>
   </div>
   <p class="wiz-hint">Или заполните вручную:</p>
-  <div class="wiz-table">
-    <div class="wiz-table__hdr"><span>ФИО</span><span>Предмет</span><span>Часов</span><span>Классы</span><span>Каб.</span><span>Ограничения</span></div>
-    <div class="wiz-table__row"><span>Иванова А.П.</span><span>Математика</span><span>22</span><span>5А, 6Б, 7А</span><span>105</span><span>—</span></div>
-    <div class="wiz-table__row"><span>Петров С.И.</span><span>Физика</span><span>18</span><span>7А, 8А, 9А</span><span>301</span><span class="wiz-warn">Вт — метод. день</span></div>
-    <div class="wiz-table__row"><span>Сидорова Е.В.</span><span>Русский язык</span><span>26</span><span>5А, 5Б, 6А</span><span>201</span><span class="wiz-warn">Не ранее 2-го ур.</span></div>
-    <div class="wiz-table__add">+ добавить учителя</div>
-  </div>
+  <div id="wizTeachersTable"></div>
 </div>
 <div id="wizStep3" class="wiz-step" style="display:none">
   <p class="wiz-hint" style="margin-bottom:12px">Кабинеты по этажам — алгоритм минимизирует переходы</p>
-  <div class="wiz-floor"><div class="wiz-floor__label"><div class="wiz-floor__dot" style="background:#3b82f6"></div><p>1 этаж</p></div>
-    <div class="wiz-table wiz-table--rooms"><div class="wiz-table__hdr"><span>Каб.</span><span>Предмет</span><span>Мест</span><span>Оборудование</span></div>
-      <div class="wiz-table__row"><span>101</span><span>Нач. классы</span><span>30</span><span>—</span></div>
-      <div class="wiz-table__row"><span>105</span><span>Математика</span><span>32</span><span>—</span></div>
-      <div class="wiz-table__add">+ кабинет</div></div></div>
-  <div class="wiz-floor"><div class="wiz-floor__label"><div class="wiz-floor__dot" style="background:#8b5cf6"></div><p>2 этаж</p></div>
-    <div class="wiz-table wiz-table--rooms"><div class="wiz-table__hdr"><span>Каб.</span><span>Предмет</span><span>Мест</span><span>Оборудование</span></div>
-      <div class="wiz-table__row"><span>201</span><span>Русский язык</span><span>30</span><span>—</span></div>
-      <div class="wiz-table__row"><span>204</span><span>Информатика</span><span>15</span><span>Компьютеры</span></div>
-      <div class="wiz-table__add">+ кабинет</div></div></div>
-  <div class="wiz-floor"><div class="wiz-floor__label"><div class="wiz-floor__dot" style="background:#22c55e"></div><p>3 этаж</p></div>
-    <div class="wiz-table wiz-table--rooms"><div class="wiz-table__hdr"><span>Каб.</span><span>Предмет</span><span>Мест</span><span>Оборудование</span></div>
-      <div class="wiz-table__row"><span>301</span><span>Физика</span><span>30</span><span>Лаборатория</span></div>
-      <div class="wiz-table__row"><span>305</span><span>Химия</span><span>28</span><span>Лаборатория</span></div>
-      <div class="wiz-table__add">+ кабинет</div></div></div>
-  <div class="wiz-add-floor">+ добавить этаж</div>
+  <div id="wizRoomsContainer"></div>
+  <div class="wiz-add-floor" onclick="wizAddFloor()">+ добавить этаж</div>
 </div>
 <div id="wizStep4" class="wiz-step" style="display:none">
   <div class="wiz-done"><div class="wiz-done__icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10l4 4 8-8" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>

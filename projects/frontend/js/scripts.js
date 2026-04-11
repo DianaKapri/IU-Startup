@@ -91,6 +91,84 @@ if (ttip) {
 var wizSel=-1,wizStep=0;
 var wizLabels=['','Шаг 1 из 4 — Школа и учебный план','Шаг 2 из 4 — Учителя','Шаг 3 из 4 — Кабинеты','Шаг 4 из 4 — Готово'];
 
+var SUBJECTS=['Алгебра','Биология','География','Геометрия','Английский язык','Информатика','История','Изобразительное искусство','Литература','Математика','Музыка','Нач. классы','ОБЖ','Обществознание','Право','Русский язык','Технология','Физика','Физкультура','Химия','Черчение'];
+var FLOORCOLORS=['#3b82f6','#8b5cf6','#22c55e','#f59e0b','#ef4444','#06b6d4'];
+var wizData={
+  schoolName:'Школа №42, г. Москва', shifts:1, days:5,
+  teachers:[
+    {name:'Иванова А.П.',subject:'Математика',hours:22,classes:'5А, 6Б, 7А',room:'105',notes:''},
+    {name:'Петров С.И.',subject:'Физика',hours:18,classes:'7А, 8А, 9А',room:'301',notes:'Вт — метод. день'},
+    {name:'Сидорова Е.В.',subject:'Русский язык',hours:26,classes:'5А, 5Б, 6А',room:'201',notes:'Не ранее 2-го ур.'}
+  ],
+  floors:[
+    {label:'1 этаж',color:'#3b82f6',rooms:[{num:'101',subject:'Нач. классы',seats:30,equipment:''},{num:'105',subject:'Математика',seats:32,equipment:''}]},
+    {label:'2 этаж',color:'#8b5cf6',rooms:[{num:'201',subject:'Русский язык',seats:30,equipment:''},{num:'204',subject:'Информатика',seats:15,equipment:'Компьютеры'}]},
+    {label:'3 этаж',color:'#22c55e',rooms:[{num:'301',subject:'Физика',seats:30,equipment:'Лаборатория'},{num:'305',subject:'Химия',seats:28,equipment:'Лаборатория'}]}
+  ]
+};
+
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function subjOpts(sel){return SUBJECTS.map(function(s){return '<option value="'+escH(s)+'"'+(s===sel?' selected':'')+'>'+escH(s)+'</option>';}).join('');}
+
+function renderTeachers(){
+  var el=document.getElementById('wizTeachersTable');if(!el)return;
+  var h='<div class="wiz-table wiz-table--edit"><div class="wiz-table__hdr wiz-table__hdr--t"><span>ФИО</span><span>Предмет</span><span>Часов</span><span>Классы</span><span>Каб.</span><span>Ограничения</span><span></span></div>';
+  wizData.teachers.forEach(function(t,i){
+    h+='<div class="wiz-table__row wiz-table__row--t">'
+      +'<span><input class="wiz-ci" value="'+escH(t.name)+'" placeholder="ФИО" onchange="wizData.teachers['+i+'].name=this.value"/></span>'
+      +'<span><select class="wiz-ci wiz-ci--sel" onchange="wizData.teachers['+i+'].subject=this.value">'+subjOpts(t.subject)+'</select></span>'
+      +'<span><input class="wiz-ci wiz-ci--num" type="number" min="1" max="40" value="'+t.hours+'" onchange="wizData.teachers['+i+'].hours=+this.value"/></span>'
+      +'<span><input class="wiz-ci" value="'+escH(t.classes)+'" placeholder="5А, 6Б" onchange="wizData.teachers['+i+'].classes=this.value"/></span>'
+      +'<span><input class="wiz-ci wiz-ci--sm" value="'+escH(t.room)+'" placeholder="101" onchange="wizData.teachers['+i+'].room=this.value"/></span>'
+      +'<span><input class="wiz-ci" value="'+escH(t.notes)+'" placeholder="—" onchange="wizData.teachers['+i+'].notes=this.value"/></span>'
+      +'<span><button class="wiz-del" onclick="wizDelT('+i+')">×</button></span>'
+      +'</div>';
+  });
+  h+='<div class="wiz-table__add" onclick="wizAddT()">+ добавить учителя</div></div>';
+  el.innerHTML=h;
+}
+function wizAddT(){wizData.teachers.push({name:'',subject:SUBJECTS[0],hours:18,classes:'',room:'',notes:''});renderTeachers();}
+function wizDelT(i){wizData.teachers.splice(i,1);renderTeachers();}
+
+function renderRooms(){
+  var el=document.getElementById('wizRoomsContainer');if(!el)return;
+  var h='';
+  wizData.floors.forEach(function(fl,fi){
+    h+='<div class="wiz-floor"><div class="wiz-floor__label"><div class="wiz-floor__dot" style="background:'+fl.color+'"></div>'
+      +'<input class="wiz-ci wiz-floor__ni" value="'+escH(fl.label)+'" onchange="wizData.floors['+fi+'].label=this.value"/>'
+      +'<button class="wiz-del wiz-del--floor" onclick="wizDelFloor('+fi+')" title="Удалить этаж">×</button></div>'
+      +'<div class="wiz-table wiz-table--rooms wiz-table--edit"><div class="wiz-table__hdr wiz-table__hdr--r"><span>Каб.</span><span>Предмет</span><span>Мест</span><span>Оборудование</span><span></span></div>';
+    fl.rooms.forEach(function(r,ri){
+      h+='<div class="wiz-table__row wiz-table__row--r">'
+        +'<span><input class="wiz-ci wiz-ci--sm" value="'+escH(r.num)+'" placeholder="101" onchange="wizData.floors['+fi+'].rooms['+ri+'].num=this.value"/></span>'
+        +'<span><select class="wiz-ci wiz-ci--sel" onchange="wizData.floors['+fi+'].rooms['+ri+'].subject=this.value">'+subjOpts(r.subject)+'</select></span>'
+        +'<span><input class="wiz-ci wiz-ci--num" type="number" min="1" value="'+r.seats+'" onchange="wizData.floors['+fi+'].rooms['+ri+'].seats=+this.value"/></span>'
+        +'<span><input class="wiz-ci" value="'+escH(r.equipment)+'" placeholder="—" onchange="wizData.floors['+fi+'].rooms['+ri+'].equipment=this.value"/></span>'
+        +'<span><button class="wiz-del" onclick="wizDelRoom('+fi+','+ri+')">×</button></span>'
+        +'</div>';
+    });
+    h+='<div class="wiz-table__add" onclick="wizAddRoom('+fi+')">+ кабинет</div></div></div>';
+  });
+  el.innerHTML=h;
+}
+function wizAddRoom(fi){wizData.floors[fi].rooms.push({num:'',subject:SUBJECTS[0],seats:30,equipment:''});renderRooms();}
+function wizDelRoom(fi,ri){wizData.floors[fi].rooms.splice(ri,1);renderRooms();}
+function wizAddFloor(){var n=wizData.floors.length;wizData.floors.push({label:(n+1)+' этаж',color:FLOORCOLORS[n%FLOORCOLORS.length],rooms:[]});renderRooms();}
+function wizDelFloor(fi){if(wizData.floors.length>1)wizData.floors.splice(fi,1);renderRooms();}
+
+/* Toggle handlers — attached once after DOM ready via event delegation */
+document.addEventListener('click',function(e){
+  var opt=e.target.closest('.wiz-toggle__opt');if(!opt)return;
+  var toggle=opt.closest('.wiz-toggle');if(!toggle)return;
+  toggle.querySelectorAll('.wiz-toggle__opt').forEach(function(o){o.classList.remove('wiz-toggle__opt--on');});
+  opt.classList.add('wiz-toggle__opt--on');
+  var val=+opt.getAttribute('data-val');
+  if(toggle.id==='wizShiftsToggle')wizData.shifts=val;
+  if(toggle.id==='wizDaysToggle')wizData.days=val;
+});
+document.getElementById('wizAddFloorBtn')&&document.getElementById('wizAddFloorBtn').addEventListener('click',wizAddFloor);
+document.getElementById('wizSchoolNameInput')&&document.getElementById('wizSchoolNameInput').addEventListener('change',function(){wizData.schoolName=this.value;});
+
 function wizSelect(i){
   wizSel=i;
   var c1=document.getElementById('wizCard1'),c2=document.getElementById('wizCard2');
@@ -123,6 +201,8 @@ function wizShowStep(){
   var prog=document.getElementById('wizProgress');
   if(prog)prog.style.display=wizStep===0?'none':'';
   for(var i=0;i<=4;i++){var el=document.getElementById('wizStep'+i);if(el)el.style.display=i===wizStep?'block':'none';}
+  if(wizStep===2)renderTeachers();
+  if(wizStep===3)renderRooms();
   for(var j=1;j<=4;j++){
     var s=document.getElementById('ws'+j);
     if(s){var dot=s.querySelector('.wiz-progress__dot'),p2=s.querySelector('p');
