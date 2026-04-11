@@ -44,10 +44,10 @@ app.get('/health', (_req, res) => {
 
 // ─── Routes ─────────────────────────────────────────────────
 const schedulesRouter = require('./routes/schedules');     // EP-04
-app.use('/api/schedules', schedulesRouter);
+app.use('/schedules', schedulesRouter);
 
-// const authRouter = require('./routes/auth');              // EP-03
-// app.use('/api/auth', authRouter);
+const authRouter = require('./routes/auth');
+app.use('/auth', authRouter);
 
 // const auditRouter = require('./routes/audit');            // EP-05
 // app.use('/api/audit', auditRouter);

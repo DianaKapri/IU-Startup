@@ -49,8 +49,12 @@
       <input class="field__input" id="regName" type="text" placeholder="Мария Петровна" autocomplete="name"/>
     </div>
     <div class="field">
-      <label class="field__label" for="regSchool">Школа</label>
+      <label class="field__label" for="regSchool">Название школы</label>
       <input class="field__input" id="regSchool" type="text" placeholder="МБОУ СОШ №42"/>
+    </div>
+    <div class="field">
+      <label class="field__label" for="regCity">Город</label>
+      <input class="field__input" id="regCity" type="text" placeholder="Москва"/>
     </div>
     <div class="field">
       <label class="field__label" for="regEmail">Email</label>
@@ -139,6 +143,7 @@
     e.preventDefault();
     var name   = document.getElementById('regName').value.trim();
     var school = document.getElementById('regSchool').value.trim();
+    var city   = document.getElementById('regCity').value.trim();
     var email  = document.getElementById('regEmail').value.trim();
     var pass   = document.getElementById('regPass').value;
     var err    = document.getElementById('regErr');
@@ -148,7 +153,7 @@
     if(pass.length < 6){ err.textContent = 'Пароль должен содержать минимум 6 символов.'; return; }
     btn.disabled = true;
     btn.textContent = 'Регистрируем…';
-    spRegister(name, school, email, pass).then(function(res){
+    spRegister(name, school, city, email, pass).then(function(res){
       if(res.ok){
         if(res.confirmRequired){
           var confirmEmail = document.getElementById('confirmEmail');

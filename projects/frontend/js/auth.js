@@ -86,9 +86,9 @@ function spLogin(email, password) {
   });
 }
 
-function spRegister(name, school, email, password) {
+function spRegister(name, school, city, email, password) {
   if (!name || !name.trim()) return Promise.resolve({ ok: false, error: 'Введите имя' });
-  if (!school || !school.trim()) return Promise.resolve({ ok: false, error: 'Укажите школу' });
+  if (!school || !school.trim()) return Promise.resolve({ ok: false, error: 'Укажите название школы' });
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     return Promise.resolve({ ok: false, error: 'Некорректный email' });
   }
@@ -101,26 +101,48 @@ function spRegister(name, school, email, password) {
       email: email.trim().toLowerCase(),
       password: password,
       options: {
-        data: { name: name.trim(), school: school.trim(), plan: 'trial' },
+        data: { name: name.trim(), school: school.trim(), city: (city || '').trim(), plan: 'free' },
       },
     }).then(function (res) {
       if (res.error) return { ok: false, error: _translateError(res.error.message) };
       var u = res.data.user;
       var session = res.data.session;
-      var meta = (u && u.user_metadata) || {};
-      // Email confirmation is required when session is null after signup
-      var confirmRequired = !session;
-      return {
-        ok: true,
-        confirmRequired: confirmRequired,
-        user: {
-          id: u ? u.id : null,
-          email: email,
-          name: meta.name || name,
-          school: meta.school || school,
-          plan: 'trial',
-        },
-      };
+      if (!u) return { ok: false, error: 'Не удалось создать пользователя. Попробуйте ещё раз.' };
+
+      // Создаём записи в public.schools и public.users
+      return fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: u.id,
+          email: email.trim().toLowerCase(),
+          name: name.trim(),
+          schoolName: school.trim(),
+          city: (city || '').trim(),
+        }),
+      }).then(function (r) { return r.json(); }).then(function (dbRes) {
+        if (!dbRes.ok) {
+          console.warn('[spRegister] DB insert warning:', dbRes.error);
+        }
+        var meta = u.user_metadata || {};
+        var confirmRequired = !session;
+        return {
+          ok: true,
+          confirmRequired: confirmRequired,
+          user: {
+            id: u.id,
+            email: email,
+            name: meta.name || name,
+            school: meta.school || school,
+            plan: 'free',
+          },
+        };
+      }).catch(function (fetchErr) {
+        console.warn('[spRegister] DB fetch error:', fetchErr.message);
+        // Не блокируем пользователя — Supabase Auth уже создан
+        var confirmRequired = !session;
+        return { ok: true, confirmRequired: confirmRequired, user: { id: u.id, email: email, name: name, school: school, plan: 'free' } };
+      });
     });
   });
 }
