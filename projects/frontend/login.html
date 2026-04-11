@@ -66,58 +66,82 @@
   </form>
 </div></main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
 <script>
 (function(){
-  const params = new URLSearchParams(location.search);
+  var params = new URLSearchParams(location.search);
   if(params.get('tab')==='register'){
     document.getElementById('tabLogin').classList.remove('auth-tab--active');
     document.getElementById('tabRegister').classList.add('auth-tab--active');
     document.getElementById('loginForm').style.display='none';
     document.getElementById('registerForm').style.display='';
   }
-  document.querySelectorAll('.auth-tab').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('.auth-tab').forEach(b=>b.classList.remove('auth-tab--active'));
+
+  document.querySelectorAll('.auth-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.auth-tab').forEach(function(b){ b.classList.remove('auth-tab--active'); });
       btn.classList.add('auth-tab--active');
-      const t=btn.dataset.tab;
-      document.getElementById('loginForm').style.display=t==='login'?'':'none';
-      document.getElementById('registerForm').style.display=t==='register'?'':'none';
+      var t = btn.dataset.tab;
+      document.getElementById('loginForm').style.display = t==='login' ? '' : 'none';
+      document.getElementById('registerForm').style.display = t==='register' ? '' : 'none';
     });
   });
-  document.querySelectorAll('[data-switch]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const t=btn.dataset.switch;
-      document.querySelectorAll('.auth-tab').forEach(b=>{
-        b.classList.toggle('auth-tab--active',b.dataset.tab===t);
+
+  document.querySelectorAll('[data-switch]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var t = btn.dataset.switch;
+      document.querySelectorAll('.auth-tab').forEach(function(b){
+        b.classList.toggle('auth-tab--active', b.dataset.tab===t);
       });
-      document.getElementById('loginForm').style.display=t==='login'?'':'none';
-      document.getElementById('registerForm').style.display=t==='register'?'':'none';
+      document.getElementById('loginForm').style.display = t==='login' ? '' : 'none';
+      document.getElementById('registerForm').style.display = t==='register' ? '' : 'none';
     });
   });
-  document.getElementById('loginForm').addEventListener('submit',function(e){
+
+  document.getElementById('loginForm').addEventListener('submit', function(e){
     e.preventDefault();
-    const email=document.getElementById('loginEmail').value.trim();
-    const pass=document.getElementById('loginPass').value;
-    const err=document.getElementById('loginErr');
-    err.textContent='';
-    const res=spLogin(email,pass);
-    if(res.ok){ location.href='/account.html'; }
-    else { err.textContent=res.error; }
+    var email = document.getElementById('loginEmail').value.trim();
+    var pass  = document.getElementById('loginPass').value;
+    var err   = document.getElementById('loginErr');
+    var btn   = document.getElementById('loginBtn');
+    err.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Входим…';
+    spLogin(email, pass).then(function(res){
+      if(res.ok){
+        var next = new URLSearchParams(location.search).get('next') || '/account.html';
+        location.href = next;
+      } else {
+        err.textContent = res.error;
+        btn.disabled = false;
+        btn.textContent = 'Войти';
+      }
+    });
   });
-  document.getElementById('registerForm').addEventListener('submit',function(e){
+
+  document.getElementById('registerForm').addEventListener('submit', function(e){
     e.preventDefault();
-    const name=document.getElementById('regName').value.trim();
-    const school=document.getElementById('regSchool').value.trim();
-    const email=document.getElementById('regEmail').value.trim();
-    const pass=document.getElementById('regPass').value;
-    const err=document.getElementById('regErr');
-    err.textContent='';
-    if(!name||!school){ err.textContent='Введите имя и название школы.'; return; }
-    if(pass.length<6){ err.textContent='Пароль должен содержать минимум 6 символов.'; return; }
-    const res=spRegister(name,school,email,pass);
-    if(res.ok){ location.href='/account.html'; }
-    else { err.textContent=res.error; }
+    var name   = document.getElementById('regName').value.trim();
+    var school = document.getElementById('regSchool').value.trim();
+    var email  = document.getElementById('regEmail').value.trim();
+    var pass   = document.getElementById('regPass').value;
+    var err    = document.getElementById('regErr');
+    var btn    = document.getElementById('regBtn');
+    err.textContent = '';
+    if(!name || !school){ err.textContent = 'Введите имя и название школы.'; return; }
+    if(pass.length < 6){ err.textContent = 'Пароль должен содержать минимум 6 символов.'; return; }
+    btn.disabled = true;
+    btn.textContent = 'Регистрируем…';
+    spRegister(name, school, email, pass).then(function(res){
+      if(res.ok){
+        location.href = '/account.html';
+      } else {
+        err.textContent = res.error;
+        btn.disabled = false;
+        btn.textContent = 'Зарегистрироваться';
+      }
+    });
   });
 })();
 </script>

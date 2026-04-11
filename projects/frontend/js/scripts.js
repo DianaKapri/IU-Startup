@@ -32,25 +32,6 @@ var cio = new IntersectionObserver(function (en) {
 }, { threshold: .3 });
 var rib = document.querySelector('.ribbon'); if (rib) cio.observe(rib);
 
-/* ═══ Auth-aware navigation ═══ */
-function updateNav() {
-  var user = spGetCurrentUser();
-  var navGuestLinks = document.getElementById('navGuestLinks');
-  var navUserLink   = document.getElementById('navUserLink');
-  var navAvatar     = document.getElementById('navAvatar');
-  var navUserName   = document.getElementById('navUserName');
-
-  if (user) {
-    if (navGuestLinks) navGuestLinks.style.display = 'none';
-    if (navUserLink)   { navUserLink.style.display = 'flex'; }
-    if (navAvatar)     navAvatar.textContent = (user.name || 'У').charAt(0).toUpperCase();
-    if (navUserName)   navUserName.textContent = user.name.split(' ')[0];
-  } else {
-    if (navGuestLinks) navGuestLinks.style.display = 'flex';
-    if (navUserLink)   navUserLink.style.display = 'none';
-  }
-}
-updateNav();
 
 /* ═══ Demo section ═══ */
 var loadDemoBtn = document.getElementById('loadDemoBtn');

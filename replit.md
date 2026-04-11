@@ -55,8 +55,17 @@ projects/
 node server.js   # Starts frontend (port 5000) + backend (port 4000)
 ```
 
+## Authentication
+Supabase Auth is used for all user authentication:
+- Login / registration via `spLogin()` / `spRegister()` in `auth.js`
+- User profile (name, school, plan) stored in Supabase `user_metadata`
+- Session managed by Supabase JS SDK (loaded from CDN on all pages)
+- Public config (URL + anon key) served via `GET /api/client-config`
+
 ## Environment Variables
 - `DATABASE_URL` — PostgreSQL connection string (set by Replit)
+- `SUPABASE_URL` — Supabase project URL (secret)
+- `SUPABASE_KEY` — Supabase anon public key (secret)
 - `PORT` — Backend port (defaults to 4000)
 - `FRONTEND_URL` — Allowed CORS origin (defaults to http://localhost:3000)
 - `NODE_ENV` — Environment mode (development/production)
@@ -64,3 +73,4 @@ node server.js   # Starts frontend (port 5000) + backend (port 4000)
 ## Dependencies
 - **Root**: express (static server + proxy)
 - **Backend**: express, cors, helmet, multer, pg, xlsx, exceljs, dotenv
+- **Frontend CDN**: @supabase/supabase-js@2, xlsx@0.18.5

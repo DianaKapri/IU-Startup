@@ -19,6 +19,14 @@ backendProcess.on('exit', (code) => {
   console.log(`[Backend] Process exited with code ${code}`);
 });
 
+// Expose public Supabase config to the frontend
+app.get('/api/client-config', (_req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL || '',
+    supabaseKey: process.env.SUPABASE_KEY || '',
+  });
+});
+
 // Proxy /api/* to backend at port 4000
 app.use('/api', (req, res) => {
   const http = require('http');
