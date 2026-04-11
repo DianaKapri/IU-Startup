@@ -288,7 +288,7 @@ function wizBuildSchedule(){
     var dayArr=[];for(var d=0;d<5;d++)dayArr.push([]);
     lessons.forEach(function(l){
       var best=0,mn=dayArr[0].length;
-      for(var d=1;d<days;d++){if(dayArr[d].length<mn){mn=dayArr[d].length;best=d;}}
+      for(var d=1;d<5;d++){if(dayArr[d].length<mn){mn=dayArr[d].length;best=d;}}
       if(dayArr[best].length<maxPD)dayArr[best].push(l);
     });
     sch[cls]=dayArr;

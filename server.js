@@ -16,24 +16,39 @@ const PORT = 5000;
 const BACKEND_PORT = 4000;
 
 // ─── Start backend subprocess ────────────────────────────────
+let backendProc = null;
+let shuttingDown = false;
+
 function startBackend() {
-  const proc = spawn('node', ['projects/sanpin-audit-ui/app.js'], {
+  if (shuttingDown) return;
+
+  backendProc = spawn('node', ['projects/sanpin-audit-ui/app.js'], {
     env: { ...process.env, PORT: String(BACKEND_PORT) },
     stdio: 'inherit',
   });
 
-  proc.on('error', (err) => {
+  backendProc.on('error', (err) => {
     console.error('[Backend] Failed to start:', err.message);
   });
 
-  proc.on('exit', (code, signal) => {
+  backendProc.on('exit', (code, signal) => {
+    if (shuttingDown) return;
     console.warn(`[Backend] Exited (code=${code} signal=${signal}). Restarting in 2s…`);
     setTimeout(startBackend, 2000);
   });
-
-  return proc;
 }
 startBackend();
+
+// ─── Graceful shutdown ────────────────────────────────────────
+function shutdown() {
+  shuttingDown = true;
+  if (backendProc) {
+    backendProc.kill('SIGTERM');
+  }
+  process.exit(0);
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 // ─── Expose Supabase public config ───────────────────────────
 app.get('/api/client-config', (_req, res) => {
