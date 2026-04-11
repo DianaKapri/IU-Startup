@@ -293,7 +293,7 @@ body.nav-open .nav__backdrop { opacity: 1; pointer-events: all; }
 /* ===== CARDS ===== */
 .cards { background: var(--gray-bg); padding: 112px 24px; }
 .cards__inner { max-width: var(--max-w); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.cards__eyebrow-label { grid-column: 1 / -1; text-align: center; font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 400; letter-spacing: -.01em; line-height: 1.1; color: var(--blue); margin-bottom: 48px; }
+.cards__eyebrow-label { grid-column: 1 / -1; text-align: center; font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: 48px; }
 .card { background: var(--white); border-radius: 18px; padding: 44px 36px; transition: transform .3s; }
 .card:hover { transform: translateY(-4px); }
 .card--wide { grid-column: 1 / -1; }
