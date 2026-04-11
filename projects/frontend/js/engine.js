@@ -6,7 +6,7 @@
 
 /* ═══ Наименования предметов и цвета ═══ */
 var SF={мат:'Математика',алг:'Алгебра',гео:'Геометрия',рус:'Русский язык',лит:'Литература',ия:'Ин. язык',физ:'Физика',хим:'Химия',био:'Биология',ист:'История',общ:'Обществознание',геогр:'География',инф:'Информатика',фк:'Физкультура',изо:'ИЗО',муз:'Музыка',техн:'Технология',обж:'ОБЖ',астр:'Астрономия',однк:'ОДНКНР',мхк:'МХК',право:'Право',элект:'Элективный',проект:'Проект',окрмир:'Окр. мир',орксэ:'ОРКСЭ',черч:'Черчение'};
-var CL={мат:'#6b4c5e',алг:'#6b4c5e',гео:'#5e3d4e',рус:'#3d5a7a',лит:'#4a6580',ия:'#3a7a72',физ:'#7a5a3a',хим:'#6a4a3a',био:'#4a7a4a',астр:'#7a5a3a',ист:'#5a4a7a',общ:'#6a5a7a',геогр:'#4a6a4a',право:'#6a5a7a',инф:'#7a6030',фк:'#4a7a5a',изо:'#6a5a40',муз:'#6a5a6a',техн:'#5a6a6a',обж:'#5a5a5a',однк:'#6a5a6a',мхк:'#6a5a60',проект:'#4a5a6a',элект:'#5a5a6a',окрмир:'#4a7a4a',орксэ:'#6a5a6a',черч:'#5a6a6a'};
+var CL={мат:'#e06070',алг:'#e06070',гео:'#d04858',рус:'#5090d0',лит:'#6aa0d8',ия:'#40b0a0',физ:'#d08040',хим:'#c06040',био:'#60b060',астр:'#d08040',ист:'#9070c0',общ:'#a080c8',геогр:'#70a070',право:'#a080c8',инф:'#e09030',фк:'#80c8a0',изо:'#c0a060',муз:'#c0a0c0',техн:'#90b0b0',обж:'#a0a0a0',однк:'#b090c0',мхк:'#b090b0',проект:'#80a0c0',элект:'#9090b0',окрмир:'#60b060',орксэ:'#b090c0',черч:'#90b0b0'};
 var DN=['Пн','Вт','Ср','Чт','Пт'];
 
 /* ═══ Таблицы трудности (СанПиН 1.2.3685-21, табл. 6.9–6.11) ═══ */
@@ -388,6 +388,8 @@ function _gridClassMeta(cl,cg,au){
 function _sortClasses(classes,cg,au){
   var meta={};classes.forEach(function(cl){meta[cl]=_gridClassMeta(cl,cg,au);});
   var sorted=classes.slice();
+  function clsNum(c){var m=c.match(/^(\d+)/);return m?parseInt(m[1]):99;}
+  function clsLetter(c){return c.replace(/^\d+/,'');}
   sorted.sort(function(a,b){
     if(_gridSort==='score'){
       var da=meta[a].viol-meta[b].viol;if(da!==0)return _gridSortAsc?da:-da;
@@ -395,7 +397,11 @@ function _sortClasses(classes,cg,au){
     }else if(_gridSort==='count'){
       var dt=meta[a].total-meta[b].total;if(dt!==0)return _gridSortAsc?-dt:dt;
     }
-    return _gridSortAsc?a.localeCompare(b,'ru'):b.localeCompare(a,'ru');
+    /* Default: numeric sort 1А < 1Б < 2А < ... < 11В */
+    var na=clsNum(a),nb=clsNum(b);
+    if(na!==nb)return _gridSortAsc?na-nb:nb-na;
+    var la=clsLetter(a),lb=clsLetter(b);
+    return _gridSortAsc?la.localeCompare(lb,'ru'):lb.localeCompare(la,'ru');
   });
   return sorted;
 }
@@ -441,9 +447,16 @@ function renderGrid(sch,cg,au,tbl){
         var bad=df>=th2&&(li<1||li>3),pair=prevS&&df>=th2&&gd(prevS,g)>=th2;
         var bg=CL[s]||'#666';
         var bdrCls=bad||pair?'demo__cell--warn':'';
-        var cellTip=_esc((SF[s]||s)+' — '+df+' б.');
-        if(bad)cellTip+=_esc('\n⚠ Сложный на '+(li+1)+'-м уроке');
-        if(pair)cellTip+=_esc('\n⚠ '+( SF[prevS]||prevS)+' ('+gd(prevS,g)+') → '+(SF[s]||s)+' ('+df+') подряд');
+        /* Build rich tooltip */
+        var tipLines=[(SF[s]||s)+' — '+df+' б. (урок '+(li+1)+')'];
+        if(bad)tipLines.push('⚠ E-01: сложный предмет ('+df+' б.) на '+(li+1)+'-м уроке — рекомендуется 2–4');
+        if(pair)tipLines.push('⚠ E-03: '+(SF[prevS]||prevS)+' ('+gd(prevS,g)+') и '+(SF[s]||s)+' ('+df+') подряд — чередуйте сложные и лёгкие');
+        /* Check if this day has C-01 violation */
+        if(m.issues){m.issues.forEach(function(iss){
+          if(iss.id==='C-01'&&iss.ds&&iss.ds.indexOf(DN[di])!==-1)tipLines.push('❌ C-01: '+iss.ds);
+          if(iss.id==='X-01')tipLines.push('❌ X-01: окна в расписании');
+        });}
+        var cellTip=_esc(tipLines.join('\n'));
         h+='<td class="'+cls2+'"><div class="demo__cell '+bdrCls+'" style="background:'+bg+'cc" data-grid-tip="'+cellTip+'"><span>'+s+'</span><span class="demo__cell-score">'+df+'</span></div></td>';
       }
     });
@@ -704,37 +717,31 @@ function renderHeat(sch,cg,au,tbl){
 
 function renderRecs(top,el){
   if(!top.length){el.innerHTML='<p class="rec-empty">Нарушений и рекомендаций не обнаружено.</p>';return;}
-  /* Group by class */
   var classMap={};
-  top.forEach(function(t){
-    t.classes.forEach(function(cl){
-      if(!classMap[cl])classMap[cl]=[];
-      classMap[cl].push(t);
-    });
-  });
-  var classes=Object.keys(classMap).sort(function(a,b){return a.localeCompare(b,'ru');});
-  el.innerHTML=classes.map(function(cl){
-    var items=classMap[cl];
-    var viols=items.filter(function(t){return t.st==='v';});
-    var warns=items.filter(function(t){return t.st==='w';});
-    var meta='';
-    if(viols.length)meta+=viols.length+' нарушени'+_plural(viols.length,'е','я','й');
-    if(viols.length&&warns.length)meta+=' · ';
-    if(warns.length)meta+=warns.length+' рекомендаци'+_plural(warns.length,'я','и','й');
-    var h='<div class="rec-class-group">';
-    h+='<div class="rec-class-group__hdr" onclick="this.parentNode.classList.toggle(\'rec-class-group--open\')">';
-    h+='<span class="rec-class-group__name">'+cl+'</span>';
-    h+='<span class="rec-class-group__meta">'+meta+'</span>';
-    h+='<span class="rec-class-group__arrow">›</span>';
-    h+='</div>';
-    h+='<div class="rec-class-group__body">';
-    items.forEach(function(t){
-      var iv=t.st==='v';
-      h+='<div class="rec-item'+(iv?' rec-item--v':'')+'">';
-      h+='<div class="rec-item__head"><span class="rec-item__badge">'+t.id+'</span><span class="rec-item__name">'+t.nm+'</span></div>';
-      h+='<div class="rec-item__desc">'+t.ds+'</div>';
-      if(t.sg)h+='<div class="rec-item__suggest">'+t.sg+'</div>';
-      h+='</div>';
+  top.forEach(function(t){t.classes.forEach(function(cl){if(!classMap[cl])classMap[cl]=[];classMap[cl].push(t);});});
+  /* Group by parallel */
+  var parallels={};
+  Object.keys(classMap).forEach(function(cl){var g=cl.replace(/[^0-9]/g,'');if(!parallels[g])parallels[g]=[];parallels[g].push(cl);});
+  var grades=Object.keys(parallels).sort(function(a,b){return parseInt(a)-parseInt(b);});
+  grades.forEach(function(g){parallels[g].sort(function(a,b){return a.localeCompare(b,'ru');});});
+  el.innerHTML=grades.map(function(grade){
+    var cls=parallels[grade];
+    var h='<div class="rec-parallel"><div class="rec-parallel__row">';
+    cls.forEach(function(cl){
+      var items=classMap[cl],vi=0,wa=0;
+      items.forEach(function(t){if(t.st==='v')vi++;else wa++;});
+      var cc=vi>0?'#ff453a':wa>0?'#ff9f0a':'#30d158';
+      var meta=[];if(vi)meta.push(vi+' нар.');if(wa)meta.push(wa+' рек.');
+      h+='<div class="rec-cls-card"><div class="rec-cls-card__hdr" onclick="this.parentNode.classList.toggle(\'rec-cls-card--open\')">';
+      h+='<span class="rec-cls-card__name" style="color:'+cc+'">'+cl+'</span>';
+      h+='<span class="rec-cls-card__meta">'+meta.join(' · ')+'</span>';
+      h+='<span class="rec-cls-card__arrow">›</span></div>';
+      h+='<div class="rec-cls-card__body">';
+      items.forEach(function(t){
+        var iv=t.st==='v';
+        h+='<div class="rec-item'+(iv?' rec-item--v':'')+'"><div class="rec-item__head"><span class="rec-item__badge">'+t.id+'</span><span class="rec-item__name">'+t.nm+'</span></div><div class="rec-item__desc">'+t.ds+'</div>'+(t.sg?'<div class="rec-item__suggest">'+t.sg+'</div>':'')+'</div>';
+      });
+      h+='</div></div>';
     });
     h+='</div></div>';
     return h;

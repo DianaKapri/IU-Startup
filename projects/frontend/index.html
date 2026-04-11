@@ -82,10 +82,37 @@
     <div class="demo-tabs" id="inlineDemoTabs">
       <button class="demo-tab demo-tab--active" data-tab="grid">Сетка уроков</button>
       <button class="demo-tab" data-tab="recs">Рекомендации</button>
+      <button class="demo-tab" data-tab="rules">Правила аудита</button>
     </div>
     <div class="demo-tab-desc" id="inlineDemoTabDesc"></div>
     <div id="inlineDemoTabGrid" class="demo-tab-panel"></div>
     <div id="inlineDemoTabRecs" class="demo-tab-panel" style="display:none"></div>
+    <div id="inlineDemoTabRules" class="demo-tab-panel" style="display:none">
+      <div class="audit-rules-screen">
+        <div class="audit-score-explain">
+          <div class="audit-score-explain__title">Как рассчитывается Score</div>
+          <div class="audit-score-explain__text">Score = пройдено ÷ (пройдено + рекомендации + нарушения) × 100. Каждый класс проверяется по 7 правилам — 5 жёстких (нарушения СанПиН) и 2 мягких (рекомендации). Нарушения и рекомендации снижают Score.</div>
+          <div class="audit-score-explain__scale">
+            <span class="audit-score-explain__range" style="background:rgba(48,209,88,.12);color:#30d158">90–100: соответствует</span>
+            <span class="audit-score-explain__range" style="background:rgba(255,214,10,.12);color:#ffd60a">70–89: есть рекомендации</span>
+            <span class="audit-score-explain__range" style="background:rgba(255,69,58,.12);color:#ff453a">0–69: есть нарушения</span>
+          </div>
+        </div>
+        <div class="audit-score-explain__title" style="margin-bottom:12px">Жёсткие ограничения (нарушения)</div>
+        <div class="audit-rules-list" style="margin-bottom:20px">
+          <div class="audit-rule-card"><span class="audit-rule-card__badge audit-rule-card__badge--hard">C-01</span><div class="audit-rule-card__body"><div class="audit-rule-card__name">Максимум уроков в день</div><div class="audit-rule-card__desc">1 кл.: 4 (один раз 5 за счёт физ-ры). 2–4 кл.: 5 (один раз 6 за счёт физ-ры). 5–6 кл.: 6. 7–11 кл.: 7.</div><div class="audit-rule-card__source">СП 2.4.3648-20, п. 3.4.16</div></div></div>
+          <div class="audit-rule-card"><span class="audit-rule-card__badge audit-rule-card__badge--hard">C-02</span><div class="audit-rule-card__body"><div class="audit-rule-card__name">Недельная нагрузка</div><div class="audit-rule-card__desc">5-дневка: 1 кл. — 21 ч, 2–4 кл. — 23 ч, 5 кл. — 29 ч, 6 кл. — 30 ч, 7 кл. — 32 ч, 8–9 кл. — 33 ч, 10–11 кл. — 34 ч.</div><div class="audit-rule-card__source">СанПиН 1.2.3685-21, табл. 6.6</div></div></div>
+          <div class="audit-rule-card"><span class="audit-rule-card__badge audit-rule-card__badge--hard">C-03</span><div class="audit-rule-card__body"><div class="audit-rule-card__name">Равномерность нагрузки</div><div class="audit-rule-card__desc">Разница между максимальным и минимальным количеством уроков в день ≤ 1. Например, 6–6–6–6–5 допустимо, 4–7–6–7–7 — нарушение.</div><div class="audit-rule-card__source">СП 2.4.3648-20, п. 3.4.16</div></div></div>
+          <div class="audit-rule-card"><span class="audit-rule-card__badge audit-rule-card__badge--hard">E-02</span><div class="audit-rule-card__body"><div class="audit-rule-card__name">Облегчённый день в середине недели</div><div class="audit-rule-card__desc">Среда или четверг должны быть самым лёгким днём по сумме баллов трудности. Если самый лёгкий — понедельник или пятница — это нарушение.</div><div class="audit-rule-card__source">СанПиН 1.2.3685-21, п. 189; МР 2.4.0331-23, п. 3.3</div></div></div>
+          <div class="audit-rule-card"><span class="audit-rule-card__badge audit-rule-card__badge--hard">X-01</span><div class="audit-rule-card__body"><div class="audit-rule-card__name">Окна в расписании</div><div class="audit-rule-card__desc">Не допускаются пустые уроки между первым и последним уроком класса в дне. Если у класса 6 уроков — они должны идти подряд без пропусков.</div><div class="audit-rule-card__source">Общепринятая практика</div></div></div>
+        </div>
+        <div class="audit-score-explain__title" style="margin-bottom:12px">Рекомендации</div>
+        <div class="audit-rules-list">
+          <div class="audit-rule-card"><span class="audit-rule-card__badge audit-rule-card__badge--soft">E-01</span><div class="audit-rule-card__body"><div class="audit-rule-card__name">Сложные предметы на 2–4 уроках</div><div class="audit-rule-card__desc">Предметы с баллом трудности ≥ 8 рекомендуется ставить на 2–4 уроки (10:00–12:00), когда умственная работоспособность максимальна. На 1-м и 5–7-м уроках — нежелательно.</div><div class="audit-rule-card__source">МР 2.4.0331-23, п. 3.2</div></div></div>
+          <div class="audit-rule-card"><span class="audit-rule-card__badge audit-rule-card__badge--soft">E-03</span><div class="audit-rule-card__body"><div class="audit-rule-card__name">Чередование сложных и лёгких предметов</div><div class="audit-rule-card__desc">Не рекомендуется ставить 2–3 сложных предмета подряд (≥ 8 баллов). 2 подряд — предупреждение, 3+ подряд — сильное предупреждение. Это рекомендация, не запрет — в реальной школе не всегда выполнимо.</div><div class="audit-rule-card__source">МР 2.4.0331-23, п. 3.2; СП 2.4.3648-20, п. 3.4.16</div></div></div>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="audit-template-row fade-in fade-in--d3">
     <a href="/assets/shablon-raspisaniya.xlsx" download class="audit-template-link">
@@ -371,6 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var which = this.getAttribute('data-tab');
       document.getElementById('inlineDemoTabGrid').style.display = which === 'grid' ? '' : 'none';
       document.getElementById('inlineDemoTabRecs').style.display = which === 'recs' ? '' : 'none';
+      document.getElementById('inlineDemoTabRules').style.display = which === 'rules' ? '' : 'none';
     });
   });
 

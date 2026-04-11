@@ -274,3 +274,34 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .rec-item__desc { font-size: .75rem; color: rgba(255,255,255,.5); line-height: 1.4; }
 .rec-item__suggest { font-size: .72rem; color: #30d158; margin-top: 2px; }
 .rec-empty { font-size: .85rem; color: #555; text-align: center; padding: 20px; }
+
+/* ═══ Recommendations: parallel row layout ═══ */
+.rec-parallel { margin-bottom: 12px; }
+.rec-parallel__row { display: flex; gap: 8px; flex-wrap: wrap; }
+.rec-cls-card { flex: 1; min-width: 200px; max-width: 400px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 10px; overflow: hidden; }
+.rec-cls-card__hdr { display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; transition: background .15s; }
+.rec-cls-card__hdr:hover { background: rgba(255,255,255,.05); }
+.rec-cls-card__name { font-size: .95rem; font-weight: 700; min-width: 32px; }
+.rec-cls-card__meta { font-size: .72rem; color: #86868b; flex: 1; }
+.rec-cls-card__arrow { font-size: 1rem; color: #555; transition: transform .2s; }
+.rec-cls-card__body { display: none; padding: 0 14px 10px; }
+.rec-cls-card--open .rec-cls-card__body { display: block; }
+.rec-cls-card--open .rec-cls-card__arrow { transform: rotate(90deg); }
+
+/* ═══ Audit rules screen ═══ */
+.audit-rules-screen { margin-top: 24px; }
+.audit-rules-screen__title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; color: #f5f5f7; }
+.audit-score-explain { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
+.audit-score-explain__title { font-size: .9rem; font-weight: 700; color: #f5f5f7; margin-bottom: 8px; }
+.audit-score-explain__text { font-size: .82rem; color: rgba(255,255,255,.6); line-height: 1.6; margin-bottom: 6px; }
+.audit-score-explain__scale { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+.audit-score-explain__range { padding: 6px 14px; border-radius: 8px; font-size: .78rem; font-weight: 600; }
+.audit-rules-list { display: grid; gap: 10px; }
+.audit-rule-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 10px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+.audit-rule-card__badge { font-size: .7rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; flex-shrink: 0; margin-top: 2px; }
+.audit-rule-card__badge--hard { background: rgba(255,69,58,.12); color: #ff453a; }
+.audit-rule-card__badge--soft { background: rgba(255,159,10,.12); color: #ff9f0a; }
+.audit-rule-card__body { flex: 1; }
+.audit-rule-card__name { font-size: .88rem; font-weight: 600; color: #f5f5f7; margin-bottom: 3px; }
+.audit-rule-card__desc { font-size: .78rem; color: rgba(255,255,255,.5); line-height: 1.5; }
+.audit-rule-card__source { font-size: .68rem; color: #555; margin-top: 4px; }
