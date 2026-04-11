@@ -203,18 +203,20 @@ a { text-decoration: none; color: inherit; }
 .mockup__row--red .mockup__value { color: var(--red); }
 
 /* ===== RIBBON ===== */
-.ribbon { background: var(--surface-dark); padding: 0 24px 80px; }
+.ribbon { background: var(--surface-dark); padding: 0 24px 112px; }
 .ribbon__inner { max-width: var(--max-w); margin: 0 auto; display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; }
 .ribbon__stat { text-align: center; }
 .ribbon__number { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.03em; color: #fff; }
+.ribbon__headline { display: block; font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.03em; color: #fff; line-height: 1.05; }
 .ribbon__unit { font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; color: #fff; }
 .ribbon__label { display: block; font-size: .82rem; color: var(--gray-mid); margin-top: 2px; }
 
 /* ===== SHOWCASE ===== */
-.showcase { padding: 120px 24px; text-align: center; }
+.showcase { padding: 112px 24px; text-align: center; }
 .showcase--dark { background: var(--surface-dark); color: #fff; }
 .showcase--light { background: var(--white); color: var(--black); }
 .showcase__inner { max-width: var(--max-w-narrow); margin: 0 auto; }
+.showcase__inner--wide { max-width: var(--max-w); }
 .showcase__eyebrow { font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
 .showcase--dark .showcase__eyebrow { color: var(--gray-mid); }
 .showcase--light .showcase__eyebrow { color: var(--blue); }
@@ -224,9 +226,9 @@ a { text-decoration: none; color: inherit; }
 .showcase--light .showcase__text { color: var(--gray-dark); }
 
 /* ===== CARDS ===== */
-.cards { background: var(--gray-bg); padding: 100px 24px; }
+.cards { background: var(--gray-bg); padding: 112px 24px; }
 .cards__inner { max-width: var(--max-w); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-.cards__eyebrow-label { grid-column: 1 / -1; font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: 4px; }
+.cards__eyebrow-label { grid-column: 1 / -1; text-align: center; font-size: clamp(2rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.07; color: var(--black); margin-bottom: 48px; }
 .card { background: var(--white); border-radius: 18px; padding: 44px 36px; transition: transform .3s; }
 .card:hover { transform: translateY(-4px); }
 .card--wide { grid-column: 1 / -1; }
@@ -235,7 +237,7 @@ a { text-decoration: none; color: inherit; }
 .card__text { font-size: .95rem; color: var(--gray-dark); line-height: 1.6; max-width: 520px; }
 
 /* ===== PRICE ===== */
-.price { background: var(--white); padding: 100px 24px; text-align: center; }
+.price { background: var(--white); padding: 112px 24px; text-align: center; }
 .price__inner { max-width: var(--max-w-narrow); margin: 0 auto; }
 .price__eyebrow { font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: 12px; }
 .price__amount { font-size: clamp(3rem, 8vw, 5.5rem); font-weight: 700; letter-spacing: -.04em; line-height: 1; margin-bottom: 16px; }
@@ -339,11 +341,11 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 }
 
 /* ═══ WIZARD ═══ */
-.wizard-section{padding:4rem 1.5rem;background:#000;}
+.wizard-section{padding:112px 1.5rem;background:#000;}
 .wizard-inner{max-width:640px;margin:0 auto;}
 .wiz-eyebrow{font-size:10px;letter-spacing:2px;color:#555;margin:0 0 10px;}
-.wiz-title{font-size:28px;font-weight:700;margin:0 0 8px;color:#fff;line-height:1.15;}
-.wiz-sub{font-size:13px;color:#777;margin:0 0 28px;}
+.wiz-title{font-size:28px;font-weight:700;margin:0 0 8px;color:#fff;line-height:1.15;text-align:center;}
+.wiz-sub{font-size:13px;color:#777;margin:0 0 28px;text-align:center;}
 .wiz-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:480px;margin:0 auto 20px;}
 .wiz-card{background:#111;border-radius:10px;padding:16px;border:1px solid #222;cursor:pointer;transition:border-color .2s;}
 .wiz-card:hover{border-color:#444;}
