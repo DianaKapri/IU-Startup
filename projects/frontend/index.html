@@ -276,6 +276,7 @@
   <span class="footer__logo">ШколаПлан</span><span class="footer__copy">© 2026 ШколаПлан</span>
 </div></footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/engine.js"></script>
@@ -308,6 +309,60 @@ function toggleInlineDemo() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  /* ═══ FILE UPLOAD: auditFileInput → parse → show audit ═══ */
+  var fileInput = document.getElementById('auditFileInput');
+  if (fileInput) {
+    fileInput.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var btn = document.querySelector('.audit-upload-btn span');
+      if (btn) btn.textContent = 'Загрузка...';
+      parseXls(file).then(function(result) {
+        if (btn) btn.textContent = 'Загрузить своё расписание (.xlsx)';
+        /* Show inline demo panel with user's data */
+        var panel = document.getElementById('inlineDemo');
+        if (panel) panel.style.display = 'block';
+        _inlineDemoReady = true;
+        try {
+          var badge = panel.querySelector('.demo-badge');
+          if (badge) badge.textContent = file.name + ' · ' + Object.keys(result.sch).length + ' классов';
+          var audit = doAudit(result.sch, result.cg);
+          var gridEl = document.getElementById('inlineDemoTabGrid');
+          var tbl = document.createElement('table');
+          tbl.className = 'acc-grid-tbl';
+          gridEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
+          gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
+          renderGrid(result.sch, result.cg, audit, tbl);
+          var recsEl = document.getElementById('inlineDemoTabRecs');
+          renderRecs(audit.top, recsEl);
+          /* Show summary above grid */
+          var summary = '<div style="margin-bottom:16px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">';
+          summary += '<span style="font-size:1.2rem;font-weight:700;color:'+(audit.score>=90?'#30d158':audit.score>=70?'#ffd60a':'#ff453a')+'">Score: '+audit.score+'</span>';
+          summary += '<span style="color:#ff453a;font-weight:600">❌ '+audit.vi.length+' нарушений</span>';
+          summary += '<span style="color:#ff9f0a;font-weight:600">⚠ '+audit.wa.length+' рекомендаций</span>';
+          summary += '<span style="color:#30d158;font-weight:600">✅ '+audit.passed+' пройдено</span>';
+          summary += '</div>';
+          gridEl.insertAdjacentHTML('afterbegin', summary);
+          panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch(err) {
+          console.error('Audit error:', err);
+          alert('Ошибка при анализе файла: ' + err);
+        }
+        /* Activate grid tab */
+        var tabs = document.querySelectorAll('#inlineDemoTabs .demo-tab');
+        tabs.forEach(function(t){ t.classList.remove('demo-tab--active'); });
+        var gridTab = document.querySelector('#inlineDemoTabs .demo-tab[data-tab="grid"]');
+        if (gridTab) gridTab.classList.add('demo-tab--active');
+        document.getElementById('inlineDemoTabGrid').style.display = '';
+        document.getElementById('inlineDemoTabRecs').style.display = 'none';
+      }).catch(function(err) {
+        if (btn) btn.textContent = 'Загрузить своё расписание (.xlsx)';
+        alert('Ошибка: ' + err);
+      });
+      fileInput.value = '';
+    });
+  }
+
   var tabs = document.querySelectorAll('#inlineDemoTabs .demo-tab');
   tabs.forEach(function(tab) {
     tab.addEventListener('click', function() {
