@@ -85,8 +85,10 @@ function doAudit(sch,cg){
   var top=[];for(var k in byR){if(byR.hasOwnProperty(k))top.push(byR[k]);}
   top.sort(function(a,b){return(a.st==='v'?0:2)+(a.classes.length>1?0:1)-((b.st==='v'?0:2)+(b.classes.length>1?0:1));});
   top=top.slice(0,8);
-  var tot=0;for(var k2 in cr){if(cr.hasOwnProperty(k2))tot+=5+cr[k2].ch.length;}
-  return{cr:cr,vi:vi,wa:wa,top:top,score:Math.round((tot-vi.length-wa.length)/tot*100),passed:tot-vi.length-wa.length};
+  var tot=Object.keys(cr).length*7; /* 7 checks per class */
+  var issues=vi.length+wa.length;
+  var passed=tot-issues;
+  return{cr:cr,vi:vi,wa:wa,top:top,score:tot>0?Math.round(passed/tot*100):100,passed:passed};
 }
 
 /* ═══ Оптимизатор ═══ */

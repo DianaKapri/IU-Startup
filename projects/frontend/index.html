@@ -95,7 +95,7 @@
       </div>
 
       <div class="rules-score-box">
-        <div class="rules-score-box__formula">Score = пройдено ÷ (пройдено + рекомендации + нарушения) × 100</div>
+        <div class="rules-score-box__formula">Score = (7 × кол-во классов − нарушения − рекомендации) ÷ (7 × кол-во классов) × 100</div>
         <div class="rules-score-box__scale">
           <span class="rules-scale rules-scale--green">90–100 соответствует</span>
           <span class="rules-scale rules-scale--yellow">70–89 рекомендации</span>
@@ -161,7 +161,7 @@
             <div class="rules-card rules-card--info">
               <div class="rules-card__badge rules-card__badge--info">📊</div>
               <div class="rules-card__title">Как считается Score</div>
-              <div class="rules-card__text">Каждый класс проверяется по 7 правилам. Пройденная проверка = +1 балл. Нарушение или рекомендация = −1. Score = процент пройденных.</div>
+              <div class="rules-card__text">Каждый класс проверяется по 7 правилам. Всего проверок = 7 × кол-во классов. Каждое нарушение или рекомендация снижает Score. 100 = ни одной проблемы.</div>
               <div class="rules-card__src">Формула ШколаПлан</div>
             </div>
             <div class="rules-card rules-card--info">
