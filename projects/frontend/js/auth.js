@@ -86,9 +86,13 @@ function spRegister(name, school, email, password) {
     }).then(function (res) {
       if (res.error) return { ok: false, error: res.error.message };
       var u = res.data.user;
+      var session = res.data.session;
       var meta = (u && u.user_metadata) || {};
+      // Email confirmation is required when session is null after signup
+      var confirmRequired = !session;
       return {
         ok: true,
+        confirmRequired: confirmRequired,
         user: {
           id: u ? u.id : null,
           email: email,

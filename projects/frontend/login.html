@@ -64,6 +64,21 @@
     <button class="btn btn--primary btn--full" type="submit" id="regBtn">Зарегистрироваться</button>
     <p class="auth-form__switch">Уже есть аккаунт? <button type="button" class="auth-form__link" data-switch="login">Войти</button></p>
   </form>
+
+  <div class="auth-form" id="confirmPanel" style="display:none">
+    <div style="text-align:center;padding:16px 0 8px">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(41,151,255,.12);border:1.5px solid #2997ff;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:26px;">✉️</div>
+      <h2 class="auth-form__title" style="margin-bottom:10px">Подтвердите email</h2>
+      <p style="color:#86868b;font-size:.9rem;line-height:1.6;margin-bottom:24px">
+        Мы отправили письмо на <strong id="confirmEmail" style="color:#f5f5f7"></strong>.<br/>
+        Перейдите по ссылке в письме, чтобы активировать аккаунт.
+      </p>
+      <p style="color:#555;font-size:.8rem;margin-bottom:20px">Не получили письмо? Проверьте папку «Спам».</p>
+      <button class="btn btn--ghost btn--full" type="button" onclick="document.getElementById('confirmPanel').style.display='none';document.getElementById('loginForm').style.display='';document.getElementById('tabLogin').classList.add('auth-tab--active');document.getElementById('tabRegister').classList.remove('auth-tab--active');">
+        Войти
+      </button>
+    </div>
+  </div>
 </div></main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -113,7 +128,13 @@
         var next = new URLSearchParams(location.search).get('next') || '/account.html';
         location.href = next;
       } else {
-        err.textContent = res.error;
+        var msg = res.error;
+        if(msg && (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('email_not_confirmed'))){
+          msg = 'Email не подтверждён. Проверьте почту и перейдите по ссылке в письме.';
+        } else if(msg && msg.toLowerCase().includes('invalid login credentials')){
+          msg = 'Неверный email или пароль.';
+        }
+        err.textContent = msg;
         btn.disabled = false;
         btn.textContent = 'Войти';
       }
@@ -135,7 +156,15 @@
     btn.textContent = 'Регистрируем…';
     spRegister(name, school, email, pass).then(function(res){
       if(res.ok){
-        location.href = '/account.html';
+        if(res.confirmRequired){
+          var confirmEmail = document.getElementById('confirmEmail');
+          if(confirmEmail) confirmEmail.textContent = email;
+          document.getElementById('registerForm').style.display = 'none';
+          document.getElementById('authTabs').style.display = 'none';
+          document.getElementById('confirmPanel').style.display = '';
+        } else {
+          location.href = '/account.html';
+        }
       } else {
         err.textContent = res.error;
         btn.disabled = false;
