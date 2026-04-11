@@ -14,12 +14,15 @@
 <nav class="nav" id="nav"><div class="nav__inner">
   <a href="/" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
   <div class="nav__center">
+    <a href="#audit" class="nav__link">Аудит</a>
+    <a href="#wizard-section" class="nav__link">Составить расписание</a>
     <a href="#features" class="nav__link">Возможности</a>
-    <a href="/demo.html" class="nav__link">Демо</a>
+    <a href="#price" class="nav__link">Тарифы</a>
   </div>
   <div class="nav__right">
-    <div id="navGuestLinks">
-      <a href="/login.html" class="nav__link nav__link--cta">Войти</a>
+    <div id="navGuestLinks" class="nav__guest">
+      <a href="/login.html" class="nav__pill nav__pill--ghost">Войти</a>
+      <a href="/login.html?tab=register" class="nav__pill nav__pill--primary">Начать бесплатно</a>
     </div>
     <div id="navUserLink" style="display:none">
       <a href="/account.html" class="nav__user-link">
@@ -27,8 +30,25 @@
         <span class="nav__user-name" id="navUserName"></span>
       </a>
     </div>
+    <button class="nav__burger" id="navBurger" aria-label="Открыть меню">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </div></nav>
+
+<div class="nav__drawer" id="navDrawer">
+  <div class="nav__drawer-links">
+    <a href="#audit" class="nav__drawer-link">Аудит</a>
+    <a href="#wizard-section" class="nav__drawer-link">Составить расписание</a>
+    <a href="#features" class="nav__drawer-link">Возможности</a>
+    <a href="#price" class="nav__drawer-link">Тарифы</a>
+  </div>
+  <div class="nav__drawer-footer">
+    <a href="/login.html" class="nav__drawer-btn nav__drawer-btn--outline">Войти</a>
+    <a href="/login.html?tab=register" class="nav__drawer-btn nav__drawer-btn--primary">Начать бесплатно</a>
+  </div>
+</div>
+<div class="nav__backdrop" id="navBackdrop"></div>
 
 <section class="hero"><div class="hero__content">
   <h1 class="hero__title fade-in">Расписание.<br/><span class="hero__title--gradient">Переосмыслено.</span></h1>
@@ -48,7 +68,7 @@
   <div class="ribbon__stat fade-in fade-in--d2"><span class="ribbon__number" data-target="90">0</span><span class="ribbon__unit">%</span><span class="ribbon__label">быстрее ручного</span></div>
 </div></section>
 
-<section class="showcase showcase--dark"><div class="showcase__inner">
+<section class="showcase showcase--dark" id="audit"><div class="showcase__inner">
   <h2 class="showcase__title fade-in">СанПиН&#8209;аудит<br/>в один клик.</h2>
   <p class="showcase__text fade-in fade-in--d1">23 проверки. Менее 5 мс. Цветовые маркеры для каждого класса, каждого дня, каждого правила.</p>
   <div class="audit-upload-wrap fade-in fade-in--d2">
@@ -97,7 +117,7 @@
   <div class="card fade-in fade-in--d3"><p class="card__eyebrow">Экстренные замены</p><h3 class="card__title">Учитель заболел? 3 минуты вместо 45.</h3><p class="card__text">Система предложит план замен за 5 секунд с учётом нагрузки и СанПиН.</p></div>
 </div></section>
 
-<section class="price"><div class="price__inner fade-in">
+<section class="price" id="price"><div class="price__inner fade-in">
   <p class="price__eyebrow">Стоимость</p>
   <div class="price__amount">14 400 <span>₽/год</span></div>
   <p class="price__note">Бесплатный аудит. 14 дней полного доступа без оплаты.</p>
@@ -266,6 +286,18 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('inlineDemoTabRecs').style.display = which === 'recs' ? '' : 'none';
     });
   });
+
+  // Mobile nav drawer
+  var burger = document.getElementById('navBurger');
+  var backdrop = document.getElementById('navBackdrop');
+  var drawerLinks = document.querySelectorAll('.nav__drawer-link, .nav__drawer-btn');
+  function openDrawer() { document.body.classList.add('nav-open'); }
+  function closeDrawer() { document.body.classList.remove('nav-open'); }
+  if (burger) burger.addEventListener('click', function() {
+    document.body.classList.contains('nav-open') ? closeDrawer() : openDrawer();
+  });
+  if (backdrop) backdrop.addEventListener('click', closeDrawer);
+  drawerLinks.forEach(function(l) { l.addEventListener('click', closeDrawer); });
 });
 </script>
 </body>
