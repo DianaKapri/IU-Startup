@@ -233,7 +233,7 @@ function wizStartGeneration(){
     +'<div class="wiz-gen__done" id="wizGenDone" style="display:none">'
     +'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="#22c55e" stroke-width="1.5"/><path d="M6 11l3.5 3.5 6.5-7" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
     +'<span>Расписание готово!</span></div>'
-    +'<a href="/login.html?tab=register" class="wiz-gen__cta" id="wizGenCta" style="display:none">Открыть расписание →</a>'
+    +'<button onclick="wizOpenSchedule()" class="wiz-gen__cta" id="wizGenCta" style="display:none">Открыть расписание →</button>'
     +'</div>';
   var steps=[
     {pct:15,msg:'Анализируем учителей и кабинеты…'},
@@ -260,3 +260,46 @@ function wizStartGeneration(){
   setTimeout(tick,300);
 }
 function wizPrev(){if(wizStep>0){wizStep--;wizShowStep();}}
+
+function wizBuildSchedule(){
+  var days=wizData.days||5;
+  var classSubjects={},classGrades={};
+  wizData.teachers.forEach(function(t){
+    var sub=t.subject||'';
+    var code=normSubj(sub)||sub.toLowerCase().slice(0,6);
+    if(!code)return;
+    var hrs=parseInt(t.hoursPerWeek||t.hours)||2;
+    var classes=(t.classes||'').split(/[,;]+/).map(function(c){return c.trim();}).filter(Boolean);
+    classes.forEach(function(cls){
+      if(!classSubjects[cls])classSubjects[cls]=[];
+      classSubjects[cls].push({code:code,hours:hrs});
+      if(!classGrades[cls]){var m=cls.match(/^(\d+)/);classGrades[cls]=m?parseInt(m[1]):7;}
+    });
+  });
+  if(!Object.keys(classSubjects).length)return null;
+  var sch={};
+  Object.keys(classSubjects).forEach(function(cls){
+    var grade=classGrades[cls]||7;
+    var maxPD=grade<=4?5:grade<=8?6:7;
+    var lessons=[];
+    classSubjects[cls].forEach(function(s){for(var h=0;h<s.hours;h++)lessons.push(s.code);});
+    /* shuffle lessons */
+    for(var i=lessons.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=lessons[i];lessons[i]=lessons[j];lessons[j]=tmp;}
+    var dayArr=[];for(var d=0;d<5;d++)dayArr.push([]);
+    lessons.forEach(function(l){
+      var best=0,mn=dayArr[0].length;
+      for(var d=1;d<days;d++){if(dayArr[d].length<mn){mn=dayArr[d].length;best=d;}}
+      if(dayArr[best].length<maxPD)dayArr[best].push(l);
+    });
+    sch[cls]=dayArr;
+  });
+  return{sch:sch,cg:classGrades};
+}
+
+function wizOpenSchedule(){
+  var built=wizBuildSchedule();
+  if(!built){alert('Добавьте учителей с классами на шаге 2');return;}
+  built.school=wizData.schoolName||'';
+  try{sessionStorage.setItem('wizSchedule',JSON.stringify(built));}catch(e){}
+  window.location.href='/schedule.html';
+}

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Сгенерированное расписание — ШколаПлан</title>
+<link rel="stylesheet" href="/css/styles.css"/>
+<link rel="stylesheet" href="/css/demo.css"/>
+<link rel="stylesheet" href="/css/account.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<style>
+body{background:#000;color:#f5f5f7;min-height:100vh;}
+.sch-page{max-width:1100px;margin:0 auto;padding:100px 24px 60px;}
+.sch-header{margin-bottom:32px;}
+.sch-eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#0071e3;margin-bottom:8px;}
+.sch-title{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;letter-spacing:-.04em;color:#f5f5f7;margin-bottom:4px;}
+.sch-sub{font-size:.9rem;color:#86868b;}
+.sch-back{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:#86868b;text-decoration:none;margin-bottom:28px;transition:color .15s;}
+.sch-back:hover{color:#f5f5f7;}
+.sch-back svg{flex-shrink:0;}
+.sch-panel{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;margin-bottom:20px;}
+.sch-panel__title{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#86868b;margin-bottom:14px;}
+.sch-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.sch-tabs{display:flex;gap:6px;margin-bottom:18px;}
+.sch-tab{padding:6px 14px;border-radius:20px;font-size:.78rem;font-weight:500;border:1px solid rgba(255,255,255,.1);background:transparent;color:#86868b;cursor:pointer;transition:all .15s;}
+.sch-tab--active{background:rgba(0,113,227,.15);border-color:#0071e3;color:#0071e3;}
+.sch-cta-bar{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;}
+.sch-btn{padding:10px 22px;border-radius:8px;font-size:.86rem;font-weight:500;cursor:pointer;text-decoration:none;display:inline-block;transition:all .15s;font-family:var(--font);}
+.sch-btn--primary{background:#0071e3;color:#fff;border:none;}
+.sch-btn--primary:hover{background:#0077ed;}
+.sch-btn--ghost{background:transparent;color:#f5f5f7;border:1px solid rgba(255,255,255,.2);}
+.sch-btn--ghost:hover{border-color:rgba(255,255,255,.4);}
+.sch-empty{text-align:center;padding:60px 24px;color:#555;font-size:.9rem;}
+.sch-stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+.sch-stat{flex:1;min-width:100px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;}
+.sch-stat__val{font-size:1.4rem;font-weight:700;color:#f5f5f7;line-height:1;}
+.sch-stat__lbl{font-size:.7rem;color:#555;margin-top:4px;}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="nav__inner">
+  <a href="/" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
+</div></nav>
+
+<div class="sch-page">
+  <a href="/#wizard-section" class="sch-back"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Назад к мастеру</a>
+
+  <div class="sch-header">
+    <p class="sch-eyebrow">Результат генерации</p>
+    <h1 class="sch-title" id="schTitle">Расписание</h1>
+    <p class="sch-sub" id="schSub">Сгенерировано алгоритмом ШколаПлан с учётом норм СанПиН</p>
+  </div>
+
+  <div class="sch-stat-row" id="schStats"></div>
+
+  <div class="sch-panel">
+    <div class="sch-tabs">
+      <button class="sch-tab sch-tab--active" data-st="grid">Сетка расписания</button>
+      <button class="sch-tab" data-st="recs">Анализ нарушений</button>
+    </div>
+    <div id="schGrid"><div class="sch-tbl-wrap"><table class="acc-grid-tbl" id="schGridTbl"></table></div></div>
+    <div id="schRecs" style="display:none"></div>
+  </div>
+
+  <div class="sch-cta-bar">
+    <button class="sch-btn sch-btn--primary" onclick="window.print()">Распечатать</button>
+    <a href="/login.html?tab=register" class="sch-btn sch-btn--ghost">Сохранить и войти</a>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="/js/engine.js"></script>
+<script>
+(function(){
+  var raw;
+  try{raw=sessionStorage.getItem('wizSchedule');}catch(e){}
+  if(!raw){
+    document.getElementById('schTitle').textContent='Нет данных';
+    document.getElementById('schSub').textContent='Вернитесь и заполните мастер составления расписания';
+    return;
+  }
+  var data=JSON.parse(raw);
+  var sch=data.sch,cg=data.cg,school=data.school||'';
+
+  if(school){
+    document.getElementById('schTitle').textContent='Расписание — '+school;
+    document.title='Расписание | '+school+' | ШколаПлан';
+  }
+
+  var classCount=Object.keys(sch).length;
+  var totalLessons=0;
+  Object.keys(sch).forEach(function(c){sch[c].forEach(function(d){d.forEach(function(l){if(l)totalLessons++;});});});
+  var audit=doAudit(sch,cg);
+  var violations=audit.vi?audit.vi.length:0,warnings=audit.wa?audit.wa.length:0;
+
+  var statsEl=document.getElementById('schStats');
+  statsEl.innerHTML=[
+    {v:classCount,l:'Классов'},
+    {v:totalLessons,l:'Уроков / неделю'},
+    {v:audit.score!==undefined?audit.score:'—',l:'Оценка качества'},
+    {v:violations,l:'Нарушений СанПиН'}
+  ].map(function(s){
+    return '<div class="sch-stat"><div class="sch-stat__val">'+s.v+'</div><div class="sch-stat__lbl">'+s.l+'</div></div>';
+  }).join('');
+
+  var tbl=document.getElementById('schGridTbl');
+  renderGrid(sch,cg,audit,tbl);
+
+  var recsEl=document.getElementById('schRecs');
+  if(audit.top&&audit.top.length){renderRecs(audit.top,recsEl);}
+  else{recsEl.innerHTML='<p style="color:#555;font-size:.85rem;padding:20px 0">Нарушений не обнаружено — расписание соответствует нормам СанПиН</p>';}
+
+  document.querySelectorAll('.sch-tab').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.sch-tab').forEach(function(b){b.classList.remove('sch-tab--active');});
+      this.classList.add('sch-tab--active');
+      var which=this.getAttribute('data-st');
+      document.getElementById('schGrid').style.display=which==='grid'?'':'none';
+      document.getElementById('schRecs').style.display=which==='recs'?'':'none';
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
