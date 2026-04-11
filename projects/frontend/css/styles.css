@@ -226,6 +226,7 @@ a { text-decoration: none; color: inherit; }
 /* ===== CARDS ===== */
 .cards { background: var(--gray-bg); padding: 100px 24px; }
 .cards__inner { max-width: var(--max-w); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.cards__eyebrow-label { grid-column: 1 / -1; font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: 4px; }
 .card { background: var(--white); border-radius: 18px; padding: 44px 36px; transition: transform .3s; }
 .card:hover { transform: translateY(-4px); }
 .card--wide { grid-column: 1 / -1; }
@@ -413,6 +414,11 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 
 /* ── Audit upload block ── */
 .audit-upload-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:28px;}
+/* rules grid colour overrides for white background */
+.showcase--light .demo-rule__name { color: var(--black); }
+.showcase--light .demo-rule__desc { color: var(--gray-dark); }
+.showcase--light .demo-rule { background: var(--gray-bg); border-radius: 12px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+
 .audit-upload-btn{display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border:1.5px solid rgba(255,255,255,.18);border-radius:12px;color:#fff;cursor:pointer;font-size:.95rem;font-weight:500;transition:border-color .2s,background .2s;}
 .audit-upload-btn:hover{border-color:#3b82f6;background:rgba(59,130,246,.08);}
 .audit-upload-btn svg{flex-shrink:0;opacity:.85;}

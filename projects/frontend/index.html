@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>ШколаПлан — Расписание. Переосмыслено.</title>
 <link rel="stylesheet" href="/css/styles.css"/>
+<link rel="stylesheet" href="/css/demo.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
@@ -57,7 +58,17 @@
       <span>Загрузить своё расписание (.xlsx)</span>
     </label>
     <input type="file" id="auditFileInput" accept=".xlsx,.xls" style="display:none"/>
-    <a href="/demo.html" class="link-cta link-cta--muted audit-demo-link">Смотреть аудит на демо-данных ›</a>
+    <button class="link-cta link-cta--muted audit-demo-link" onclick="toggleInlineDemo()" style="background:none;border:none;cursor:pointer;padding:0;font:inherit">Смотреть аудит на демо-данных ›</button>
+  </div>
+  <div id="inlineDemo" style="display:none;margin-top:32px;text-align:left;width:100%">
+    <div class="demo-badge">Тестовые данные · Школа №42</div>
+    <div class="demo-tabs" id="inlineDemoTabs">
+      <button class="demo-tab demo-tab--active" data-tab="grid">Сетка</button>
+      <button class="demo-tab" data-tab="recs">Рекомендации</button>
+    </div>
+    <div class="demo-tab-desc" id="inlineDemoTabDesc"></div>
+    <div id="inlineDemoTabGrid" class="demo-tab-panel"></div>
+    <div id="inlineDemoTabRecs" class="demo-tab-panel" style="display:none"></div>
   </div>
   <div class="audit-template-row fade-in fade-in--d3">
     <a href="/assets/shablon-raspisaniya.xlsx" download class="audit-template-link">
@@ -65,6 +76,35 @@
       Скачать шаблон расписания
     </a>
   </div>
+</div></section>
+
+<section class="showcase showcase--light"><div class="showcase__inner">
+  <h2 class="showcase__title fade-in">Что проверяет ШколаПлан</h2>
+  <div class="demo-rules__grid" style="margin-top:32px;text-align:left">
+    <div class="demo-rule fade-in"><div class="demo-rule__code">C-01</div><div><p class="demo-rule__name">Дневная нагрузка</p><p class="demo-rule__desc">Число уроков в день не превышает норму для параллели (5–7 уроков). СП 2.4.3648-20, п. 3.4.</p></div></div>
+    <div class="demo-rule fade-in fade-in--d1"><div class="demo-rule__code">C-02</div><div><p class="demo-rule__name">Недельная нагрузка</p><p class="demo-rule__desc">Суммарное число уроков соответствует санитарным нормам. СанПиН 1.2.3685-21, Таблица 6.6.</p></div></div>
+    <div class="demo-rule fade-in fade-in--d2"><div class="demo-rule__code">C-03</div><div><p class="demo-rule__name">Сдвоенные уроки</p><p class="demo-rule__desc">Один предмет не стоит подряд более одного раза в день (кроме лабораторных).</p></div></div>
+    <div class="demo-rule fade-in"><div class="demo-rule__code">E-01</div><div><p class="demo-rule__name">Трудные предметы утром</p><p class="demo-rule__desc">Математика, физика, химия — во второй-четвёртой позиции, когда работоспособность максимальна.</p></div></div>
+    <div class="demo-rule fade-in fade-in--d1"><div class="demo-rule__code">E-02</div><div><p class="demo-rule__name">Пик нагрузки в середине недели</p><p class="demo-rule__desc">Среда и четверг — самые нагруженные дни; понедельник и пятница — облегчённые.</p></div></div>
+    <div class="demo-rule fade-in fade-in--d2"><div class="demo-rule__code">E-03</div><div><p class="demo-rule__name">Профильные предметы</p><p class="demo-rule__desc">ОБЖ, физкультура, музыка, изо — не в первой позиции и не стоят перед контрольными.</p></div></div>
+    <div class="demo-rule fade-in fade-in--d3"><div class="demo-rule__code">X-01</div><div><p class="demo-rule__name">Конфликты ресурсов</p><p class="demo-rule__desc">Учитель или кабинет не ведёт два урока одновременно. Пересечения выделяются красным.</p></div></div>
+  </div>
+</div></section>
+
+<section class="cards" id="features"><div class="cards__inner">
+  <p class="cards__eyebrow-label fade-in">Возможности</p>
+  <div class="card fade-in"><p class="card__eyebrow">Импорт</p><h3 class="card__title">Умный парсер с нечётким сопоставлением</h3><p class="card__text">«Иванова М.П.» и «Иванова Мария Петровна» — один человек. Работает с любыми таблицами.</p></div>
+  <div class="card fade-in fade-in--d1"><p class="card__eyebrow">Проектная деятельность</p><h3 class="card__title">Слоты для межклассных групп</h3><p class="card__text">Тепловая карта доступности без конфликтов.</p></div>
+  <div class="card fade-in fade-in--d2"><p class="card__eyebrow">Конфликты</p><h3 class="card__title">Проверка в реальном времени</h3><p class="card__text">Конфликты подсвечиваются мгновенно при каждом изменении.</p></div>
+  <div class="card fade-in fade-in--d3"><p class="card__eyebrow">Экстренные замены</p><h3 class="card__title">Учитель заболел? 3 минуты вместо 45.</h3><p class="card__text">Система предложит план замен за 5 секунд с учётом нагрузки и СанПиН.</p></div>
+</div></section>
+
+<section class="price"><div class="price__inner fade-in">
+  <p class="price__eyebrow">Стоимость</p>
+  <div class="price__amount">14 400 <span>₽/год</span></div>
+  <p class="price__note">Бесплатный аудит. 14 дней полного доступа без оплаты.</p>
+  <a href="/login.html?tab=register" class="link-cta link-cta--blue">Начать бесплатно ›</a>
+  <a href="/subscription.html" class="link-cta link-cta--muted" style="margin-left:12px">Подробнее о тарифах</a>
 </div></section>
 
 <!-- ═══ WIZARD: С чего начнём? ═══ -->
@@ -93,7 +133,6 @@
   <p class="wiz-flow__label" id="wizStepLabel"></p>
   <span class="wiz-flow__close" onclick="wizClose()">✕</span>
 </div>
-
 <div id="wizProgress" class="wiz-progress" style="display:none">
   <div class="wiz-progress__track">
     <div class="wiz-progress__bg"></div>
@@ -104,8 +143,6 @@
     <div class="wiz-progress__step" id="ws4"><div class="wiz-progress__dot">4</div><p>Готово</p></div>
   </div>
 </div>
-
-<!-- Step 0: Auth -->
 <div id="wizStep0" class="wiz-step">
   <div class="wiz-auth-box">
     <div class="wiz-auth-box__icon"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="6" r="3" stroke="#3b82f6" stroke-width="1.5"/><path d="M3 16c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/></svg></div>
@@ -117,8 +154,6 @@
     </div>
   </div>
 </div>
-
-<!-- Step 1: School -->
 <div id="wizStep1" class="wiz-step" style="display:none">
   <div class="wiz-field"><label class="wiz-label">НАЗВАНИЕ ШКОЛЫ</label><div class="wiz-input">Школа №42, г. Москва</div></div>
   <div class="wiz-field"><label class="wiz-label">УЧЕБНЫЙ ПЛАН</label>
@@ -132,8 +167,6 @@
     <div class="wiz-field"><label class="wiz-label">ДНЕЙ В НЕДЕЛЕ</label><div class="wiz-toggle"><span class="wiz-toggle__opt wiz-toggle__opt--on">5</span><span class="wiz-toggle__opt">6</span></div></div>
   </div>
 </div>
-
-<!-- Step 2: Teachers -->
 <div id="wizStep2" class="wiz-step" style="display:none">
   <div class="wiz-upload-row" style="margin-bottom:12px">
     <div class="wiz-dropzone"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2v12m0 0l-4-4m4 4l4-4M3 16h14" stroke="#555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><p>Загрузить .xlsx</p><p class="wiz-dropzone__hint">перетащите или выберите</p></div>
@@ -148,8 +181,6 @@
     <div class="wiz-table__add">+ добавить учителя</div>
   </div>
 </div>
-
-<!-- Step 3: Rooms -->
 <div id="wizStep3" class="wiz-step" style="display:none">
   <p class="wiz-hint" style="margin-bottom:12px">Кабинеты по этажам — алгоритм минимизирует переходы</p>
   <div class="wiz-floor"><div class="wiz-floor__label"><div class="wiz-floor__dot" style="background:#3b82f6"></div><p>1 этаж</p></div>
@@ -169,13 +200,10 @@
       <div class="wiz-table__add">+ кабинет</div></div></div>
   <div class="wiz-add-floor">+ добавить этаж</div>
 </div>
-
-<!-- Step 4: Done -->
 <div id="wizStep4" class="wiz-step" style="display:none">
   <div class="wiz-done"><div class="wiz-done__icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10l4 4 8-8" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <p class="wiz-done__title">Всё готово</p><p class="wiz-done__desc">Расписание будет готово за минуту</p></div>
 </div>
-
 <div class="wiz-flow__btns">
   <div id="wizBack" class="wiz-btn wiz-btn--ghost" onclick="wizPrev()" style="display:none">Назад</div>
   <div id="wizNext" class="wiz-btn wiz-btn--primary" onclick="wizNext()" style="display:none">Далее →</div>
@@ -184,42 +212,53 @@
 
 </div></section>
 
-<section class="showcase showcase--light" style="padding:56px 24px"><div class="showcase__inner" style="text-align:center">
-  <p class="showcase__eyebrow fade-in">Возможности</p>
-</div></section>
-
-<section class="cards" id="features"><div class="cards__inner">
-  <div class="card fade-in"><p class="card__eyebrow">Импорт</p><h3 class="card__title">Умный парсер с нечётким сопоставлением</h3><p class="card__text">«Иванова М.П.» и «Иванова Мария Петровна» — один человек. Работает с любыми таблицами.</p></div>
-  <div class="card fade-in fade-in--d1"><p class="card__eyebrow">Проектная деятельность</p><h3 class="card__title">Слоты для межклассных групп</h3><p class="card__text">Тепловая карта доступности без конфликтов.</p></div>
-  <div class="card fade-in fade-in--d2"><p class="card__eyebrow">Конфликты</p><h3 class="card__title">Проверка в реальном времени</h3><p class="card__text">Конфликты подсвечиваются мгновенно при каждом изменении.</p></div>
-  <div class="card fade-in fade-in--d3"><p class="card__eyebrow">Экстренные замены</p><h3 class="card__title">Учитель заболел? 3 минуты вместо 45.</h3><p class="card__text">Система предложит план замен за 5 секунд с учётом нагрузки и СанПиН.</p></div>
-</div></section>
-
-<section class="price"><div class="price__inner fade-in">
-  <p class="price__eyebrow">Стоимость</p>
-  <div class="price__amount">14 400 <span>₽/год</span></div>
-  <p class="price__note">Бесплатный аудит. 14 дней полного доступа без оплаты.</p>
-  <a href="/login.html?tab=register" class="link-cta link-cta--blue">Начать бесплатно ›</a>
-  <a href="/subscription.html" class="link-cta link-cta--muted" style="margin-left:12px">Подробнее о тарифах</a>
-</div></section>
-
-<section class="cta-register" id="cta-register"><div class="cta-register__inner fade-in">
-  <p class="cta-register__eyebrow">Присоединяйтесь</p>
-  <h2 class="cta-register__title">Создайте аккаунт бесплатно</h2>
-  <p class="cta-register__desc">Загрузите расписание своей школы и получите полный аудит по СанПиН. 14 дней полного доступа — никаких банковских карт.</p>
-  <div class="cta-register__actions">
-    <a href="/login.html?tab=register" class="link-cta link-cta--blue">Зарегистрироваться →</a>
-    <a href="/login.html" class="link-cta link-cta--muted">Уже есть аккаунт? Войти</a>
-  </div>
-</div></section>
-
 <footer class="footer"><div class="footer__inner">
   <span class="footer__logo">ШколаПлан</span><span class="footer__copy">© 2026 ШколаПлан</span>
 </div></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/engine.js"></script>
 <script src="/js/scripts.js"></script>
-<script>spInitNav();</script>
+<script>
+spInitNav();
+
+var _inlineDemoReady = false;
+function toggleInlineDemo() {
+  var panel = document.getElementById('inlineDemo');
+  var visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if (!visible && !_inlineDemoReady) {
+    _inlineDemoReady = true;
+    try {
+      var audit = doAudit(DEM, DCG);
+      var gridEl = document.getElementById('inlineDemoTabGrid');
+      var tbl = document.createElement('table');
+      tbl.className = 'acc-grid-tbl';
+      gridEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
+      gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
+      renderGrid(DEM, DCG, audit, tbl);
+      var recsEl = document.getElementById('inlineDemoTabRecs');
+      renderRecs(audit.top, recsEl);
+    } catch(e) { console.warn('Demo init error:', e); }
+  }
+  if (!visible) {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var tabs = document.querySelectorAll('#inlineDemoTabs .demo-tab');
+  tabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      tabs.forEach(function(t){ t.classList.remove('demo-tab--active'); });
+      this.classList.add('demo-tab--active');
+      var which = this.getAttribute('data-tab');
+      document.getElementById('inlineDemoTabGrid').style.display = which === 'grid' ? '' : 'none';
+      document.getElementById('inlineDemoTabRecs').style.display = which === 'recs' ? '' : 'none';
+    });
+  });
+});
+</script>
 </body>
 </html>
