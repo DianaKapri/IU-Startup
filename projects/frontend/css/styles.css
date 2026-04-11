@@ -269,7 +269,7 @@ body.nav-open .nav__backdrop { opacity: 1; pointer-events: all; }
 .ribbon__inner { max-width: var(--max-w); margin: 0 auto; display: flex; justify-content: center; align-items: flex-end; gap: 60px; flex-wrap: wrap; }
 .ribbon__stat { text-align: center; display: flex; flex-direction: column; align-items: center; }
 .ribbon__number { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 700; letter-spacing: -.03em; color: #fff; line-height: 1.1; }
-.text-\[34px\] { font-size: 34px !important; }
+.text-\[35px\] { font-size: 35px !important; }
 .ribbon__headline { display: block; font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 700; letter-spacing: -.03em; color: #fff; line-height: 1.1; }
 .ribbon__unit { font-size: clamp(1rem, 2vw, 1.4rem); font-weight: 700; color: #fff; }
 .ribbon__label { display: block; font-size: .82rem; color: var(--gray-mid); margin-top: 6px; }
