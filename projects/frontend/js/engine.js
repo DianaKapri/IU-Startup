@@ -226,7 +226,7 @@ function normSubj(raw){
 /* ═══ Excel-парсер ═══ */
 var DYM={'понедельник':'Пн','пн':'Пн','понед':'Пн','вторник':'Вт','вт':'Вт','втор':'Вт','среда':'Ср','ср':'Ср','сред':'Ср','четверг':'Чт','чт':'Чт','четв':'Чт','пятница':'Пт','пт':'Пт','пятн':'Пт','суббота':'Сб','сб':'Сб','субб':'Сб'};
 function parseDay(r){if(!r)return null;var s=String(r).toLowerCase().replace(/[.\s]/g,'').trim();return DYM[s]||null;}
-function isClassName(s){if(!s)return false;var v=String(s).trim();return /^\d{1,2}\s*[А-Яа-яA-Za-z]{0,2}$/.test(v)&&parseInt(v)>=1&&parseInt(v)<=11;}
+function isClassName(s){if(!s)return false;var v=String(s).trim();return /^\d{1,2}\s*[А-Яа-яA-Za-z]{1,2}$/.test(v)&&parseInt(v)>=1&&parseInt(v)<=11;}
 function cellStr(v){return v==null?'':String(v).trim();}
 
 function parseXls(file){
