@@ -115,6 +115,7 @@ body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 /* ─── Table wrapper (grid / heat) ─── */
 .acc-tbl-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,.07); }
 .acc-grid-tbl { width: max-content; border-collapse: collapse; font-size: .76rem; }
+.tbl-hdr-cls { position: sticky; left: 0; z-index: 3; background: #0a0a0a; }
 .acc-heat-tbl { width: 100%; border-collapse: collapse; font-size: .76rem; }
 .acc-grid-tbl th, .acc-grid-tbl td,
 .acc-heat-tbl th, .acc-heat-tbl td {

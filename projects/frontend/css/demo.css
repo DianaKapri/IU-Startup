@@ -104,6 +104,7 @@
 .tbl-day-hdr { border-left: 2px solid rgba(255,255,255,.1); }
 .tbl-num-hdr { font-size: .6rem; color: #6e6e73; }
 .tbl-num-hdr--first { border-left: 2px solid rgba(255,255,255,.1); }
+.tbl-hdr-cls { position: sticky; left: 0; z-index: 3; background: rgba(0,0,0,.9); }
 .tbl-cls-cell { position: sticky; left: 0; z-index: 2; background: rgba(0,0,0,.9); font-weight: 700; font-size: .72rem; padding: 0 6px; cursor: help; }
 .tbl-cell { padding: 1px; }
 .tbl-cell--first { border-left: 2px solid rgba(255,255,255,.1); }

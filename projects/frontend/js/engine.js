@@ -407,9 +407,9 @@ function renderGrid(sch,cg,au,tbl){
   var sorted=_sortClasses(classes,cg,au);
 
   /* Table header */
-  var h='<thead><tr><th></th>';
+  var h='<thead><tr><th class="tbl-hdr-cls"></th>';
   DN.forEach(function(d){h+='<th colspan="'+ml+'" class="tbl-day-hdr">'+d+'</th>';});
-  h+='</tr><tr><th></th>';
+  h+='</tr><tr><th class="tbl-hdr-cls"></th>';
   DN.forEach(function(){for(var i=0;i<ml;i++)h+='<th class="tbl-num-hdr'+(i===0?' tbl-num-hdr--first':'')+'">'+(i+1)+'</th>';});
   h+='</tr></thead><tbody>';
 
