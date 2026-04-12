@@ -573,17 +573,69 @@ function _renderOptimizedTab(sch, cg, origAudit) {
     h += '<div style="text-align:center"><div style="font-size:.7rem;color:#86868b;margin-bottom:2px">Стало</div><div style="font-size:1.3rem;font-weight:700;color:' + (optAudit.score >= 90 ? '#30d158' : optAudit.score >= 70 ? '#ffd60a' : '#ff453a') + '">' + optAudit.score + '</div></div>';
     if (diffS > 0) h += '<div style="font-size:.85rem;font-weight:600;color:#30d158;padding:4px 12px;background:rgba(48,209,88,.1);border-radius:8px">+' + diffS + ' баллов</div>';
     h += '</div>';
-    h += '<div style="display:flex;gap:14px;font-size:.78rem;flex-wrap:wrap">';
+    h += '<div style="display:flex;gap:14px;font-size:.78rem;flex-wrap:wrap;margin-bottom:8px">';
     if (diffV > 0) h += '<span style="color:#30d158">−' + diffV + ' нарушений</span>';
     if (diffW > 0) h += '<span style="color:#30d158">−' + diffW + ' рекомендаций</span>';
-    if (optAudit.vi.length > 0) h += '<span style="color:#ff453a">' + optAudit.vi.length + ' неисправимых нарушений (структурные — нужна ручная корректировка)</span>';
-    h += '</div></div>';
+    h += '</div>';
+
+    /* Analyze remaining violations — give specific advice */
+    if (optAudit.vi.length > 0) {
+      var WM_map={1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
+      var DX_map={1:4,2:5,3:5,4:5,5:6,6:6,7:7,8:7,9:7,10:7,11:7};
+      var tips = [];
+      optAudit.vi.forEach(function(v) {
+        var g = cg[v.cls] || 5;
+        if (v.id === 'C-02') {
+          var days = opt[v.cls];
+          var total = 0;
+          days.forEach(function(d){ d.forEach(function(s){ if(s) total++; }); });
+          var wm = WM_map[g] || 34;
+          var over = total - wm;
+          tips.push({ cls: v.cls, text: v.cls + ': ' + total + ' ч/нед (макс ' + wm + ') — уберите ' + over + ' ч из учебного плана', type: 'plan' });
+        } else if (v.id === 'C-01') {
+          tips.push({ cls: v.cls, text: v.ds, type: 'daily' });
+        } else if (v.id === 'C-03') {
+          tips.push({ cls: v.cls, text: v.ds, type: 'balance' });
+        } else if (v.id === 'E-02') {
+          tips.push({ cls: v.cls, text: v.ds, type: 'light' });
+        } else {
+          tips.push({ cls: v.cls, text: v.id + ': ' + v.ds, type: 'other' });
+        }
+      });
+
+      /* Group: C-02 first (plan issues), then others */
+      var planTips = tips.filter(function(t){ return t.type === 'plan'; });
+      var otherTips = tips.filter(function(t){ return t.type !== 'plan'; });
+
+      h += '<div style="margin-top:8px;padding:12px 16px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.15);border-radius:10px">';
+      h += '<div style="font-size:.82rem;font-weight:600;color:#ff453a;margin-bottom:8px">' + optAudit.vi.length + ' нарушений не удалось исправить автоматически</div>';
+
+      if (planTips.length) {
+        h += '<div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-bottom:6px"><b style="color:#ff9f0a">Превышение учебного плана:</b></div>';
+        planTips.forEach(function(t) {
+          h += '<div style="font-size:.78rem;color:rgba(255,255,255,.6);padding:3px 0;padding-left:12px;border-left:2px solid #ff453a;margin-bottom:4px">' + t.text + '</div>';
+        });
+        h += '<div style="font-size:.75rem;color:#30d158;margin:6px 0 8px;padding-left:12px">💡 Рекомендуем: пересмотрите учебный план — сократите количество часов до нормы СанПиН</div>';
+      }
+
+      if (otherTips.length) {
+        h += '<div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-bottom:4px"><b style="color:#ff9f0a">Другие нарушения:</b></div>';
+        otherTips.forEach(function(t) {
+          h += '<div style="font-size:.78rem;color:rgba(255,255,255,.6);padding:3px 0;padding-left:12px;border-left:2px solid #ff9f0a;margin-bottom:4px">' + t.text + '</div>';
+        });
+        h += '<div style="font-size:.75rem;color:#30d158;margin:6px 0;padding-left:12px">💡 Рекомендуем: перераспределите уроки между днями вручную</div>';
+      }
+
+      h += '</div>';
+    }
+
+    h += '</div>';
 
     var tbl = document.createElement('table');
     tbl.className = 'acc-grid-tbl';
     el.innerHTML = h + '<div class="acc-tbl-wrap"></div>';
     el.querySelector('.acc-tbl-wrap').appendChild(tbl);
-    renderGrid(opt, cg, optAudit, tbl);
+    renderGrid(opt, cg, optAudit, tbl, true);
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }
