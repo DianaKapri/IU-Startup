@@ -784,10 +784,12 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .sched-params--light .sched-param { background: #fff; border-color: rgba(0,0,0,.06); }
 
 .how-section--white { background: #fff; }
+.how-section--white .how__eyebrow { color: #6e6e73; }
 .how-section--white .how__title { color: #1d1d1f; }
-.how-section--white .how-step__num { color: #2997ff; background: rgba(41,151,255,.08); }
-.how-section--white .how-step__title { color: #1d1d1f; }
-.how-section--white .how-step__desc { color: #6e6e73; }
+.how-section--white .how__step { background: #f5f5f7; border-color: rgba(0,0,0,.06); }
+.how-section--white .how__step-num { color: #2997ff; }
+.how-section--white .how__step-title { color: #1d1d1f; }
+.how-section--white .how__step-desc { color: #4a4a4f; }
 
 .price--light { background: #f5f5f7; }
 .price--light .price__eyebrow { color: #86868b; }
