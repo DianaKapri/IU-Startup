@@ -74,7 +74,7 @@
   <h2 class="showcase__title fade-in">СанПиН&#8209;аудит<br/>в один клик.</h2>
   <div class="audit-upload-wrap fade-in fade-in--d2">
     <label class="audit-upload-btn" for="auditFileInput">
-      <svg width="52" height="52" viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="18" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M14 11v8M10 15l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.6"/></svg>
+      <svg width="52" height="52" viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="18" rx="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M14 11v8M10 15l4-4 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 6V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.1"/></svg>
       <span>Загрузить своё расписание (.xlsx)</span>
     </label>
     <input type="file" id="auditFileInput" accept=".xlsx,.xls" style="display:none"/>
@@ -279,57 +279,58 @@
 </div></section>
 
 <!-- ═══ SCHEDULE GEN: visual intro ═══ -->
-<section class="sched-hero"><div class="sched-hero__inner">
-  <div class="sched-hero__graphic" aria-hidden="true">
-    <div class="sg-grid">
-      <div class="sg-grid__hdr">
-        <span></span><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span>
-      </div>
-      <div class="sg-grid__row">
-        <span class="sg-grid__time">08:00</span>
-        <span class="sg-cell sg-cell--blue" style="--d:0s">Математика</span>
-        <span class="sg-cell sg-cell--green" style="--d:.15s">Физика</span>
-        <span class="sg-cell sg-cell--purple" style="--d:.30s">Химия</span>
-        <span class="sg-cell sg-cell--blue" style="--d:.45s">Русский</span>
-        <span class="sg-cell sg-cell--orange" style="--d:.60s">История</span>
-      </div>
-      <div class="sg-grid__row">
-        <span class="sg-grid__time">09:00</span>
-        <span class="sg-cell sg-cell--green" style="--d:.20s">Биология</span>
-        <span class="sg-cell sg-cell--blue" style="--d:.35s">Математика</span>
-        <span class="sg-cell sg-cell--orange" style="--d:.50s">История</span>
-        <span class="sg-cell sg-cell--purple" style="--d:.65s">Химия</span>
-        <span class="sg-cell sg-cell--green" style="--d:.80s">Физика</span>
-      </div>
-      <div class="sg-grid__row">
-        <span class="sg-grid__time">10:00</span>
-        <span class="sg-cell sg-cell--purple" style="--d:.40s">Химия</span>
-        <span class="sg-cell sg-cell--orange" style="--d:.55s">История</span>
-        <span class="sg-cell sg-cell--blue" style="--d:.70s">Русский</span>
-        <span class="sg-cell sg-cell--green" style="--d:.85s">Биология</span>
-        <span class="sg-cell sg-cell--blue" style="--d:1.0s">Математика</span>
-      </div>
-      <div class="sg-grid__row">
-        <span class="sg-grid__time">11:00</span>
-        <span class="sg-cell sg-cell--orange" style="--d:.60s">История</span>
-        <span class="sg-cell sg-cell--purple" style="--d:.75s">Химия</span>
-        <span class="sg-cell sg-cell--green" style="--d:.90s">Физика</span>
-        <span class="sg-cell sg-cell--blue" style="--d:1.05s">Математика</span>
-        <span class="sg-cell sg-cell--purple" style="--d:1.20s">Химия</span>
-      </div>
+<section class="showcase showcase--dark" id="schedule-gen"><div class="showcase__inner">
+  <p class="showcase__eyebrow fade-in">Составление расписания</p>
+  <h2 class="showcase__title fade-in">Расписание под вашу школу —<br/>с нуля за 30 минут</h2>
+  <p class="showcase__text fade-in">Введите параметры один раз. Система сама распределит учителей, кабинеты и уроки — с соблюдением СанПиН, без окон и перегрузок.</p>
+</div>
+<div class="sched-hero__graphic-wrap fade-in fade-in--d2" aria-hidden="true">
+  <div class="sg-grid">
+    <div class="sg-grid__hdr">
+      <span></span><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span>
     </div>
-    <div class="sg-badge">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#22c55e" stroke-width="1.4"/><path d="M4.5 7l2 2 3-3" stroke="#22c55e" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      СанПиН: все нормы соблюдены
+    <div class="sg-grid__row">
+      <span class="sg-grid__time">08:00</span>
+      <span class="sg-cell sg-cell--blue" style="--d:0s">Математика</span>
+      <span class="sg-cell sg-cell--green" style="--d:.15s">Физика</span>
+      <span class="sg-cell sg-cell--purple" style="--d:.30s">Химия</span>
+      <span class="sg-cell sg-cell--blue" style="--d:.45s">Русский</span>
+      <span class="sg-cell sg-cell--orange" style="--d:.60s">История</span>
+    </div>
+    <div class="sg-grid__row">
+      <span class="sg-grid__time">09:00</span>
+      <span class="sg-cell sg-cell--green" style="--d:.20s">Биология</span>
+      <span class="sg-cell sg-cell--blue" style="--d:.35s">Математика</span>
+      <span class="sg-cell sg-cell--orange" style="--d:.50s">История</span>
+      <span class="sg-cell sg-cell--purple" style="--d:.65s">Химия</span>
+      <span class="sg-cell sg-cell--green" style="--d:.80s">Физика</span>
+    </div>
+    <div class="sg-grid__row">
+      <span class="sg-grid__time">10:00</span>
+      <span class="sg-cell sg-cell--purple" style="--d:.40s">Химия</span>
+      <span class="sg-cell sg-cell--orange" style="--d:.55s">История</span>
+      <span class="sg-cell sg-cell--blue" style="--d:.70s">Русский</span>
+      <span class="sg-cell sg-cell--green" style="--d:.85s">Биология</span>
+      <span class="sg-cell sg-cell--blue" style="--d:1.0s">Математика</span>
+    </div>
+    <div class="sg-grid__row">
+      <span class="sg-grid__time">11:00</span>
+      <span class="sg-cell sg-cell--orange" style="--d:.60s">История</span>
+      <span class="sg-cell sg-cell--purple" style="--d:.75s">Химия</span>
+      <span class="sg-cell sg-cell--green" style="--d:.90s">Физика</span>
+      <span class="sg-cell sg-cell--blue" style="--d:1.05s">Математика</span>
+      <span class="sg-cell sg-cell--purple" style="--d:1.20s">Химия</span>
     </div>
   </div>
-  <div class="sched-hero__text">
-    <p class="sched-hero__eyebrow">СОСТАВЛЕНИЕ РАСПИСАНИЯ</p>
-    <h2 class="sched-hero__title">Расписание под вашу школу — с нуля за 30 минут</h2>
-    <p class="sched-hero__desc">Введите параметры один раз. Система сама распределит учителей, кабинеты и уроки — с соблюдением СанПиН, без окон и перегрузок.</p>
-    <a href="/login.html?tab=register" class="btn btn--primary">Попробовать бесплатно →</a>
+  <div class="sg-badge">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#22c55e" stroke-width="1.4"/><path d="M4.5 7l2 2 3-3" stroke="#22c55e" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    СанПиН: все нормы соблюдены
   </div>
-</div></section>
+</div>
+<div style="text-align:center;padding:0 24px 80px;" class="fade-in fade-in--d3">
+  <a href="/login.html?tab=register" class="btn btn--primary btn--lg">Попробовать бесплатно →</a>
+</div>
+</section>
 
 <!-- ═══ SCHEDULE GEN: what's considered ═══ -->
 <section class="sched-params"><div class="sched-params__inner">
