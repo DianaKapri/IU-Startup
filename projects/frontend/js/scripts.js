@@ -180,8 +180,8 @@ function wizSelect(i){
 
 function wizOpen(){
   if(wizSel<0)return;
-  /* Path 0 = audit → redirect to demo page */
-  if(wizSel===0){window.location.href='/demo.html';return;}
+  /* Path 0 = audit → show inline demo */
+  if(wizSel===0){showInlineDemo();return;}
   /* Path 1 = generation → open wizard */
   var l=document.getElementById('wizLanding'),f=document.getElementById('wizFlow');
   if(l)l.style.display='none';
