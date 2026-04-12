@@ -260,8 +260,8 @@ body.nav-open .nav__backdrop { opacity: 1; pointer-events: all; }
 .mockup__row--green .mockup__dot { background: var(--green); }
 .mockup__row--red .mockup__dot { background: var(--red); }
 .mockup__row--yellow .mockup__dot { background: var(--yellow); }
-.mockup__label { font-size: .85rem; font-weight: 500; color: #f5f5f7; white-space: nowrap; }
-.mockup__value { font-size: .78rem; color: var(--gray-mid); text-align: right; }
+.mockup__label { font-size: .85rem; font-weight: 500; color: #f5f5f7; white-space: nowrap; flex: 1; text-align: left; }
+.mockup__value { font-size: .78rem; color: var(--gray-mid); text-align: right; white-space: nowrap; flex-shrink: 0; }
 .mockup__row--red .mockup__value { color: var(--red); }
 .mockup__row--yellow .mockup__value { color: var(--yellow); }
 
