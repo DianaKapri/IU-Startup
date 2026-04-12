@@ -578,55 +578,33 @@ function _renderOptimizedTab(sch, cg, origAudit) {
     if (diffW > 0) h += '<span style="color:#30d158">−' + diffW + ' рекомендаций</span>';
     h += '</div>';
 
-    /* Analyze remaining violations — give specific advice */
-    if (optAudit.vi.length > 0) {
-      var WM_map={1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
-      var DX_map={1:4,2:5,3:5,4:5,5:6,6:6,7:7,8:7,9:7,10:7,11:7};
-      var tips = [];
-      optAudit.vi.forEach(function(v) {
+    /* Show only C-02 (weekly overload) — the only truly unfixable violation */
+    var WM_map={1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
+    var c02list = [];
+    optAudit.vi.forEach(function(v) {
+      if (v.id === 'C-02') {
         var g = cg[v.cls] || 5;
-        if (v.id === 'C-02') {
-          var days = opt[v.cls];
-          var total = 0;
-          days.forEach(function(d){ d.forEach(function(s){ if(s) total++; }); });
-          var wm = WM_map[g] || 34;
-          var over = total - wm;
-          tips.push({ cls: v.cls, text: v.cls + ': ' + total + ' ч/нед (макс ' + wm + ') — уберите ' + over + ' ч из учебного плана', type: 'plan' });
-        } else if (v.id === 'C-01') {
-          tips.push({ cls: v.cls, text: v.ds, type: 'daily' });
-        } else if (v.id === 'C-03') {
-          tips.push({ cls: v.cls, text: v.ds, type: 'balance' });
-        } else if (v.id === 'E-02') {
-          tips.push({ cls: v.cls, text: v.ds, type: 'light' });
-        } else {
-          tips.push({ cls: v.cls, text: v.id + ': ' + v.ds, type: 'other' });
-        }
+        var days = opt[v.cls];
+        var total = 0;
+        days.forEach(function(d){ d.forEach(function(s){ if(s) total++; }); });
+        var wm = WM_map[g] || 34;
+        c02list.push({ cls: v.cls, total: total, max: wm, over: total - wm, grade: g });
+      }
+    });
+
+    if (c02list.length) {
+      h += '<div class="sp-alert sp-alert--warn">';
+      h += '<div class="sp-alert__icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L1.5 17h17L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v4M10 14v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>';
+      h += '<div class="sp-alert__body">';
+      h += '<div class="sp-alert__title">Превышение недельной нагрузки</div>';
+      h += '<div class="sp-alert__desc">В учебном плане больше часов, чем допускает СанПиН 1.2.3685-21 (табл. 6.6). Автоматическая оптимизация не может убрать лишние уроки — нужна ручная корректировка.</div>';
+      h += '<div class="sp-alert__list">';
+      c02list.forEach(function(c) {
+        h += '<div class="sp-alert__item"><span class="sp-alert__cls">' + c.cls + '</span><span class="sp-alert__detail">' + c.total + ' ч/нед (максимум ' + c.max + ' для ' + c.grade + ' кл.) — сократите на ' + c.over + ' ч</span></div>';
       });
-
-      /* Group: C-02 first (plan issues), then others */
-      var planTips = tips.filter(function(t){ return t.type === 'plan'; });
-      var otherTips = tips.filter(function(t){ return t.type !== 'plan'; });
-
-      h += '<div style="margin-top:8px;padding:12px 16px;background:rgba(255,69,58,.06);border:1px solid rgba(255,69,58,.15);border-radius:10px">';
-      h += '<div style="font-size:.82rem;font-weight:600;color:#ff453a;margin-bottom:8px">' + optAudit.vi.length + ' нарушений не удалось исправить автоматически</div>';
-
-      if (planTips.length) {
-        h += '<div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-bottom:6px"><b style="color:#ff9f0a">Превышение учебного плана:</b></div>';
-        planTips.forEach(function(t) {
-          h += '<div style="font-size:.78rem;color:rgba(255,255,255,.6);padding:3px 0;padding-left:12px;border-left:2px solid #ff453a;margin-bottom:4px">' + t.text + '</div>';
-        });
-        h += '<div style="font-size:.75rem;color:#30d158;margin:6px 0 8px;padding-left:12px">💡 Рекомендуем: пересмотрите учебный план — сократите количество часов до нормы СанПиН</div>';
-      }
-
-      if (otherTips.length) {
-        h += '<div style="font-size:.78rem;color:rgba(255,255,255,.7);margin-bottom:4px"><b style="color:#ff9f0a">Другие нарушения:</b></div>';
-        otherTips.forEach(function(t) {
-          h += '<div style="font-size:.78rem;color:rgba(255,255,255,.6);padding:3px 0;padding-left:12px;border-left:2px solid #ff9f0a;margin-bottom:4px">' + t.text + '</div>';
-        });
-        h += '<div style="font-size:.75rem;color:#30d158;margin:6px 0;padding-left:12px">💡 Рекомендуем: перераспределите уроки между днями вручную</div>';
-      }
-
       h += '</div>';
+      h += '<div class="sp-alert__tip">Рекомендуем: пересмотрите учебный план — сократите количество часов до нормы СанПиН</div>';
+      h += '</div></div>';
     }
 
     h += '</div>';
@@ -743,6 +721,32 @@ document.addEventListener('DOMContentLoaded', function() {
           summary += '<span style="color:#ff9f0a;font-weight:600">⚠ '+audit.wa.length+' рекомендаций</span>';
           summary += '<span style="color:#30d158;font-weight:600">✅ '+audit.passed+' пройдено</span>';
           summary += '</div>';
+          /* Check for C-02 weekly overload — show alert */
+          var WM_check={1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
+          var overloads = [];
+          audit.vi.forEach(function(v) {
+            if (v.id === 'C-02') {
+              var g = result.cg[v.cls] || 5;
+              var total = 0;
+              result.sch[v.cls].forEach(function(d){ d.forEach(function(s){ if(s) total++; }); });
+              var wm = WM_check[g] || 34;
+              overloads.push({ cls: v.cls, total: total, max: wm, over: total - wm, grade: g });
+            }
+          });
+          if (overloads.length) {
+            summary += '<div class="sp-alert sp-alert--error">';
+            summary += '<div class="sp-alert__icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L1.5 17h17L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v4M10 14v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>';
+            summary += '<div class="sp-alert__body">';
+            summary += '<div class="sp-alert__title">Превышение недельной нагрузки</div>';
+            summary += '<div class="sp-alert__desc">Учебный план содержит больше часов, чем допускает СанПиН 1.2.3685-21 (табл. 6.6). Сократите количество часов до нормы.</div>';
+            summary += '<div class="sp-alert__list">';
+            overloads.forEach(function(c) {
+              summary += '<div class="sp-alert__item"><span class="sp-alert__cls">' + c.cls + '</span><span class="sp-alert__detail">' + c.total + ' ч/нед → максимум ' + c.max + ' для ' + c.grade + ' кл. (лишних: ' + c.over + ')</span></div>';
+            });
+            summary += '</div>';
+            summary += '<div class="sp-alert__tip">Сократите количество часов до нормы СанПиН — автоматическая оптимизация не может убрать лишние уроки</div>';
+            summary += '</div></div>';
+          }
           gridEl.insertAdjacentHTML('afterbegin', summary);
           panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch(err) {

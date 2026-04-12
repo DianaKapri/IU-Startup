@@ -368,3 +368,20 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .grid-tip__issue span { color: #86868b; font-size: .7rem; }
 .grid-tip__issue--v { color: #ff453a; }
 .grid-tip__issue--w { color: #ffd60a; }
+
+/* ═══ SP Alert component (shadcn-inspired) ═══ */
+.sp-alert { display: flex; gap: 12px; padding: 14px 16px; border-radius: 12px; margin-top: 10px; }
+.sp-alert--warn { background: rgba(255,159,10,.06); border: 1px solid rgba(255,159,10,.2); border-left: 3px solid #ff9f0a; }
+.sp-alert--error { background: rgba(255,69,58,.06); border: 1px solid rgba(255,69,58,.2); border-left: 3px solid #ff453a; }
+.sp-alert__icon { flex-shrink: 0; margin-top: 1px; }
+.sp-alert--warn .sp-alert__icon { color: #ff9f0a; }
+.sp-alert--error .sp-alert__icon { color: #ff453a; }
+.sp-alert__body { flex: 1; min-width: 0; }
+.sp-alert__title { font-size: .88rem; font-weight: 600; color: #f5f5f7; margin-bottom: 4px; }
+.sp-alert__desc { font-size: .78rem; color: rgba(255,255,255,.55); line-height: 1.55; margin-bottom: 10px; }
+.sp-alert__list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.sp-alert__item { display: flex; align-items: baseline; gap: 8px; font-size: .8rem; }
+.sp-alert__cls { font-weight: 700; color: #ff9f0a; min-width: 28px; }
+.sp-alert--error .sp-alert__cls { color: #ff453a; }
+.sp-alert__detail { color: rgba(255,255,255,.65); }
+.sp-alert__tip { font-size: .78rem; color: #30d158; padding: 8px 12px; background: rgba(48,209,88,.06); border: 1px solid rgba(48,209,88,.12); border-radius: 8px; }
