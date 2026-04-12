@@ -412,6 +412,12 @@ function renderGrid(sch,cg,au,tbl,clean){
     var clsColor=clean?'#f5f5f7':(m.viol>0?'#ff453a':m.warn>0?'#ff9f0a':'#f5f5f7');
     var rowBdr=clean?'':(m.viol>0?'grid-row--hard':m.warn>0?'grid-row--soft':'');
 
+    /* Дни, нарушающие C-01 (слишком много уроков) → красная обводка клеток */
+    var violDaySet={};
+    if(!clean&&m.issues){m.issues.forEach(function(iss){
+      if(iss.id==='C-01'){DN.forEach(function(d,di){if(iss.ds&&iss.ds.indexOf(d)!==-1)violDaySet[di]=true;});}
+    });}
+
     /* Build tooltip HTML for class name */
     var tipParts=[],tipIssues='';
     if(!clean){
@@ -436,7 +442,8 @@ function renderGrid(sch,cg,au,tbl,clean){
         var df=gd(s,g),prevS=li>0&&li-1<filled.length?filled[li-1]:'';
         var bad=clean?false:(df>=th2&&(li<1||li>3)),pair=clean?false:(prevS&&df>=th2&&gd(prevS,g)>=th2);
         var bg=CL[s]||'#666';
-        var bdrCls=(bad||pair)?'demo__cell--warn':'';
+        var dayViol=!clean&&violDaySet[di];
+        var bdrCls=dayViol?'demo__cell--viol':(bad||pair)?'demo__cell--warn':'';
         var tipAttr='';
         if(!clean){
           var tipLines=[];

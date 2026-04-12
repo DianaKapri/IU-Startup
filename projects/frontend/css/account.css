@@ -144,6 +144,7 @@ body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .grid-row--hard td { border-bottom: 2px solid rgba(255,69,58,.35) !important; }
 .grid-row--soft td { border-bottom: 2px solid rgba(255,159,10,.25) !important; }
 .demo__cell--warn { border: 2px solid #ff9f0a !important; }
+.demo__cell--viol { border: 2px solid #ff453a !important; }
 
 /* ─── T-0510: Floating tooltip ─── */
 .grid-tip {

@@ -581,7 +581,7 @@ function _renderOptimizedTab(sch, cg, origAudit) {
     tbl.className = 'acc-grid-tbl';
     el.innerHTML = h + '<div class="acc-tbl-wrap"></div>';
     el.querySelector('.acc-tbl-wrap').appendChild(tbl);
-    renderGrid(opt, cg, optAudit, tbl, true);
+    renderGrid(opt, cg, optAudit, tbl);
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }
