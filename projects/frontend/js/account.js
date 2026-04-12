@@ -232,7 +232,11 @@ spRequireAuth(function () {
     if (heatEl) {
       var htbl = document.createElement('table');
       htbl.className = 'acc-heat-tbl';
-      heatEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
+      heatEl.innerHTML = '<div class="acc-heat-note">'
+        + '<strong>Тепловая карта нагрузки</strong> — число баллов трудности по каждому дню и классу. '
+        + 'Чем краснее клетка, тем тяжелее день. Зелёный — лёгкий день, жёлтый — средний, красный — пик нагрузки. '
+        + 'Самый лёгкий день должен приходиться на среду или четверг (правило E-02).'
+        + '</div><div class="acc-tbl-wrap"></div>';
       heatEl.querySelector('.acc-tbl-wrap').appendChild(htbl);
       renderHeat(sch, cg, audit, htbl);
     }

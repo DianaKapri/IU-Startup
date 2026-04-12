@@ -124,6 +124,8 @@ body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .acc-grid-tbl th, .acc-heat-tbl th {
   background: rgba(255,255,255,.04); font-weight: 600; color: #86868b;
 }
+.acc-heat-note { font-size: .82rem; color: #86868b; line-height: 1.6; margin-bottom: 14px; padding: 12px 16px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 10px; }
+.acc-heat-note strong { color: #e5e5e7; }
 
 /* ─── T-0510: Grid sort bar ─── */
 .grid-sort {
@@ -285,21 +287,27 @@ body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .rec-class-group--open .rec-class-group__body { display: block; }
 .rec-class-group--open .rec-class-group__arrow { transform: rotate(90deg); }
 
-.rec-item {
-  padding: 12px 14px; margin-bottom: 6px; border-radius: 8px;
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.07);
-}
-.rec-item--v { border-left: 2px solid rgba(255,255,255,.3); }
-.rec-item__head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 5px; }
-.rec-item__badge {
-  font-family: monospace; font-size: .7rem; font-weight: 700;
-  color: #86868b; background: rgba(255,255,255,.07);
-  padding: 2px 8px; border-radius: 6px;
-}
+/* ─── Collapsible class cards (matches main page renderRecs) ─── */
+.rec-parallel { margin-bottom: 12px; }
+.rec-parallel__row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.rec-cls-card { flex: 1; min-width: 200px; max-width: 400px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 10px; overflow: hidden; }
+.rec-cls-card__hdr { display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; transition: background .15s; }
+.rec-cls-card__hdr:hover { background: rgba(255,255,255,.05); }
+.rec-cls-card__name { font-size: .95rem; font-weight: 700; min-width: 32px; }
+.rec-cls-card__meta { font-size: .72rem; color: #86868b; flex: 1; }
+.rec-cls-card__arrow { font-size: 1rem; color: #555; transition: transform .2s; }
+.rec-cls-card__body { display: none; padding: 0 14px 10px; }
+.rec-cls-card--open .rec-cls-card__body { display: block; }
+.rec-cls-card--open .rec-cls-card__arrow { transform: rotate(90deg); }
+
+.rec-item { border-radius: 10px; padding: 10px 12px; margin-bottom: 7px; border: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.03); }
+.rec-item--v { background: rgba(255,69,58,.06); border-color: rgba(255,69,58,.15); }
+.rec-item__head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+.rec-item__badge { font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 5px; color: #000; background: #ff9f0a; }
+.rec-item--v .rec-item__badge { background: #ff453a; }
 .rec-item__name { font-size: .84rem; font-weight: 600; color: #e5e5e7; }
 .rec-item__desc { font-size: .80rem; color: rgba(255,255,255,.45); line-height: 1.55; }
-.rec-item__suggest { font-size: .78rem; color: rgba(255,255,255,.55); margin-top: 5px; font-style: italic; }
+.rec-item__suggest { font-size: .78rem; color: #22d3ee; margin-top: 4px; }
 
 /* ─── Fixed variant screen ─── */
 .fix-header { margin-bottom: 20px; }
