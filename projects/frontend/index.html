@@ -559,12 +559,14 @@ function _renderOptimizedTab(sch, cg, origAudit) {
   if (!el) return;
   try {
     var opt = optSchedule(sch, cg, 'bell');
+    _lastOptSch = opt;
     var optAudit = doAudit(opt, cg);
     var diffV = origAudit.vi.length - optAudit.vi.length;
     var diffW = origAudit.wa.length - optAudit.wa.length;
     var diffS = optAudit.score - origAudit.score;
 
     var h = '<div style="margin-bottom:16px;padding:14px 18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px">';
+    h += '<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button onclick="downloadOptSchedule()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(10,132,255,.15);border:1px solid rgba(10,132,255,.35);border-radius:8px;color:#3b82f6;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v8M2 9l5 5 5-5" stroke="#3b82f6" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h10" stroke="#3b82f6" stroke-width="1.3" stroke-linecap="round"/></svg> Скачать .xlsx</button></div>';
     h += '<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:10px">';
     h += '<div style="text-align:center"><div style="font-size:.7rem;color:#86868b;margin-bottom:2px">Было</div><div style="font-size:1.3rem;font-weight:700;color:#ff453a">' + origAudit.score + '</div></div>';
     h += '<div style="font-size:1.2rem;color:#555">→</div>';
@@ -585,6 +587,43 @@ function _renderOptimizedTab(sch, cg, origAudit) {
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }
+}
+
+var _lastOptSch = null;
+
+function downloadOptSchedule() {
+  if (!_lastOptSch) return;
+  var sch = _lastOptSch;
+  var FULL_DAYS = ['Понедельник','Вторник','Среда','Четверг','Пятница'];
+  var classes = Object.keys(sch).sort(function(a,b){
+    var na=parseInt(a),nb=parseInt(b);
+    if(na!==nb)return na-nb;
+    return a.localeCompare(b,'ru');
+  });
+  var wb = XLSX.utils.book_new();
+  FULL_DAYS.forEach(function(dayName,di){
+    var maxL=0;
+    classes.forEach(function(cl){
+      var cnt=(sch[cl][di]||[]).filter(function(s){return s;}).length;
+      if(cnt>maxL)maxL=cnt;
+    });
+    if(maxL<1)maxL=7;
+    var rows=[['Урок'].concat(classes)];
+    for(var li=0;li<maxL;li++){
+      var row=[li+1];
+      classes.forEach(function(cl){
+        var filled=(sch[cl][di]||[]).filter(function(s){return s;});
+        var subj=filled[li]||'';
+        row.push(SF[subj]||subj);
+      });
+      rows.push(row);
+    }
+    var ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:8}].concat(classes.map(function(){return{wch:16};}));
+    ws['!freeze']={xSplit:1,ySplit:1};
+    XLSX.utils.book_append_sheet(wb,ws,dayName);
+  });
+  XLSX.writeFile(wb,'raspisanie-uluchshennoe.xlsx');
 }
 
 var _inlineDemoReady = false;
