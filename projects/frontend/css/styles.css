@@ -268,16 +268,15 @@ body.nav-open .nav__backdrop { opacity: 1; pointer-events: all; }
 /* ===== PRODUCTS GALLERY (Gallery6 style) ===== */
 .pg { background: #000; padding: 80px 0 96px; overflow: hidden; }
 .pg__inner { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
-.pg__header { display: flex; flex-direction: column; gap: 24px; margin-bottom: 52px; }
-@media (min-width: 768px) { .pg__header { flex-direction: row; justify-content: space-between; align-items: flex-end; } }
-.pg__heading { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.15; color: #f5f5f7; margin-bottom: 14px; }
+.pg__header { display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 20px; margin-bottom: 52px; flex-wrap: wrap; }
+.pg__heading { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.15; color: #f5f5f7; margin: 0; text-align: center; }
 .pg__demo-link { display: inline-flex; align-items: center; gap: 5px; font-size: .95rem; color: #2997ff; text-decoration: none; font-weight: 500; transition: gap .2s; }
 .pg__demo-link:hover { gap: 9px; }
 .pg__demo-arrow { transition: transform .2s; }
 .pg__demo-link:hover .pg__demo-arrow { transform: translate(2px,-2px); }
 .pg__nav { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-top: 8px; }
 @media (min-width: 768px) { .pg__nav { margin-top: 0; } }
-.pg__nav-btn { width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.13); background: transparent; color: #f5f5f7; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s; }
+.pg__nav-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(255,255,255,.13); background: transparent; color: #f5f5f7; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s; }
 .pg__nav-btn:hover:not([disabled]) { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.22); }
 .pg__nav-btn[disabled] { opacity: .3; cursor: default; }
 
