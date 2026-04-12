@@ -49,20 +49,24 @@
 <div class="nav__backdrop" id="navBackdrop"></div>
 
 <section class="hero"><div class="hero__content">
-  <h1 class="hero__title fade-in">Расписание.<br/><span class="hero__title--gradient">Переосмыслено.</span></h1>
-  <p class="hero__subtitle fade-in fade-in--d1">Загрузите расписание — получите аудит по СанПиН за 5 мс.<br class="hide-mobile"/>Составьте расписание с ИУП за 30 минут вместо двух недель.</p>
-
+  <p class="hero__eyebrow fade-in">Аудит СанПиН за 5 мс · Расписание за 30 минут</p>
+  <h1 class="hero__title fade-in fade-in--d1">Расписание.<br/><span class="hero__title--gradient">Переосмыслено.</span></h1>
+  <p class="hero__subtitle fade-in fade-in--d2">Загрузите Excel — система мгновенно найдёт все нарушения и предложит исправления. Без таблиц, без догадок.</p>
+  <div class="hero__cta fade-in fade-in--d3">
+    <a href="/login.html?tab=register" class="btn btn--primary btn--lg">Начать бесплатно →</a>
+    <button class="btn btn--ghost-dark btn--lg" onclick="toggleInlineDemo();document.getElementById('audit').scrollIntoView({behavior:'smooth'})">Смотреть демо</button>
+  </div>
 </div>
 <div class="hero__mockup fade-in fade-in--d3"><div class="mockup"><div class="mockup__header"><div class="mockup__dots"><span></span><span></span><span></span></div><span class="mockup__tab">Аудит СанПиН — Школа №42</span></div><div class="mockup__body">
   <div class="mockup__row mockup__row--green"><span class="mockup__dot"></span><span class="mockup__label">5А — Понедельник</span><span class="mockup__value">Соответствует</span></div>
-  <div class="mockup__row mockup__row--red"><span class="mockup__dot"></span><span class="mockup__label">7В — Среда</span><span class="mockup__value">Нарушение п. 3.4.16</span></div>
-  <div class="mockup__row mockup__row--yellow"><span class="mockup__dot"></span><span class="mockup__label">9А — Четверг</span><span class="mockup__value">Рекомендация</span></div>
+  <div class="mockup__row mockup__row--red"><span class="mockup__dot"></span><span class="mockup__label">7В — Среда</span><span class="mockup__value">6 уроков в 7В — превышение нормы</span></div>
+  <div class="mockup__row mockup__row--yellow"><span class="mockup__dot"></span><span class="mockup__label">9А — Четверг</span><span class="mockup__value">Физика в 1-м уроке — не рекомендуется</span></div>
   <div class="mockup__row mockup__row--green"><span class="mockup__dot"></span><span class="mockup__label">10Б — Пятница</span><span class="mockup__value">Соответствует</span></div>
 </div></div></div></section>
 
 <section class="ribbon"><div class="ribbon__inner">
-  <div class="ribbon__stat fade-in"><span class="ribbon__number text-[35px]" data-target="23">0</span><span class="ribbon__label">проверки СанПиН</span></div>
-  <div class="ribbon__stat fade-in fade-in--d1"><span class="ribbon__headline">до 50 000 ₽</span><span class="ribbon__label">штраф за нарушение СанПиН</span></div>
+  <div class="ribbon__stat fade-in"><span class="ribbon__number" data-target="23">0</span><span class="ribbon__label">проверки СанПиН</span></div>
+  <div class="ribbon__stat fade-in fade-in--d1"><span class="ribbon__headline">5 мс</span><span class="ribbon__label">время аудита расписания</span></div>
   <div class="ribbon__stat fade-in fade-in--d2"><span class="ribbon__number" data-target="90">0</span><span class="ribbon__unit"> %</span><span class="ribbon__label">быстрее ручного</span></div>
 </div></section>
 
@@ -235,24 +239,51 @@
   </div>
 </div></section>
 
-<section class="showcase showcase--light"><div class="showcase__inner showcase__inner--wide">
+<section class="showcase showcase--dark showcase--rules"><div class="showcase__inner showcase__inner--wide">
   <h2 class="showcase__title fade-in">Что проверяет ШколаПлан</h2>
-  <div class="demo-rules__grid" style="margin-top:32px;text-align:left">
-    <div class="demo-rule fade-in"><div class="demo-rule__code">C-01</div><div><p class="demo-rule__name">Дневная нагрузка</p><p class="demo-rule__desc">Число уроков в день не превышает норму для параллели (5–7 уроков). СП 2.4.3648-20, п. 3.4.</p></div></div>
-    <div class="demo-rule fade-in fade-in--d1"><div class="demo-rule__code">C-02</div><div><p class="demo-rule__name">Недельная нагрузка</p><p class="demo-rule__desc">Суммарное число уроков соответствует санитарным нормам. СанПиН 1.2.3685-21, Таблица 6.6.</p></div></div>
-    <div class="demo-rule fade-in"><div class="demo-rule__code">E-01</div><div><p class="demo-rule__name">Трудные предметы утром</p><p class="demo-rule__desc">Математика, физика, химия — во второй-четвёртой позиции, когда работоспособность максимальна.</p></div></div>
-    <div class="demo-rule fade-in fade-in--d1"><div class="demo-rule__code">E-02</div><div><p class="demo-rule__name">Пик нагрузки в середине недели</p><p class="demo-rule__desc">Среда и четверг — самые нагруженные дни; понедельник и пятница — облегчённые.</p></div></div>
-    <div class="demo-rule fade-in fade-in--d2"><div class="demo-rule__code">E-03</div><div><p class="demo-rule__name">Профильные предметы</p><p class="demo-rule__desc">ОБЖ, физкультура, музыка, изо — не в первой позиции и не стоят перед контрольными.</p></div></div>
-    <div class="demo-rule fade-in fade-in--d3"><div class="demo-rule__code">X-01</div><div><p class="demo-rule__name">Конфликты ресурсов</p><p class="demo-rule__desc">Учитель или кабинет не ведёт два урока одновременно. Пересечения выделяются красным.</p></div></div>
+  <div class="demo-rules__grid demo-rules__grid--dark" style="margin-top:32px;text-align:left">
+    <div class="demo-rule demo-rule--dark fade-in"><div class="demo-rule__code">C-01</div><div><p class="demo-rule__name">Дневная нагрузка</p><p class="demo-rule__desc">Число уроков в день не превышает норму для параллели (5–7 уроков). СП 2.4.3648-20, п. 3.4.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in fade-in--d1"><div class="demo-rule__code">C-02</div><div><p class="demo-rule__name">Недельная нагрузка</p><p class="demo-rule__desc">Суммарное число уроков соответствует санитарным нормам. СанПиН 1.2.3685-21, Таблица 6.6.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in"><div class="demo-rule__code">E-01</div><div><p class="demo-rule__name">Трудные предметы утром</p><p class="demo-rule__desc">Математика, физика, химия — во второй-четвёртой позиции, когда работоспособность максимальна.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in fade-in--d1"><div class="demo-rule__code">E-02</div><div><p class="demo-rule__name">Пик нагрузки в середине недели</p><p class="demo-rule__desc">Среда и четверг — самые нагруженные дни; понедельник и пятница — облегчённые.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in fade-in--d2"><div class="demo-rule__code">E-03</div><div><p class="demo-rule__name">Чередование сложных предметов</p><p class="demo-rule__desc">Два и более сложных предмета подряд — предупреждение. МР 2.4.0331-23, п. 3.2.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in fade-in--d3"><div class="demo-rule__code">X-01</div><div><p class="demo-rule__name">Окна в расписании</p><p class="demo-rule__desc">Пустые уроки между первым и последним — запрещены. Окна у учеников недопустимы.</p></div></div>
   </div>
 </div></section>
 
-<section class="cards" id="features"><div class="cards__inner">
-  <p class="cards__eyebrow-label fade-in">ВОЗМОЖНОСТИ РАСПИСАНИЯ</p>
-  <div class="card fade-in"><p class="card__eyebrow">Импорт</p><h3 class="card__title">Умный парсер с нечётким сопоставлением</h3><p class="card__text">«Иванова М.П.» и «Иванова Мария Петровна» — один человек. Работает с любыми таблицами.</p></div>
-  <div class="card fade-in fade-in--d1"><p class="card__eyebrow">Проектная деятельность</p><h3 class="card__title">Слоты для межклассных групп</h3><p class="card__text">Тепловая карта доступности без конфликтов.</p></div>
-  <div class="card fade-in fade-in--d2"><p class="card__eyebrow">Конфликты</p><h3 class="card__title">Проверка в реальном времени</h3><p class="card__text">Конфликты подсвечиваются мгновенно при каждом изменении.</p></div>
-  <div class="card fade-in fade-in--d3"><p class="card__eyebrow">Экстренные замены</p><h3 class="card__title">Учитель заболел? 3 минуты вместо 45.</h3><p class="card__text">Система предложит план замен за 5 секунд с учётом нагрузки и СанПиН.</p></div>
+<section class="how-section"><div class="how__inner">
+  <p class="how__eyebrow fade-in">КАК ЭТО РАБОТАЕТ</p>
+  <h2 class="how__title fade-in">От файла до результата — за минуту</h2>
+  <div class="how__steps">
+    <div class="how__step fade-in">
+      <div class="how__step-num">01</div>
+      <h3 class="how__step-title">Загрузите Excel</h3>
+      <p class="how__step-desc">Любой формат расписания. Если файла нет — скачайте шаблон и заполните.</p>
+    </div>
+    <div class="how__step fade-in fade-in--d1">
+      <div class="how__step-num">02</div>
+      <h3 class="how__step-title">Получите аудит</h3>
+      <p class="how__step-desc">Система проверит 23 правила СанПиН и покажет нарушения с точными ссылками на пункты.</p>
+    </div>
+    <div class="how__step fade-in fade-in--d2">
+      <div class="how__step-num">03</div>
+      <h3 class="how__step-title">Исправьте или сгенерируйте</h3>
+      <p class="how__step-desc">Следуйте рекомендациям или создайте расписание с нуля — система сама учтёт все ограничения.</p>
+    </div>
+    <div class="how__step fade-in fade-in--d3">
+      <div class="how__step-num">04</div>
+      <h3 class="how__step-title">Экспортируйте</h3>
+      <p class="how__step-desc">Готовое расписание — в Excel одним кликом. Чисто, по норме, без ошибок.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="proof-section"><div class="proof__inner fade-in">
+  <div class="proof__stat"><span class="proof__num">50+</span><span class="proof__label">расписаний уже проверено</span></div>
+  <div class="proof__divider"></div>
+  <div class="proof__stat"><span class="proof__num">1 200+</span><span class="proof__label">нарушений СанПиН выявлено</span></div>
+  <div class="proof__divider"></div>
+  <div class="proof__stat"><span class="proof__num">23</span><span class="proof__label">автоматические проверки</span></div>
 </div></section>
 
 <section class="price" id="price"><div class="price__inner fade-in">
@@ -300,17 +331,19 @@
           <span class="plan__amount plan__amount--lt">14 400 ₽</span>
           <span class="plan__period plan__period--lt">/ год</span>
         </div>
+        <p class="plan__monthly">1 200 ₽/мес · ≈ 40 ₽ в день</p>
         <a href="/login.html?tab=register" class="plan__btn plan__btn--light">
-          Попробовать 14 дней
+          Попробовать 14 дней бесплатно
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
+        <p class="plan__trial-note">После пробного периода — без автосписания. Оплата только по вашему решению.</p>
       </div>
       <div class="plan__features plan__features--dark">
         <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Аудит по нормам СанПиН</div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>До 5 школ</div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Генерация расписания</div>
+        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>До 5 школ <span class="plan__feat-diff">(в пробном — 1)</span></div>
+        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Генерация расписания <span class="plan__feat-diff">(нет в пробном)</span></div>
+        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Экспорт в Excel <span class="plan__feat-diff">(нет в пробном)</span></div>
         <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Приоритетная поддержка</div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Экспорт в Excel</div>
       </div>
     </div>
 
@@ -402,15 +435,6 @@
 
 </div></section>
 
-<section class="join-section"><div class="join__inner fade-in">
-  <p class="join__eyebrow">Присоединяйтесь</p>
-  <h2 class="join__title">Проверьте расписание своей школы прямо сейчас</h2>
-  <p class="join__desc">Загрузите файл — получите полный аудит по СанПиН за секунды.</p>
-  <div class="join__actions">
-    <a href="/login.html?tab=register" class="btn btn--white btn--lg">Начать бесплатно →</a>
-    <a href="/login.html" class="btn btn--ghost-light btn--lg">Уже есть аккаунт? Войти</a>
-  </div>
-</div></section>
 
 <footer class="footer"><div class="footer__inner">
   <span class="footer__logo">ШколаПлан</span><span class="footer__copy">© 2026 ШколаПлан</span>

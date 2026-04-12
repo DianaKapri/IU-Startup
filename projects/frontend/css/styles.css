@@ -558,13 +558,51 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .wiz-done__desc{font-size:12px;color:#666;margin:0;}
 @media(max-width:500px){.wiz-cards{grid-template-columns:1fr;}.wiz-row-2{grid-template-columns:1fr;}}
 
+/* ── Hero eyebrow & CTA ── */
+.hero__eyebrow{font-size:.78rem;font-weight:500;letter-spacing:.06em;color:#6e6e73;text-transform:uppercase;margin-bottom:16px;}
+.hero__cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;}
+.btn--ghost-dark{display:inline-flex;align-items:center;justify-content:center;padding:0 22px;height:48px;border-radius:980px;font-size:.9rem;font-weight:500;background:transparent;color:rgba(255,255,255,.8);border:1.5px solid rgba(255,255,255,.2);cursor:pointer;transition:border-color .2s,color .2s;font-family:var(--font);}
+.btn--ghost-dark:hover{border-color:rgba(255,255,255,.5);color:#fff;}
+.btn--primary{display:inline-flex;align-items:center;justify-content:center;padding:0 22px;height:48px;border-radius:980px;font-size:.9rem;font-weight:500;background:var(--blue);color:#fff;border:none;cursor:pointer;transition:background .2s;font-family:var(--font);}
+.btn--primary:hover{background:var(--blue-hover);}
+.btn--lg{height:52px;padding:0 28px;font-size:.95rem;}
+
+/* ── Dark rules grid ── */
+.demo-rule--dark{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;transition:background .2s;}
+.demo-rule--dark:hover{background:rgba(255,255,255,.07);}
+.demo-rule--dark .demo-rule__code{color:#3b82f6;}
+.demo-rule--dark .demo-rule__name{color:#f5f5f7;}
+.demo-rule--dark .demo-rule__desc{color:#6e6e73;}
+
+/* ── How it works ── */
+.how-section{background:#000;padding:100px 22px;}
+.how__inner{max-width:var(--max-w);margin:0 auto;}
+.how__eyebrow{font-size:.72rem;font-weight:600;letter-spacing:.08em;color:#6e6e73;text-transform:uppercase;display:block;margin-bottom:14px;text-align:center;}
+.how__title{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:700;color:#f5f5f7;text-align:center;margin-bottom:60px;letter-spacing:-.02em;}
+.how__steps{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}
+@media(max-width:734px){.how__steps{grid-template-columns:1fr 1fr;gap:20px;}}
+@media(max-width:480px){.how__steps{grid-template-columns:1fr;}}
+.how__step{padding:28px 24px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;}
+.how__step-num{font-size:.72rem;font-weight:700;letter-spacing:.08em;color:#3b82f6;margin-bottom:16px;}
+.how__step-title{font-size:1rem;font-weight:600;color:#f5f5f7;margin-bottom:10px;}
+.how__step-desc{font-size:.82rem;color:#6e6e73;line-height:1.6;}
+
+/* ── Social proof ── */
+.proof-section{background:#0a0a0a;border-top:1px solid #1d1d1f;border-bottom:1px solid #1d1d1f;padding:48px 22px;}
+.proof__inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;}
+.proof__stat{flex:1;min-width:160px;text-align:center;padding:16px 24px;}
+.proof__num{display:block;font-size:2rem;font-weight:700;color:#f5f5f7;letter-spacing:-.03em;margin-bottom:6px;}
+.proof__label{font-size:.8rem;color:#6e6e73;}
+.proof__divider{width:1px;height:40px;background:rgba(255,255,255,.08);}
+@media(max-width:600px){.proof__divider{display:none;}.proof__stat{min-width:100%;border-bottom:1px solid rgba(255,255,255,.06);}}
+
+/* ── Pricing extras ── */
+.plan__monthly{font-size:.78rem;color:rgba(255,255,255,.45);margin:-4px 0 12px;letter-spacing:.01em;}
+.plan__trial-note{font-size:.72rem;color:rgba(255,255,255,.3);margin-top:10px;line-height:1.5;}
+.plan__feat-diff{font-size:.72rem;color:#6e6e73;font-weight:400;}
+
 /* ── Audit upload block ── */
 .audit-upload-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:28px;}
-/* rules grid colour overrides for white background */
-.showcase--light .demo-rule__name { color: var(--black); }
-.showcase--light .demo-rule__desc { color: var(--gray-dark); }
-.showcase--light .demo-rule { background: var(--gray-bg); border-radius: 12px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
-
 .audit-upload-btn{display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border:1.5px solid rgba(255,255,255,.18);border-radius:12px;color:#fff;cursor:pointer;font-size:.95rem;font-weight:500;transition:border-color .2s,background .2s;}
 .audit-upload-btn:hover{border-color:#3b82f6;background:rgba(59,130,246,.08);}
 .audit-upload-btn svg{flex-shrink:0;opacity:.85;}
