@@ -357,7 +357,7 @@
 <h2 class="wiz-title">С чего начнём?</h2>
 <p class="wiz-sub">Выберите задачу — мы проведём вас по нужному пути.</p>
 <div class="wiz-cards">
-  <div id="wizCard1" class="wiz-card" onclick="toggleInlineDemo();document.getElementById('audit').scrollIntoView({behavior:'smooth'})">
+  <div id="wizCard1" class="wiz-card" onclick="showInlineDemo()">
     <div class="wiz-card__icon wiz-card__icon--blue"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1L1 7l6 6 6-6z" stroke="#3b82f6" stroke-width="1.5"/></svg></div>
     <p class="wiz-card__title">Проверить расписание</p>
     <p class="wiz-card__desc">Загрузите Excel — мгновенно покажем все нарушения СанПиН</p>
@@ -483,28 +483,33 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 }
 
 var _inlineDemoReady = false;
+function _initInlineDemo() {
+  if (_inlineDemoReady) return;
+  _inlineDemoReady = true;
+  try {
+    var audit = doAudit(DEM, DCG);
+    var gridEl = document.getElementById('inlineDemoTabGrid');
+    var tbl = document.createElement('table');
+    tbl.className = 'acc-grid-tbl';
+    gridEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
+    gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
+    renderGrid(DEM, DCG, audit, tbl);
+    var recsEl = document.getElementById('inlineDemoTabRecs');
+    renderRecs(audit.top, recsEl);
+    _renderOptimizedTab(DEM, DCG, audit);
+  } catch(e) { console.warn('Demo init error:', e); }
+}
 function toggleInlineDemo() {
   var panel = document.getElementById('inlineDemo');
   var visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : 'block';
-  if (!visible && !_inlineDemoReady) {
-    _inlineDemoReady = true;
-    try {
-      var audit = doAudit(DEM, DCG);
-      var gridEl = document.getElementById('inlineDemoTabGrid');
-      var tbl = document.createElement('table');
-      tbl.className = 'acc-grid-tbl';
-      gridEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
-      gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
-      renderGrid(DEM, DCG, audit, tbl);
-      var recsEl = document.getElementById('inlineDemoTabRecs');
-      renderRecs(audit.top, recsEl);
-      _renderOptimizedTab(DEM, DCG, audit);
-    } catch(e) { console.warn('Demo init error:', e); }
-  }
-  if (!visible) {
-    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  if (!visible) { _initInlineDemo(); panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+function showInlineDemo() {
+  var panel = document.getElementById('inlineDemo');
+  panel.style.display = 'block';
+  _initInlineDemo();
+  document.getElementById('audit').scrollIntoView({ behavior: 'smooth' });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
