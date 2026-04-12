@@ -55,7 +55,7 @@
 </div></section>
 
 <!-- ===== PRODUCTS GALLERY (Gallery6 style) ===== -->
-<section class="pg">
+<section class="pg" id="products">
   <div class="pg__inner">
     <div class="pg__header fade-in">
       <div>
@@ -91,39 +91,43 @@
                 </div>
                 <div class="pg-mock__grid-row">
                   <span class="pg-mock__day">Пн</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--err"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--err pg-mock__cell--pulse">7 ур.</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
                 </div>
                 <div class="pg-mock__grid-row">
                   <span class="pg-mock__day">Вт</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--warn"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--warn">Физ №1</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
                 </div>
                 <div class="pg-mock__grid-row">
                   <span class="pg-mock__day">Ср</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--err"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--warn"></span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--err">7 ур.</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--warn">Хим №1</span>
                 </div>
                 <div class="pg-mock__grid-row">
                   <span class="pg-mock__day">Чт</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--err"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--err">6 ур.</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
                 </div>
                 <div class="pg-mock__grid-row">
                   <span class="pg-mock__day">Пт</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
-                  <span class="pg-mock__cell pg-mock__cell--ok"></span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
+                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
                 </div>
+              </div>
+              <div class="pg-mock__annotation">
+                <span class="pg-mock__ann-dot"></span>
+                <span class="pg-mock__ann-text">7В · Пн — превышение нормы уроков (7 из 6 макс.)</span>
               </div>
             </div>
           </div>
@@ -139,7 +143,7 @@
           <div class="pg-mock pg-mock--gen">
             <div class="pg-mock__bar">
               <span class="pg-mock__dots"><span></span><span></span><span></span></span>
-              <span class="pg-mock__tab">Генерация расписания · Черновик</span>
+              <span class="pg-mock__tab">Генерация расписания · 9А</span>
             </div>
             <div class="pg-mock__body">
               <div class="pg-mock__badge pg-mock__badge--green">Расписание готово · 0 нарушений</div>
@@ -149,33 +153,33 @@
                 </div>
                 <div class="pg-mock__sched-row">
                   <span class="pg-mock__snum">1</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.18);color:#5ac8fa">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.16);color:#34c759">Рус</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.14);color:#ff9f0a">Физ</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.18);color:#5ac8fa">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.14);color:#bf5af2">Ист</span>
+                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
+                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.26);color:#4cd964;border:1px solid rgba(76,217,100,.3)">Рус</span>
+                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.24);color:#ffcc00;border:1px solid rgba(255,204,0,.3)">Физ</span>
+                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
+                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.24);color:#da8fff;border:1px solid rgba(218,143,255,.3)">Ист</span>
                 </div>
                 <div class="pg-mock__sched-row">
                   <span class="pg-mock__snum">2</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.16);color:#34c759">Рус</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.18);color:#5ac8fa">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.16);color:#34c759">Рус</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.14);color:#ff9f0a">Физ</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.18);color:#5ac8fa">Мат</span>
+                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.26);color:#4cd964;border:1px solid rgba(76,217,100,.3)">Рус</span>
+                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
+                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.26);color:#4cd964;border:1px solid rgba(76,217,100,.3)">Рус</span>
+                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.24);color:#ffcc00;border:1px solid rgba(255,204,0,.3)">Физ</span>
+                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
                 </div>
                 <div class="pg-mock__sched-row">
                   <span class="pg-mock__snum">3</span>
-                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.14);color:#bf5af2">Ист</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.14);color:#ff9f0a">Физ</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.18);color:#5ac8fa">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.16);color:#34c759">Рус</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,69,58,.14);color:#ff453a">Хим</span>
+                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.24);color:#da8fff;border:1px solid rgba(218,143,255,.3)">Ист</span>
+                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.24);color:#ffcc00;border:1px solid rgba(255,204,0,.3)">Физ</span>
+                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
+                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.26);color:#4cd964;border:1px solid rgba(76,217,100,.3)">Рус</span>
+                  <span class="pg-mock__slot" style="background:rgba(255,69,58,.24);color:#ff6b6b;border:1px solid rgba(255,107,107,.3)">Хим</span>
                 </div>
                 <div class="pg-mock__sched-row">
                   <span class="pg-mock__snum">4</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.14);color:#ff9f0a">Физ</span>
-                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.14);color:#bf5af2">Ист</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,69,58,.14);color:#ff453a">Хим</span>
+                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.24);color:#ffcc00;border:1px solid rgba(255,204,0,.3)">Физ</span>
+                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.24);color:#da8fff;border:1px solid rgba(218,143,255,.3)">Ист</span>
+                  <span class="pg-mock__slot" style="background:rgba(255,69,58,.24);color:#ff6b6b;border:1px solid rgba(255,107,107,.3)">Хим</span>
                   <span class="pg-mock__slot" style="background:rgba(41,151,255,.18);color:#5ac8fa">Мат</span>
                   <span class="pg-mock__slot" style="background:rgba(52,199,89,.16);color:#34c759">Рус</span>
                 </div>
