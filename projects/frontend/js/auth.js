@@ -54,8 +54,11 @@ function spGetCurrentUser() {
       var u = res.data.user;
       var meta = u.user_metadata || {};
 
-      return fetch('/api/users/me?id=' + encodeURIComponent(u.id))
-        .then(function (r) { return r.ok ? r.json() : null; })
+      return sb.auth.getSession().then(function (sessRes) {
+        var token = sessRes.data && sessRes.data.session && sessRes.data.session.access_token;
+        var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        return fetch('/api/users/me', { headers: headers });
+      }).then(function (r) { return r && r.ok ? r.json() : null; })
         .then(function (data) {
           var db = (data && data.ok && data.user) ? data.user : null;
           return {
