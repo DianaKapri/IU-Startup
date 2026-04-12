@@ -42,7 +42,7 @@ router.get('/me', async (req, res) => {
     return res.json({ ok: true, user: result.rows[0] });
   } catch (err) {
     console.error('[GET /api/users/me]', err.message);
-    return res.status(500).json({ ok: false, error: err.message });
+    return res.status(500).json({ ok: false, error: 'Внутренняя ошибка сервера' });
   }
 });
 
