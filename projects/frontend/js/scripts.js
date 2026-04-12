@@ -9,7 +9,7 @@ document.querySelectorAll('.fade-in').forEach(function (el) { sio.observe(el); }
 
 /* ═══ Nav theme ═══ */
 var nav = document.getElementById('nav');
-var darkSections = document.querySelectorAll('.hero,.showcase--dark,.ribbon,.demo,.cta-register,.demo-hero,.demo-main,.sub-hero,.sub-main');
+var darkSections = document.querySelectorAll('.hero,.pg,.showcase--dark,.ribbon,.demo,.cta-register,.demo-hero,.demo-main,.sub-hero,.sub-main');
 function navTheme() {
   if (!nav) return;
   var nb = nav.getBoundingClientRect().bottom;
