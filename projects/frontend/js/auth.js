@@ -28,13 +28,20 @@ function _initSupabase() {
   if (_configPromise) return _configPromise;
 
   _configPromise = fetch('/api/client-config')
-    .then(function (r) { return r.json(); })
+    .then(function (r) {
+      if (!r.ok) throw new Error('Сервер вернул ошибку ' + r.status);
+      return r.json();
+    })
     .then(function (cfg) {
       if (!cfg.supabaseUrl || !cfg.supabaseKey) {
-        throw new Error('Supabase config missing');
+        throw new Error('Supabase не настроен. Обратитесь к администратору.');
       }
       _supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
       return _supabase;
+    })
+    .catch(function(err) {
+      _configPromise = null; // allow retry
+      throw err;
     });
 
   return _configPromise;
