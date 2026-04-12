@@ -53,13 +53,30 @@ function spGetCurrentUser() {
       if (res.error || !res.data.user) return null;
       var u = res.data.user;
       var meta = u.user_metadata || {};
-      return {
-        id: u.id,
-        email: u.email,
-        name: meta.name || u.email,
-        school: meta.school || '',
-        plan: meta.plan || 'trial',
-      };
+
+      return fetch('/api/users/me?id=' + encodeURIComponent(u.id))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          var db = (data && data.ok && data.user) ? data.user : null;
+          return {
+            id: u.id,
+            email: u.email,
+            name:   (db && db.name)   || meta.name   || u.email,
+            school: (db && db.school) || meta.school || '',
+            city:   (db && db.city)   || meta.city   || '',
+            plan:   (db && db.plan)   || meta.plan   || 'trial',
+          };
+        })
+        .catch(function () {
+          return {
+            id: u.id,
+            email: u.email,
+            name:   meta.name   || u.email,
+            school: meta.school || '',
+            city:   meta.city   || '',
+            plan:   meta.plan   || 'trial',
+          };
+        });
     });
   });
 }
