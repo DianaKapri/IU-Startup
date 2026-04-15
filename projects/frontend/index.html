@@ -65,7 +65,7 @@
     <div class="pg__track" id="pgTrack">
 
       <!-- Card 1: Аудит -->
-      <a href="/demo.html" class="pg-card">
+      <a href="#audit" class="pg-card" onclick="event.preventDefault();toggleInlineDemo();document.getElementById('audit').scrollIntoView({behavior:'smooth'})">
         <div class="pg-card__img">
           <div class="pg-mock pg-mock--audit">
             <div class="pg-mock__bar">
@@ -127,7 +127,7 @@
       </a>
 
       <!-- Card 2: Составление -->
-      <a href="#schedule-gen" class="pg-card">
+      <a href="#wizard-section" class="pg-card" onclick="event.preventDefault();wizSelect(1);wizOpen();document.getElementById('wizard-section').scrollIntoView({behavior:'smooth'})">
         <div class="pg-card__img">
           <div class="pg-mock pg-mock--gen">
             <div class="pg-mock__bar">
@@ -415,23 +415,19 @@
   <h2 class="how__title fade-in">От файла до результата — за минуту</h2>
   <div class="how__steps">
     <div class="how__step fade-in">
-      <div class="how__step-num">01</div>
-      <h3 class="how__step-title">Загрузите Excel</h3>
+      <div class="how__step-head"><div class="how__step-num">01</div><h3 class="how__step-title">Загрузите Excel</h3></div>
       <p class="how__step-desc">Любой формат расписания. Если файла нет — скачайте шаблон и заполните.</p>
     </div>
     <div class="how__step fade-in fade-in--d1">
-      <div class="how__step-num">02</div>
-      <h3 class="how__step-title">Получите аудит</h3>
+      <div class="how__step-head"><div class="how__step-num">02</div><h3 class="how__step-title">Получите аудит</h3></div>
       <p class="how__step-desc">Система проверит 23 правила СанПиН и покажет нарушения с точными ссылками на пункты.</p>
     </div>
     <div class="how__step fade-in fade-in--d2">
-      <div class="how__step-num">03</div>
-      <h3 class="how__step-title">Исправьте или сгенерируйте</h3>
+      <div class="how__step-head"><div class="how__step-num">03</div><h3 class="how__step-title">Исправьте или сгенерируйте</h3></div>
       <p class="how__step-desc">Следуйте рекомендациям или создайте расписание с нуля — система сама учтёт все ограничения.</p>
     </div>
     <div class="how__step fade-in fade-in--d3">
-      <div class="how__step-num">04</div>
-      <h3 class="how__step-title">Экспортируйте</h3>
+      <div class="how__step-head"><div class="how__step-num">04</div><h3 class="how__step-title">Экспортируйте</h3></div>
       <p class="how__step-desc">Готовое расписание — в Excel одним кликом. Чисто, по норме, без ошибок.</p>
     </div>
   </div>
@@ -771,11 +767,15 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 
     h += '</div>';
 
-    var tbl = document.createElement('table');
-    tbl.className = 'acc-grid-tbl';
-    el.innerHTML = h + '<div class="acc-tbl-wrap"></div>';
-    el.querySelector('.acc-tbl-wrap').appendChild(tbl);
-    renderGrid(opt, cg, optAudit, tbl, true);
+    /* Side-by-side comparison: Было → Стало */
+    h += '<div class="compare-wrap">';
+    h += '<div class="compare-side compare-side--old"><div class="compare-side__label"><span class="compare-dot compare-dot--red"></span> Текущее расписание</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
+    h += '<div class="compare-side compare-side--new"><div class="compare-side__label"><span class="compare-dot compare-dot--green"></span> Улучшенное расписание</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
+    h += '</div>';
+
+    el.innerHTML = h;
+    renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'));
+    renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true);
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }

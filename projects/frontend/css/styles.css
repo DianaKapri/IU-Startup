@@ -646,8 +646,9 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 @media(max-width:734px){.how__steps{grid-template-columns:1fr 1fr;gap:20px;}}
 @media(max-width:480px){.how__steps{grid-template-columns:1fr;}}
 .how__step{padding:28px 24px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;}
-.how__step-num{font-size:.72rem;font-weight:700;letter-spacing:.08em;color:#3b82f6;margin-bottom:16px;}
-.how__step-title{font-size:1rem;font-weight:600;color:#f5f5f7;margin-bottom:10px;}
+.how__step-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+.how__step-num{font-size:.72rem;font-weight:700;letter-spacing:.08em;color:#3b82f6;flex-shrink:0;}
+.how__step-title{font-size:1rem;font-weight:600;color:#f5f5f7;}
 .how__step-desc{font-size:.82rem;color:#6e6e73;line-height:1.6;}
 
 /* ── Social proof ── */
@@ -793,7 +794,7 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .how-section--white { background: #fff; }
 .how-section--white .how__eyebrow { color: #6e6e73; }
 .how-section--white .how__title { color: #1d1d1f; }
-.how-section--white .how__step { background: #f5f5f7; border-color: rgba(0,0,0,.06); }
+.how-section--white .how__step { background: #fff; border-color: rgba(0,0,0,.08); box-shadow: 0 1px 4px rgba(0,0,0,.04); }
 .how-section--white .how__step-num { color: #2997ff; }
 .how-section--white .how__step-title { color: #1d1d1f; }
 .how-section--white .how__step-desc { color: #4a4a4f; }
