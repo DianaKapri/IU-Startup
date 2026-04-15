@@ -395,7 +395,7 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .cmp-tbl .tbl-cls-cell { width: 34px !important; min-width: 34px !important; max-width: 34px !important; box-sizing: border-box; }
 .cmp-tbl .tbl-num-hdr,
 .cmp-tbl .tbl-cell { width: 46px !important; min-width: 46px !important; max-width: 46px !important; box-sizing: border-box; }
-.cmp-tbl .tbl-cell .demo__cell { width: 42px !important; min-width: 42px !important; }
+.cmp-tbl .tbl-cell .demo__cell { width: 42px !important; min-width: 42px !important; height: 32px !important; min-height: 32px !important; max-height: 32px !important; box-sizing: border-box !important; overflow: hidden; }
 .cmp-tbl--top { position: absolute; top: 0; left: 0; z-index: 2; clip-path: inset(0 0 0 50%); pointer-events: none; }
 .cmp-box__tag { position: absolute; top: 8px; z-index: 15; padding: 3px 10px; font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; border-radius: 5px; pointer-events: none; }
 .cmp-box__tag--left { left: 40px; background: rgba(255,69,58,.15); color: #ff453a; border: 1px solid rgba(255,69,58,.25); }
@@ -406,6 +406,7 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 
 /* Fix: violation borders → outline (no layout shift) for comparison */
 .cmp-tbl .demo__cell--warn { border: none !important; outline: 2px solid #ff9f0a; outline-offset: -2px; }
+.cmp-tbl .demo__cell--viol { border: none !important; outline: 2px solid #ff453a; outline-offset: -2px; }
 .cmp-tbl .grid-row--hard td { border-bottom: none !important; }
 .cmp-tbl .grid-row--soft td { border-bottom: none !important; }
 .cmp-tbl .tbl-cls-cell { box-sizing: border-box !important; }
@@ -413,3 +414,8 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 /* Old schedule: faded; New schedule: solid */
 .cmp-tbl .demo__cell { opacity: 0.35; }
 .cmp-tbl--top .demo__cell { opacity: 1; }
+
+/* Force identical row heights */
+.cmp-tbl .tbl-cell { height: 38px !important; max-height: 38px !important; box-sizing: border-box !important; padding: 2px !important; }
+.cmp-tbl .tbl-cls-cell { height: 38px !important; max-height: 38px !important; }
+.cmp-tbl .tbl-num-hdr { height: 18px !important; }
