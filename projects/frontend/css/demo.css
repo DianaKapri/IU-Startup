@@ -389,14 +389,16 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 /* ═══ Comparison: fixed-width overlay ═══ */
 .cmp-box { position: relative; margin-top: 16px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); }
 .cmp-box__scroll { overflow: auto; max-height: 520px; -webkit-overflow-scrolling: touch; }
-.cmp-box__layers { position: relative; }
-.cmp-tbl { table-layout: fixed !important; }
-.cmp-tbl td, .cmp-tbl th { width: 44px; min-width: 44px; max-width: 44px; overflow: hidden; }
-.cmp-tbl .tbl-cls-cell { width: 36px; min-width: 36px; max-width: 36px; }
-.cmp-tbl .tbl-day-hdr { width: auto; min-width: auto; max-width: none; }
+.cmp-box__layers { position: relative; width: max-content; }
+.cmp-tbl { border-collapse: collapse; }
+.cmp-tbl .tbl-hdr-cls,
+.cmp-tbl .tbl-cls-cell { width: 34px !important; min-width: 34px !important; max-width: 34px !important; box-sizing: border-box; }
+.cmp-tbl .tbl-num-hdr,
+.cmp-tbl .tbl-cell { width: 46px !important; min-width: 46px !important; max-width: 46px !important; box-sizing: border-box; }
+.cmp-tbl .tbl-cell .demo__cell { width: 42px !important; min-width: 42px !important; }
 .cmp-tbl--top { position: absolute; top: 0; left: 0; z-index: 2; clip-path: inset(0 0 0 50%); pointer-events: none; }
 .cmp-box__tag { position: absolute; top: 8px; z-index: 15; padding: 3px 10px; font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; border-radius: 5px; pointer-events: none; }
-.cmp-box__tag--left { left: 44px; background: rgba(255,69,58,.15); color: #ff453a; border: 1px solid rgba(255,69,58,.25); }
+.cmp-box__tag--left { left: 40px; background: rgba(255,69,58,.15); color: #ff453a; border: 1px solid rgba(255,69,58,.25); }
 .cmp-box__tag--right { right: 12px; background: rgba(48,209,88,.15); color: #30d158; border: 1px solid rgba(48,209,88,.25); }
 .cmp-box__slider { position: absolute; top: 0; bottom: 0; left: 50%; z-index: 20; width: 3px; transform: translateX(-50%); cursor: ew-resize; }
 .cmp-box__line { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; transform: translateX(-50%); background: rgba(255,255,255,.5); }
