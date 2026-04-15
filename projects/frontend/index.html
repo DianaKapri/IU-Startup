@@ -766,10 +766,52 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 
     h += '</div>';
 
-    h += '<div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div>';
+    /* Image-comparison style: fixed-width tables overlaid */
+    h += '<div class="cmp-box" id="cmpBox">';
+    h += '<div class="cmp-box__scroll">';
+    h += '<div class="cmp-box__layers">';
+    h += '<table class="acc-grid-tbl cmp-tbl" id="optTblOld"></table>';
+    h += '<table class="acc-grid-tbl cmp-tbl cmp-tbl--top" id="optTblNew"></table>';
+    h += '</div>';
+    h += '</div>';
+    h += '<div class="cmp-box__tag cmp-box__tag--left">Текущее</div>';
+    h += '<div class="cmp-box__tag cmp-box__tag--right">Улучшенное</div>';
+    h += '<div class="cmp-box__slider" id="cmpSlider">';
+    h += '<div class="cmp-box__line"></div>';
+    h += '<div class="cmp-box__knob">◀ ▶</div>';
+    h += '</div>';
+    h += '</div>';
 
     el.innerHTML = h;
+    renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'));
     renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true);
+
+    /* Slider logic */
+    (function(){
+      var box = document.getElementById('cmpBox');
+      var top = document.querySelector('.cmp-tbl--top');
+      var slider = document.getElementById('cmpSlider');
+      if (!box||!top||!slider) return;
+      var pct = 50;
+      function set(p) {
+        pct = Math.max(3, Math.min(97, p));
+        top.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
+        slider.style.left = pct + '%';
+      }
+      set(50);
+      var drag = false;
+      function move(e) {
+        if (!drag) return;
+        var r = box.getBoundingClientRect();
+        set(((e.touches ? e.touches[0].clientX : e.clientX) - r.left) / r.width * 100);
+      }
+      slider.onmousedown = function(e) { drag=true; e.preventDefault(); };
+      slider.ontouchstart = function() { drag=true; };
+      document.addEventListener('mousemove', move);
+      document.addEventListener('touchmove', move, {passive:true});
+      document.addEventListener('mouseup', function() { drag=false; });
+      document.addEventListener('touchend', function() { drag=false; });
+    })();
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }
