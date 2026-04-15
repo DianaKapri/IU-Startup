@@ -37,11 +37,12 @@ function doAudit(sch,cg){
     var dd=days.map(function(d){return d.reduce(function(s,sub){return s+gd(sub,g);},0);});
     var dmBase=g<=1?4:g<=4?5:g<=6?6:7;
     /* C-01 */
+    var peExceptionUsed=false;
     days.forEach(function(d,di){
       var c=d.filter(function(s){return s;}).length;
       if(c>dmBase){
-        if(g<=4&&c===dmBase+1&&d.some(function(s){return s==='фк';}))return;
-        ch.push({id:'C-01',nm:'Макс. уроков/день',st:'v',ds:cls+' '+DN[di]+': '+c+' ур. (макс. '+dmBase+')',sg:'Уберите '+(c-dmBase)+' урок'});
+        if(g<=4&&c===dmBase+1&&d.some(function(s){return s==='фк';})&&!peExceptionUsed){peExceptionUsed=true;return;}
+        ch.push({id:'C-01',nm:'Макс. уроков/день',st:'v',ds:cls+' '+DN[di]+': '+c+' ур. (макс. '+dmBase+(g<=4?', +1 за физ-ру один раз/нед':'')+')',sg:'Уберите '+(c-dmBase)+' урок'});
       }
     });
     /* C-02 */
@@ -134,13 +135,44 @@ function optSchedule(sch,cg,mode){
     compact(days);
     /* Fix C-01 */
     var dmBase2=g<=1?4:g<=4?5:g<=6?6:7;
-    for(var c01=0;c01<10;c01++){
+    for(var c01=0;c01<20;c01++){
       var counts=days.map(function(d){return d.filter(function(s){return s;}).length;});
-      var overIdx=-1;counts.forEach(function(c,i){if(c>dmBase2&&overIdx===-1)overIdx=i;});if(overIdx===-1)break;
-      var minIdx=-1,minC=999;counts.forEach(function(c,i){if(i!==overIdx&&c<dmBase2&&c<minC){minC=c;minIdx=i;}});if(minIdx===-1)break;
+      /* For grades 1-4: allow ONE day with dmBase+1 (PE exception), fix the rest */
+      var overDays=[];counts.forEach(function(c,i){if(c>dmBase2)overDays.push(i);});
+      if(overDays.length===0)break;
+      /* If only one overloaded day at dmBase+1 for grades 1-4 and has PE — OK */
+      if(g<=4&&overDays.length===1&&counts[overDays[0]]===dmBase2+1&&days[overDays[0]].some(function(s){return s==='фк';}))break;
+      var overIdx=overDays[0];
+      var minIdx=-1,minC=999;counts.forEach(function(c,i){if(i!==overIdx&&c<counts[overIdx]-1&&c<minC){minC=c;minIdx=i;}});
+      if(minIdx===-1)break;
       var heavy=days[overIdx],lightD=days[minIdx],moved=false;
       for(var si=heavy.length-1;si>=0&&!moved;si--){if(!heavy[si])continue;var subj=heavy[si];var hasDup=false;for(var ti=0;ti<lightD.length;ti++){if(lightD[ti]===subj){hasDup=true;break;}}if(!hasDup){heavy[si]='';lightD.push(subj);moved=true;}}
       if(!moved)break;compact(days);
+    }
+    /* Fix C-01 PE exception: for grades 1-4, if a day has dmBase+1 lessons, 
+       ensure PE (фк) is in that day. If PE is elsewhere, swap it in. */
+    if(g<=4){
+      compact(days);
+      var cntsC01=days.map(function(d){return d.filter(function(s){return s;}).length;});
+      var overDay=-1;cntsC01.forEach(function(c,i){if(c===dmBase2+1&&overDay===-1)overDay=i;});
+      if(overDay!==-1&&!days[overDay].some(function(s){return s==='фк';})){
+        /* Find PE in another day and swap with lightest subject from overloaded day */
+        var peDay=-1,peIdx=-1;
+        days.forEach(function(d,di){if(di!==overDay){for(var j=0;j<d.length;j++){if(d[j]==='фк'){peDay=di;peIdx=j;}}}}); 
+        if(peDay!==-1){
+          /* Find lightest subject in overloaded day to swap out */
+          var lightestVal=999,lightestIdx=-1;
+          days[overDay].forEach(function(s,si){
+            if(s&&s!=='фк'){var v=gd(s,g);if(v<lightestVal){lightestVal=v;lightestIdx=si;}}
+          });
+          if(lightestIdx!==-1){
+            var swapSubj=days[overDay][lightestIdx];
+            days[overDay][lightestIdx]='фк';
+            days[peDay][peIdx]=swapSubj;
+          }
+        }
+        compact(days);
+      }
     }
     /* Fix C-03 */
     for(var c03=0;c03<10;c03++){
