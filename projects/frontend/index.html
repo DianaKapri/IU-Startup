@@ -766,19 +766,37 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 
     h += '</div>';
 
-    /* Side-by-side comparison */
-    h += '<div class="compare-pair">';
-    h += '<div class="compare-half compare-half--old"><div class="compare-half__tag">Текущее</div><div class="acc-tbl-wrap" id="cmpScrollOld"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
-    h += '<div class="compare-half compare-half--new"><div class="compare-half__tag compare-half__tag--green">Улучшенное</div><div class="acc-tbl-wrap" id="cmpScrollNew"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
+    /* Split-view comparison with draggable divider */
+    h += '<div class="compare-split" id="compareSplit">';
+    h += '<div class="compare-split__left" id="cmpLeft" style="flex:1"><div class="compare-split__tag compare-split__tag--red">Текущее</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
+    h += '<div class="compare-split__handle" id="cmpHandle"><div class="compare-split__bar"></div><div class="compare-split__knob">◀▶</div></div>';
+    h += '<div class="compare-split__right" id="cmpRight" style="flex:1"><div class="compare-split__tag compare-split__tag--green">Улучшенное</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
     h += '</div>';
 
     el.innerHTML = h;
     renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'));
     renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true);
-    /* Sync scroll */
-    var sOld=document.getElementById('cmpScrollOld'),sNew=document.getElementById('cmpScrollNew');
-    if(sOld&&sNew){var s=false;sOld.onscroll=function(){if(!s){s=true;sNew.scrollLeft=sOld.scrollLeft;sNew.scrollTop=sOld.scrollTop;s=false;}};sNew.onscroll=function(){if(!s){s=true;sOld.scrollLeft=sNew.scrollLeft;sOld.scrollTop=sNew.scrollTop;s=false;}};}
 
+    /* Draggable split handle */
+    (function(){
+      var split=document.getElementById('compareSplit'),left=document.getElementById('cmpLeft'),right=document.getElementById('cmpRight'),handle=document.getElementById('cmpHandle');
+      if(!split||!handle)return;
+      var dragging=false;
+      function onMove(e){
+        if(!dragging)return;
+        var rect=split.getBoundingClientRect();
+        var x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+        var pct=Math.max(15,Math.min(85,(x/rect.width)*100));
+        left.style.flex='0 0 '+pct+'%';
+        right.style.flex='0 0 '+(100-pct-1)+'%';
+      }
+      handle.addEventListener('mousedown',function(e){dragging=true;e.preventDefault();});
+      handle.addEventListener('touchstart',function(){dragging=true;});
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('touchmove',onMove);
+      document.addEventListener('mouseup',function(){dragging=false;});
+      document.addEventListener('touchend',function(){dragging=false;});
+    })();
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }
