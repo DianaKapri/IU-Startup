@@ -132,6 +132,10 @@ function optSchedule(sch,cg,mode){
         [0,4,5,6,7].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
         /* Fill light subjects in remaining slots */
         for(var j=0;j<su.length;j++){if(!res[j]&&li<light.length)res[j]=light[li++];}
+        /* Avoid ФК at lesson 1 (position 0) — swap with another light subject */
+        if(res[0]&&res[0].s==='фк'){
+          for(var sw=4;sw<su.length;sw++){if(res[sw]&&res[sw].dv<th&&res[sw].s!=='фк'){var tmp2=res[0];res[0]=res[sw];res[sw]=tmp2;break;}}
+        }
         var ri=0;for(var i=0;i<d.length;i++){if(d[i]){d[i]=res[ri]?res[ri].s:d[i];ri++;}}
       });
       for(var p=0;p<4;p++){
