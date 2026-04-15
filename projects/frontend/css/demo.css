@@ -212,11 +212,11 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
   font-size: .72rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
   color: rgba(255,255,255,.45); background: rgba(255,255,255,.05);
   border: 1px solid rgba(255,255,255,.09); border-radius: 980px;
-  padding: 4px 12px; margin-bottom: 20px;
+  padding: 4px 12px; margin-bottom: 20px; margin-left: auto; margin-right: auto;
 }
 
 .demo-results { margin-bottom: 40px; }
-.demo-tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.08); padding-bottom: 10px; }
+.demo-tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.08); padding-bottom: 10px; justify-content: center; flex-wrap: wrap; }
 .demo-tab { font-family: var(--font); font-size: .82rem; font-weight: 500; color: rgba(255,255,255,.4); background: none; border: none; padding: 6px 14px; border-radius: 980px; cursor: pointer; transition: all .15s; white-space: nowrap; }
 .demo-tab:hover { color: #f5f5f7; }
 .demo-tab--active { color: #f5f5f7; background: rgba(255,255,255,.1); }
@@ -253,9 +253,9 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 }
 
 /* ═══ Grid scroll fix ═══ */
-#inlineDemo { max-width: 100vw; overflow-x: visible; }
-#inlineDemoTabGrid .acc-tbl-wrap,
-#inlineDemoTabOptimized .acc-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: calc(100vw - 40px); }
+#inlineDemo { max-width: 100vw; overflow-x: visible; text-align: center; }
+#inlineDemo .acc-tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: calc(100vw - 40px); display: inline-block; text-align: left; }
+#inlineDemo .acc-grid-tbl { margin: 0 auto; }
 
 /* ═══ Recommendations: collapsible by class ═══ */
 .rec-class-group { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
@@ -387,15 +387,15 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .sp-alert__tip { font-size: .78rem; color: #30d158; padding: 8px 12px; background: rgba(48,209,88,.06); border: 1px solid rgba(48,209,88,.12); border-radius: 8px; }
 
 /* ═══ Comparison: fixed-width overlay ═══ */
-.cmp-box { position: relative; margin-top: 16px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); }
-.cmp-box__scroll { overflow: auto; max-height: 520px; -webkit-overflow-scrolling: touch; }
+.cmp-box { position: relative; margin-top: 16px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); display: inline-block; text-align: left; }
+.cmp-box__scroll { overflow: auto; max-height: 520px; -webkit-overflow-scrolling: touch; max-width: calc(100vw - 40px); }
 .cmp-box__layers { position: relative; width: max-content; }
 .cmp-tbl { border-collapse: collapse; }
-.cmp-tbl .tbl-hdr-cls,
-.cmp-tbl .tbl-cls-cell { width: 34px !important; min-width: 34px !important; max-width: 34px !important; box-sizing: border-box; }
-.cmp-tbl .tbl-num-hdr,
-.cmp-tbl .tbl-cell { width: 46px !important; min-width: 46px !important; max-width: 46px !important; box-sizing: border-box; }
-.cmp-tbl .tbl-cell .demo__cell { width: 42px !important; min-width: 42px !important; height: 32px !important; min-height: 32px !important; max-height: 32px !important; box-sizing: border-box !important; overflow: hidden; }
+.cmp-tbl .tbl-day-cell { width: 90px !important; min-width: 90px !important; max-width: 90px !important; box-sizing: border-box; }
+.cmp-tbl .tbl-num-cell { width: 24px !important; min-width: 24px !important; max-width: 24px !important; box-sizing: border-box; }
+.cmp-tbl .tbl-subj-cell { width: 52px !important; min-width: 52px !important; max-width: 52px !important; box-sizing: border-box; padding: 2px !important; }
+.cmp-tbl .tbl-cls-hdr { width: 52px !important; min-width: 52px !important; max-width: 52px !important; box-sizing: border-box; }
+.cmp-tbl .demo__cell { width: 48px !important; min-width: 48px !important; height: 32px !important; max-height: 32px !important; box-sizing: border-box !important; overflow: hidden; }
 .cmp-tbl--top { position: absolute; top: 0; left: 0; z-index: 2; clip-path: inset(0 0 0 50%); pointer-events: none; }
 .cmp-box__tag { position: absolute; top: 8px; z-index: 15; padding: 3px 10px; font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; border-radius: 5px; pointer-events: none; }
 .cmp-box__tag--left { left: 40px; background: rgba(255,69,58,.15); color: #ff453a; border: 1px solid rgba(255,69,58,.25); }
@@ -407,18 +407,17 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 /* Fix: violation borders → outline (no layout shift) for comparison */
 .cmp-tbl .demo__cell--warn { border: none !important; outline: 2px solid #ff9f0a; outline-offset: -2px; }
 .cmp-tbl .demo__cell--viol { border: none !important; outline: 2px solid #ff453a; outline-offset: -2px; }
-.cmp-tbl .grid-row--hard td { border-bottom: none !important; }
-.cmp-tbl .grid-row--soft td { border-bottom: none !important; }
-.cmp-tbl .tbl-cls-cell { box-sizing: border-box !important; }
+.cmp-tbl .tbl-day-first td { border-top: none !important; }
+.cmp-tbl .tbl-day-cell { box-sizing: border-box !important; }
 
 /* Old schedule: faded; New schedule: solid */
 .cmp-tbl .demo__cell { opacity: 0.35; }
 .cmp-tbl--top .demo__cell { opacity: 1; }
 
 /* Force identical row heights */
-.cmp-tbl .tbl-cell { height: 38px !important; max-height: 38px !important; box-sizing: border-box !important; padding: 2px !important; }
-.cmp-tbl .tbl-cls-cell { height: 38px !important; max-height: 38px !important; }
-.cmp-tbl .tbl-num-hdr { height: 18px !important; }
+.cmp-tbl .tbl-subj-cell { height: 38px !important; max-height: 38px !important; box-sizing: border-box !important; padding: 2px !important; }
+.cmp-tbl .tbl-num-cell { height: 38px !important; max-height: 38px !important; }
+.cmp-tbl .tbl-cls-hdr { height: 32px !important; }
 
 /* ═══ Transposed grid: days vertical, classes horizontal ═══ */
 .acc-grid-tbl { border-collapse: collapse; }
