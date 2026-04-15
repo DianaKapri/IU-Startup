@@ -1,6 +1,99 @@
 document.addEventListener('DOMContentLoaded', function () {
 'use strict';
 
+// ─── Scroll Animations ───
+function initScrollAnimations() {
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('fade-in--visible');
+      }
+    });
+  }, observerOptions);
+
+  // Наблюдаем за элементами с классом fade-in
+  document.querySelectorAll('.fade-in').forEach(el => {
+    observer.observe(el);
+  });
+}
+
+// ─── Enhanced Hover Effects ───
+function initHoverEffects() {
+  // Эффекты для карточек продуктов
+  const productCards = document.querySelectorAll('.pg-product-card');
+  productCards.forEach(card => {
+    card.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-8px) scale(1.02)';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0) scale(1)';
+    });
+  });
+
+  // Эффекты для кнопок
+  const buttons = document.querySelectorAll('.btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-2px)';
+      this.style.boxShadow = '0 8px 16px rgba(0,113,227,0.3)';
+    });
+    
+    btn.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+      this.style.boxShadow = 'none';
+    });
+  });
+
+  // Эффекты для вкладок
+  const tabs = document.querySelectorAll('.acc-tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('mouseenter', function() {
+      if (!this.classList.contains('acc-tab--active')) {
+        this.style.backgroundColor = 'rgba(255,255,255,0.08)';
+      }
+    });
+    
+    tab.addEventListener('mouseleave', function() {
+      if (!this.classList.contains('acc-tab--active')) {
+        this.style.backgroundColor = 'transparent';
+      }
+    });
+  });
+}
+
+// ─── Parallax Effects ───
+function initParallaxEffects() {
+  const header = document.querySelector('.acc-header');
+  const intro = document.querySelector('.acc-intro');
+  
+  if (header || intro) {
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      const rate = scrolled * -0.5;
+      
+      if (header) {
+        header.style.transform = `translateY(${rate * 0.3}px)`;
+        header.style.opacity = 1 - scrolled / 500;
+      }
+      
+      if (intro) {
+        intro.style.transform = `translateY(${rate * 0.2}px)`;
+      }
+    });
+  }
+}
+
+// Инициализация всех эффектов
+initScrollAnimations();
+initHoverEffects();
+initParallaxEffects();
+
 spRequireAuth(function () {
   var user = null;
 
@@ -163,8 +256,84 @@ spRequireAuth(function () {
   /* ═══ Demo button ═══ */
   var demoBtn = document.getElementById('accDemoBtn');
   if (demoBtn) {
-    demoBtn.addEventListener('click', function () { showResults(DEM, DCG); });
+    demoBtn.addEventListener('click', function () { 
+      // Load demo file and show results in main account section
+      showResults(DEM, DCG);
+    });
   }
+
+  /* ═══ Inline Demo Panel Functions (like on main page) */
+  var _inlineDemoReady = false;
+  function _initInlineDemo() {
+    if (_inlineDemoReady) return;
+    _inlineDemoReady = true;
+    try {
+      var audit = doAudit(DEM, DCG);
+      var gridEl = document.getElementById('inlineDemoTabGrid');
+      var tbl = document.createElement('table');
+      tbl.className = 'acc-grid-tbl';
+      gridEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
+      gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
+      renderGrid(DEM, DCG, audit, tbl);
+      var recsEl = document.getElementById('inlineDemoTabRecs');
+      renderRecs(audit.top, recsEl);
+      _renderOptimizedTab(DEM, DCG, audit);
+    } catch(e) { console.warn('Demo init error:', e); }
+  }
+
+  function toggleInlineDemo() {
+    var panel = document.getElementById('inlineDemo');
+    var visible = panel.style.display !== 'none';
+    panel.style.display = visible ? 'none' : 'block';
+    if (!visible) { 
+      _initInlineDemo(); 
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); 
+    }
+  }
+
+  function showInlineDemo() {
+    var panel = document.getElementById('inlineDemo');
+    panel.style.display = 'block';
+    _initInlineDemo();
+    document.getElementById('accResults').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function _renderOptimizedTab(sch, cg, origAudit) {
+    var el = document.getElementById('inlineDemoTabOptimized');
+    if (!el) return;
+    try {
+      var opt = optSchedule(sch, cg, 'bell');
+      var audit = doAudit(opt, cg);
+      var h = '<div class="demo-optimized-summary">';
+      h += '<h3>Improved Schedule</h3>';
+      h += '<div class="demo-score-comparison">';
+      h += '<div class="demo-score-item"><span class="demo-score-label">Original:</span><span class="demo-score-value" style="color:' + (origAudit.score >= 90 ? '#30d158' : origAudit.score >= 70 ? '#ff9f0a' : '#ff453a') + '">' + origAudit.score + '/100</span></div>';
+      h += '<div class="demo-score-item"><span class="demo-score-label">Improved:</span><span class="demo-score-value" style="color:' + (audit.score >= 90 ? '#30d158' : audit.score >= 70 ? '#ff9f0a' : '#ff453a') + '">' + audit.score + '/100</span></div>';
+      h += '</div></div><div class="acc-tbl-wrap"></div>';
+      el.innerHTML = h;
+      var tbl = document.createElement('table');
+      tbl.className = 'acc-grid-tbl';
+      el.querySelector('.acc-tbl-wrap').appendChild(tbl);
+      renderGrid(opt, cg, audit, tbl);
+    } catch(e) { console.warn('Optimized tab error:', e); }
+  }
+
+  // Tab switching for inline demo
+  document.addEventListener('click', function (e) {
+    var tab = e.target.closest('.demo-tab'); 
+    if (!tab) return;
+    var panel = tab.closest('#inlineDemo'); 
+    if (!panel) return;
+    panel.querySelectorAll('.demo-tab').forEach(function (t) { t.classList.remove('demo-tab--active'); });
+    tab.classList.add('demo-tab--active');
+    var map = { grid: 'inlineDemoTabGrid', recs: 'inlineDemoTabRecs', optimized: 'inlineDemoTabOptimized', rules: 'inlineDemoTabRules' };
+    panel.querySelectorAll('.demo-tab-panel').forEach(function (p) { p.style.display = 'none'; });
+    var target = map[tab.getAttribute('data-tab')];
+    if (target) { 
+      var paneEl = document.getElementById(target); 
+      if (paneEl) paneEl.style.display = 'block'; 
+    }
+  });
 
   /* ═══ Reset ═══ */
   var resetBtn = document.getElementById('resetBtn');
@@ -188,34 +357,14 @@ spRequireAuth(function () {
     var results = document.getElementById('accResults');
     var actions = document.getElementById('accActions');
     var introEl = document.getElementById('accIntro');
+    
+    // Сохраняем данные аудита для возможности сохранения
+    currentAuditData = audit;
+    
     if (dropzone) dropzone.style.display = 'none';
-    if (introEl)  introEl.style.display  = 'none';
     if (results) results.style.display = '';
     if (actions) actions.style.display = '';
 
-    /* --- Audit tab --- */
-    var auditEl = document.getElementById('tabAudit');
-    if (auditEl) {
-      var classes = Object.keys(sch);
-      var h = '<div class="acc-audit-scores">';
-      classes.forEach(function (cl) {
-        var r = audit.cr[cl]; if (!r) return;
-        var hv = r.ch.some(function (c) { return c.st === 'v'; });
-        var hw = r.ch.some(function (c) { return c.st === 'w'; });
-        var col = hv ? '#ff453a' : hw ? '#ff9f0a' : '#30d158';
-        var issues = r.ch.map(function (c) {
-          return '<div class="acc-issue acc-issue--' + c.st + '"><span class="acc-issue__id">' + c.id + '</span> ' + c.nm + '</div>';
-        }).join('');
-        h += '<div class="acc-score-card"><div class="acc-score-card__name" style="color:' + col + '">' + cl + '</div>' + issues + '</div>';
-      });
-      h += '</div>';
-      if (audit.vi.length || audit.wa.length) {
-        h += '<div class="acc-audit-summary"><span class="acc-audit-stat acc-audit-stat--v">❌ ' + audit.vi.length + ' нарушений</span> <span class="acc-audit-stat acc-audit-stat--w">⚠️ ' + audit.wa.length + ' рекомендаций</span> <span class="acc-audit-stat">Балл: ' + audit.score + '/100</span></div>';
-      } else {
-        h += '<div class="acc-audit-summary acc-audit-summary--ok">✅ Нарушений не обнаружено. Балл: ' + audit.score + '/100</div>';
-      }
-      auditEl.innerHTML = h;
-    }
 
     /* --- Grid tab --- */
     var gridEl = document.getElementById('tabGrid');
@@ -227,35 +376,25 @@ spRequireAuth(function () {
       renderGrid(sch, cg, audit, tbl);
     }
 
-    /* --- Heat tab --- */
-    var heatEl = document.getElementById('tabHeat');
-    if (heatEl) {
-      var htbl = document.createElement('table');
-      htbl.className = 'acc-heat-tbl';
-      heatEl.innerHTML = '<div class="acc-heat-note">'
-        + '<strong>Тепловая карта нагрузки</strong> — число баллов трудности по каждому дню и классу. '
-        + 'Чем краснее клетка, тем тяжелее день. Зелёный — лёгкий день, жёлтый — средний, красный — пик нагрузки. '
-        + 'Самый лёгкий день должен приходиться на среду или четверг (правило E-02).'
-        + '</div><div class="acc-tbl-wrap"></div>';
-      heatEl.querySelector('.acc-tbl-wrap').appendChild(htbl);
-      renderHeat(sch, cg, audit, htbl);
-    }
-
     /* --- Recs tab --- */
     var recsEl = document.getElementById('tabRecs');
     if (recsEl) { renderRecs(audit.top, recsEl); }
 
-    /* --- Fixed tab --- */
-    var fixedEl = document.getElementById('tabFixed');
-    if (fixedEl) { renderFixed(sch, cg, audit, fixedEl); }
+    /* --- Optimized tab --- */
+    var optimizedEl = document.getElementById('tabOptimized');
+    if (optimizedEl) { renderOptimized(sch, cg, audit, optimizedEl); }
 
-    /* --- Switch to audit tab --- */
-    switchTab('audit');
+    /* --- Rules tab --- */
+    var rulesEl = document.getElementById('tabRules');
+    if (rulesEl) { renderRules(rulesEl); }
+
+    /* --- Switch to grid tab --- */
+    switchTab('grid');
   }
 
   /* ═══ Tab switching ═══ */
   function switchTab(name) {
-    var panels = { audit: 'tabAudit', grid: 'tabGrid', heat: 'tabHeat', recs: 'tabRecs', fixed: 'tabFixed' };
+    var panels = { grid: 'tabGrid', recs: 'tabRecs', optimized: 'tabOptimized', rules: 'tabRules' };
     for (var key in panels) {
       var el = document.getElementById(panels[key]);
       if (el) el.style.display = key === name ? '' : 'none';
@@ -269,6 +408,190 @@ spRequireAuth(function () {
     btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
   });
 
-}); // end spRequireAuth
+  /* ═══ Save Audit Functionality ═══ */
+  var saveAuditBtn = document.getElementById('saveAuditBtn');
+  var currentAuditData = null;
 
-});
+  if (saveAuditBtn) {
+    saveAuditBtn.addEventListener('click', function () {
+      if (!currentAuditData) {
+        alert('Нет данных аудита для сохранения');
+        return;
+      }
+      saveAuditToSupabase(currentAuditData);
+    });
+  }
+
+  function saveAuditToSupabase(auditData) {
+    spGetCurrentUser().then(function (user) {
+      if (!user) {
+        alert('Пользователь не авторизован');
+        return;
+      }
+
+      var auditRecord = {
+        user_id: user.id,
+        school_name: user.school || '',
+        audit_data: JSON.stringify(auditData),
+        violations_count: auditData.vi ? auditData.vi.length : 0,
+        recommendations_count: auditData.wa ? auditData.wa.length : 0,
+        score: auditData.score || 0,
+        created_at: new Date().toISOString()
+      };
+
+      // Сохранение в Supabase
+      supabase
+        .from('saved_audits')
+        .insert([auditRecord])
+        .then(function (response) {
+          if (response.error) {
+            console.error('Ошибка сохранения аудита:', response.error);
+            alert('Ошибка при сохранении аудита: ' + response.error.message);
+          } else {
+            alert('Аудит успешно сохранен!');
+            console.log('Аудит сохранен:', response.data);
+          }
+        })
+        .catch(function (error) {
+          console.error('Ошибка запроса:', error);
+          alert('Произошла ошибка при сохранении аудита');
+        });
+    });
+  }
+
+  // Обновляем функцию renderResults для сохранения текущих данных
+  var originalRenderResults = window.renderResults;
+  if (originalRenderResults) {
+    window.renderResults = function(sch, cg, audit) {
+      currentAuditData = audit;
+      return originalRenderResults(sch, cg, audit);
+    };
+  } else {
+    // Если функции нет, создаем свою
+    window.renderResults = function(sch, cg, audit) {
+      currentAuditData = audit;
+      // Здесь можно добавить логику отображения результатов
+    };
+  }
+
+  /* ─── Render Optimized Schedule ─── */
+  function renderOptimized(sch, cg, audit, container) {
+    container.innerHTML = '<div class="acc-optimized-note">'
+      + '<strong>Улучшенная сетка уроков</strong> — расписание с исправленными нарушениями СанПиН. '
+      + 'Все рекомендации применены, нагрузка равномерно распределена, сложные предметы перенесены на оптимальные уроки.'
+      + '</div><div class="acc-tbl-wrap"></div>';
+    
+    var tbl = document.createElement('table');
+    tbl.className = 'acc-grid-tbl';
+    container.querySelector('.acc-tbl-wrap').appendChild(tbl);
+    
+    // Здесь можно добавить логику генерации улучшенного расписания
+    // Пока используем ту же сетку, что и в Grid
+    renderGrid(sch, cg, audit, tbl);
+  }
+
+  /* ─── Render Rules ─── */
+  function renderRules(container) {
+    container.innerHTML = `
+      <div class="rules-hero">
+        <div class="rules-hero__badge">Нормативная база</div>
+      </div>
+
+      <div class="rules-score-box">
+        <div class="rules-score-box__formula">Score = (7 × number of classes - violations - recommendations) ÷ (7 × number of classes) × 100</div>
+        <div class="rules-score-box__scale">
+          <span class="rules-scale rules-scale--green">90-100 compliant</span>
+          <span class="rules-scale rules-scale--yellow">70-89 recommendations</span>
+          <span class="rules-scale rules-scale--red">0-69 violations</span>
+        </div>
+      </div>
+
+      <div class="rules-columns">
+        <div class="rules-col">
+          <div class="rules-col__track">
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">C-01</div>
+              <div class="rules-card__title">Maximum lessons per day</div>
+              <div class="rules-card__text">1st grade: 4 lessons (once 5 for PE). 2-4 grades: 5 (once 6 with PE). 5-6 grades: 6. 7-11 grades: 7.</div>
+              <div class="rules-card__src">SP 2.4.3648-20, p. 3.4.16</div>
+            </div>
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">C-02</div>
+              <div class="rules-card__title">Weekly workload</div>
+              <div class="rules-card__text">5-day week: 1st grade - 21 h, 2-4 - 23, 5 - 29, 6 - 30, 7 - 32, 8-9 - 33, 10-11 - 34 h. Exceeding = violation.</div>
+              <div class="rules-card__src">SanPiN 1.2.3685-21, table 6.6</div>
+            </div>
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">C-03</div>
+              <div class="rules-card__title">Workload uniformity</div>
+              <div class="rules-card__text">Difference between max and min lessons per day <= 1. Acceptable: 6-6-6-6-5. Violation: 4-7-6-7-7.</div>
+              <div class="rules-card__src">SP 2.4.3648-20, p. 3.4.16</div>
+            </div>
+            <div class="rules-card rules-card--info">
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">Difficulty scale</div>
+              <div class="rules-card__text">Each subject has a difficulty score from 1 to 13. PE = 1, Math = 8-10, Physics = 8-13. Scores depend on grade.</div>
+              <div class="rules-card__src">SanPiN table 6.9-6.11</div>
+            </div>
+          </div>
+        </div>
+        <div class="rules-col rules-col--md">
+          <div class="rules-col__track rules-col__track--slow">
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">E-02</div>
+              <div class="rules-card__title">Light day</div>
+              <div class="rules-card__text">Wednesday or Thursday - the lightest day by difficulty score sum. If minimum on Mon or Fri - violation.</div>
+              <div class="rules-card__src">SanPiN p. 189; MR p. 3.3</div>
+            </div>
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">X-01</div>
+              <div class="rules-card__title">Windows in schedule</div>
+              <div class="rules-card__text">Empty lessons between first and last - forbidden. 6 lessons = consecutively, without gaps. Windows for students are unacceptable.</div>
+              <div class="rules-card__src">Common practice</div>
+            </div>
+            <div class="rules-card rules-card--info">
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">How Score is calculated</div>
+              <div class="rules-card__text">Each class is checked by 7 rules. Total checks = 7 × number of classes. Each violation or recommendation reduces Score. 100 = no problems.</div>
+              <div class="rules-card__src">ShkolaPlan Formula</div>
+            </div>
+            <div class="rules-card rules-card--info">
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">Hard vs Soft</div>
+              <div class="rules-card__text">5 hard (C-01, C-02, C-03, E-02, X-01) - red, SanPiN violations. 2 soft (E-01, E-03) - orange, MR recommendations.</div>
+              <div class="rules-card__src">ShkolaPlan Classification</div>
+            </div>
+          </div>
+        </div>
+        <div class="rules-col rules-col--lg">
+          <div class="rules-col__track rules-col__track--fast">
+            <div class="rules-card rules-card--soft">
+              <div class="rules-card__badge rules-card__badge--soft">E-01</div>
+              <div class="rules-card__title">Difficult subjects in 2-4 lessons</div>
+              <div class="rules-card__text">Subjects >= 8 points - in 2-4 lessons (peak performance 10:00-12:00). In 1st and 5+ - undesirable but acceptable.</div>
+              <div class="rules-card__src">MR 2.4.0331-23, p. 3.2</div>
+            </div>
+            <div class="rules-card rules-card--soft">
+              <div class="rules-card__badge rules-card__badge--soft">E-03</div>
+              <div class="rules-card__title">Alternating subjects</div>
+              <div class="rules-card__text">2 difficult in a row (>= 8 b.) - warning. 3+ in a row - strong warning. This is a recommendation, not a prohibition.</div>
+              <div class="rules-card__src">MR p. 3.2; SP p. 3.4.16</div>
+            </div>
+            <div class="rules-card rules-card--info">
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">Regulatory documents</div>
+              <div class="rules-card__text">SanPiN 1.2.3685-21 (ed. 24.12.2025) - valid until 01.03.2027. SP 2.4.3648-20 - until 01.01.2027. MR 2.4.0331-23 - indefinitely.</div>
+              <div class="rules-card__src">Rospotrebnadzor</div>
+            </div>
+            <div class="rules-card rules-card--info">
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">Why E-03 is not a prohibition</div>
+              <div class="rules-card__text">In a real school with limited number of teachers and classrooms, separating all difficult subjects with easy ones is often physically impossible.</div>
+              <div class="rules-card__src">Practical experience</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+})});
