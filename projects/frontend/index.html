@@ -766,16 +766,9 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 
     h += '</div>';
 
-    /* Toggle between old and new grid */
-    h += '<div class="cmp-toggle">';
-    h += '<button class="cmp-toggle__btn cmp-toggle__btn--active" id="cmpBtnOld" onclick="document.getElementById(\'cmpOldGrid\').style.display=\'\';document.getElementById(\'cmpNewGrid\').style.display=\'none\';this.classList.add(\'cmp-toggle__btn--active\');document.getElementById(\'cmpBtnNew\').classList.remove(\'cmp-toggle__btn--active\')"><span class="cmp-toggle__dot cmp-toggle__dot--red"></span>Текущее</button>';
-    h += '<button class="cmp-toggle__btn" id="cmpBtnNew" onclick="document.getElementById(\'cmpNewGrid\').style.display=\'\';document.getElementById(\'cmpOldGrid\').style.display=\'none\';this.classList.add(\'cmp-toggle__btn--active\');document.getElementById(\'cmpBtnOld\').classList.remove(\'cmp-toggle__btn--active\')"><span class="cmp-toggle__dot cmp-toggle__dot--green"></span>Улучшенное</button>';
-    h += '</div>';
-    h += '<div id="cmpOldGrid"><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
-    h += '<div id="cmpNewGrid" style="display:none"><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
+    h += '<div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div>';
 
     el.innerHTML = h;
-    renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'));
     renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true);
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
