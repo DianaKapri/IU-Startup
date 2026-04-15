@@ -15,7 +15,7 @@
   <a href="/" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
   <div class="nav__center">
     <a href="/#features" class="nav__link">Возможности</a>
-    <a href="/demo.html" class="nav__link">Демо</a>
+   
   </div>
   <div class="nav__right">
     <a href="/subscription.html" class="nav__link nav__link--buy" id="navBuyBtn">Купить подписку</a>
@@ -32,10 +32,28 @@
 <main class="acc-main">
   <header class="acc-header">
     <h1 class="acc-header__title" id="accDashTitle">Личный кабинет</h1>
-    <p class="acc-header__sub" id="accWelcome">Загрузите расписание для аудита</p>
+    <p class="acc-header__sub" id="accWelcome">Выберите задачу: проверить текущее расписание или собрать улучшенное</p>
   </header>
 
-  <section class="acc-upload">
+  <section class="acc-start" id="accStart">
+    <h2 class="acc-start__title">С чего начнем?</h2>
+    <p class="acc-start__sub">Выберите задачу — мы проведем вас по нужному пути.</p>
+    <div class="acc-start__cards">
+      <button class="acc-start-card" type="button" data-mode="audit" id="accModeAudit">
+        <span class="acc-start-card__badge">01</span>
+        <span class="acc-start-card__title">Проверить расписание</span>
+        <span class="acc-start-card__text">Загрузите Excel — мгновенно покажем нарушения СанПиН и рекомендации.</span>
+      </button>
+      <button class="acc-start-card" type="button" data-mode="build" id="accModeBuild">
+        <span class="acc-start-card__badge">02</span>
+        <span class="acc-start-card__title">Составить расписание</span>
+        <span class="acc-start-card__text">Алгоритм соберет улучшенную сетку уроков и сразу проверит ее на соответствие.</span>
+      </button>
+    </div>
+    <button class="btn btn--primary" type="button" id="accModeContinue" disabled>Продолжить →</button>
+  </section>
+
+  <section class="acc-upload" id="accUpload" style="display:none">
     <div class="acc-dropzone" id="accDropzone">
       <input type="file" id="accFileInput" accept=".xlsx,.xls" hidden/>
       <svg class="acc-dropzone__icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
@@ -49,7 +67,57 @@
     </div>
   </section>
 
-  <section class="acc-intro" id="accIntro">
+  <section class="acc-builder" id="accBuilder" style="display:none">
+    <div class="acc-builder__head">
+      <h2 class="acc-builder__title">Составление расписания</h2>
+      <p class="acc-builder__sub">Заполните параметры школы, и мы сгенерируем рабочую сетку с проверкой по СанПиН.</p>
+    </div>
+
+    <div class="acc-builder__steps">
+      <span class="acc-builder-step acc-builder-step--active" data-step-dot="1">1. Школа</span>
+      <span class="acc-builder-step" data-step-dot="2">2. Классы</span>
+      <span class="acc-builder-step" data-step-dot="3">3. Ограничения</span>
+    </div>
+
+    <div class="acc-builder-panel" data-step="1">
+      <label class="acc-builder-field">
+        <span>Название школы</span>
+        <input type="text" id="builderSchoolName" value="Школа №42" />
+      </label>
+      <label class="acc-builder-field">
+        <span>Дней в неделе</span>
+        <select id="builderDays">
+          <option value="5" selected>5</option>
+          <option value="6">6</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="acc-builder-panel" data-step="2" style="display:none">
+      <p class="acc-builder-hint">Классы (через запятую, например: 5А, 6А, 7Б)</p>
+      <input type="text" id="builderClasses" value="5А, 6А, 7А, 8А" />
+      <p class="acc-builder-hint">Максимум уроков в день</p>
+      <input type="number" id="builderMaxLessons" min="4" max="8" value="7" />
+    </div>
+
+    <div class="acc-builder-panel" data-step="3" style="display:none">
+      <p class="acc-builder-hint">Учителя и нагрузка (каждая строка: ФИО | предмет | часы/нед | классы)</p>
+      <textarea id="builderTeachers" rows="7">Иванова А.П. | Математика | 20 | 5А, 6А, 7А
+Петров С.И. | Физика | 16 | 7А, 8А
+Сидорова Е.В. | Русский язык | 22 | 5А, 6А, 7А, 8А
+Кузнецова Л.М. | История | 14 | 6А, 7А, 8А
+Фролов Д.Н. | Биология | 12 | 5А, 6А, 7А</textarea>
+    </div>
+
+    <div class="acc-builder__actions">
+      <button type="button" class="btn btn--ghost btn--sm" id="builderBackBtn" style="display:none">← Назад</button>
+      <button type="button" class="btn btn--primary btn--sm" id="builderNextBtn">Далее →</button>
+      <button type="button" class="btn btn--primary btn--sm" id="builderGenerateBtn" style="display:none">Сгенерировать и проверить</button>
+    </div>
+    <p class="acc-error" id="builderError"></p>
+  </section>
+
+  <section class="acc-intro" id="accIntro" style="display:none">
     <div class="acc-intro__header fade-in">
       <p class="acc-intro__eyebrow">ЧТО ВЫ ПОЛУЧИТЕ</p>
       <h2 class="acc-intro__title">Полный анализ расписания за секунды</h2>
