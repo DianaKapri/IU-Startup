@@ -49,9 +49,8 @@
 <div class="nav__backdrop" id="navBackdrop"></div>
 
 <section class="hero"><div class="hero__content">
-  <p class="hero__eyebrow fade-in">Аудит СанПиН за 5 мс · Расписание за 30 минут</p>
-  <h1 class="hero__title fade-in fade-in--d1">Расписание.<br/><span class="hero__title--gradient">Переосмыслено.</span></h1>
-  <p class="hero__subtitle fade-in fade-in--d2">Загрузите Excel — система мгновенно найдёт все нарушения и предложит исправления. Без таблиц, без догадок.</p>
+  <h1 class="hero__title fade-in fade-in--d1">Расписание без нарушений<br/><span class="hero__title--gradient">СанПиН</span></h1>
+  <p class="hero__subtitle fade-in fade-in--d2">Загрузите готовое — найдём нарушения.<br class="hide-mobile"/>Или соберём с нуля из учебного плана.</p>
 </div></section>
 
 <!-- ===== PRODUCTS GALLERY (Gallery6 style) ===== -->
@@ -767,21 +766,66 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 
     h += '</div>';
 
-    /* Side-by-side comparison: Было → Стало */
-    h += '<div class="compare-wrap">';
-    h += '<div class="compare-side compare-side--old"><div class="compare-side__label"><span class="compare-dot compare-dot--red"></span> Текущее расписание</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
-    h += '<div class="compare-side compare-side--new"><div class="compare-side__label"><span class="compare-dot compare-dot--green"></span> Улучшенное расписание</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
+    /* Slider comparison: drag to reveal before/after */
+    h += '<div class="compare-slider" id="compareSlider">';
+    h += '<div class="compare-slider__side compare-slider__old" id="compareOld"><div class="compare-slider__label compare-slider__label--red">Текущее</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
+    h += '<div class="compare-slider__side compare-slider__new" id="compareNew"><div class="compare-slider__label compare-slider__label--green">Улучшенное</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
+    h += '<div class="compare-slider__handle" id="compareHandle"><div class="compare-slider__line"></div><div class="compare-slider__knob">◀▶</div></div>';
     h += '</div>';
 
     el.innerHTML = h;
     renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'));
     renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true);
+    _initCompareSlider();
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }
 }
 
 var _lastOptSch = null;
+
+function _initCompareSlider() {
+  var container = document.getElementById('compareSlider');
+  var newSide = document.getElementById('compareNew');
+  var handle = document.getElementById('compareHandle');
+  if (!container || !newSide || !handle) return;
+
+  var pos = 50;
+  function setPos(p) {
+    pos = Math.max(2, Math.min(98, p));
+    newSide.style.clipPath = 'inset(0 0 0 ' + pos + '%)';
+    handle.style.left = pos + '%';
+  }
+  setPos(50);
+
+  var dragging = false;
+  function onMove(e) {
+    if (!dragging) return;
+    var rect = container.getBoundingClientRect();
+    var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    setPos((x / rect.width) * 100);
+  }
+  handle.addEventListener('mousedown', function(e) { dragging = true; e.preventDefault(); });
+  handle.addEventListener('touchstart', function(e) { dragging = true; });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove);
+  document.addEventListener('mouseup', function() { dragging = false; });
+  document.addEventListener('touchend', function() { dragging = false; });
+  /* Also allow hover drag on container */
+  container.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var rect = container.getBoundingClientRect();
+    setPos(((e.clientX - rect.left) / rect.width) * 100);
+  });
+  /* Sync scroll between both tables */
+  var oldWrap = container.querySelector('.compare-slider__old .acc-tbl-wrap');
+  var newWrap = container.querySelector('.compare-slider__new .acc-tbl-wrap');
+  if (oldWrap && newWrap) {
+    var syncing = false;
+    oldWrap.addEventListener('scroll', function() { if (!syncing) { syncing = true; newWrap.scrollLeft = oldWrap.scrollLeft; newWrap.scrollTop = oldWrap.scrollTop; syncing = false; } });
+    newWrap.addEventListener('scroll', function() { if (!syncing) { syncing = true; oldWrap.scrollLeft = newWrap.scrollLeft; oldWrap.scrollTop = newWrap.scrollTop; syncing = false; } });
+  }
+}
 
 function downloadOptSchedule() {
   if (!_lastOptSch) return;
