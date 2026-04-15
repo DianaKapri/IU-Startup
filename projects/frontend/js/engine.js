@@ -120,13 +120,16 @@ function optSchedule(sch,cg,mode){
         if(su.length<3)return;
         var hard=[],light=[];su.forEach(function(x){if(x.dv>=th)hard.push(x);else light.push(x);});
         hard.sort(function(a,b){return b.dv-a.dv;});light.sort(function(a,b){return a.dv-b.dv;});
-        /* E-01: hard at lessons 2,4 (0-indexed: 1,3) with light between them
-           Pattern: light, HARD, light, HARD, light, HARD, light... */
+        /* E-01: hard at lessons 2,4 (0-indexed: 1,3) — within optimal range
+           3rd hard goes to position 2 (lesson 3), also optimal
+           Break-pairs step after will handle E-03 if needed */
         var res=new Array(su.length),hi=0,li=0;
-        /* Hard subjects at odd positions (1,3,5) = lessons 2,4,6 */
-        [1,3,5].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
-        /* Remaining hard at even positions if needed */
-        [0,2,4,6,7].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
+        /* Hard subjects at positions 1,3 first (lessons 2,4 — optimal, not consecutive) */
+        [1,3].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
+        /* Then position 2 (lesson 3 — still optimal range) */
+        [2].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
+        /* Overflow hard to other positions */
+        [0,4,5,6,7].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
         /* Fill light subjects in remaining slots */
         for(var j=0;j<su.length;j++){if(!res[j]&&li<light.length)res[j]=light[li++];}
         var ri=0;for(var i=0;i<d.length;i++){if(d[i]){d[i]=res[ri]?res[ri].s:d[i];ri++;}}
@@ -192,24 +195,30 @@ function optSchedule(sch,cg,mode){
       for(var ci=0;ci<candidates.length&&!moved2;ci++){var cand=candidates[ci];var dupInTarget=false;for(var ti=0;ti<lDay.length;ti++){if(lDay[ti]===cand.s){dupInTarget=true;break;}}if(!dupInTarget){hDay[cand.i]='';lDay.push(cand.s);moved2=true;}}
       if(!moved2)break;compact(days);
     }
-    /* Fix E-02 */
-    for(var ea=0;ea<4;ea++){
+    /* Fix E-02: make Wed or Thu the lightest day */
+    for(var ea=0;ea<6;ea++){
       var ddx=days.map(function(d){return d.reduce(function(s,sub){return s+gd(sub,g);},0);});
       var av=ddx.map(function(d,i){return{d:d,i:i};}).filter(function(x){return x.d>0;}).sort(function(a2,b){return a2.d-b.d;});
-      var tl=av.slice(0,2).map(function(x){return x.i;});
-      if(tl.indexOf(2)!==-1||tl.indexOf(3)!==-1)break;
-      var tgt=ddx[2]<=ddx[3]?2:3;var pi=0;ddx.forEach(function(v,i){if(i!==tgt&&v>ddx[pi])pi=i;});
-      var ts=[],ps=[];
-      days[tgt].forEach(function(s,i){if(s)ts.push({s:s,i:i,dv:gd(s,g)});});ts.sort(function(a2,b){return b.dv-a2.dv;});
-      days[pi].forEach(function(s,i){if(s)ps.push({s:s,i:i,dv:gd(s,g)});});ps.sort(function(a2,b){return a2.dv-b.dv;});
+      if(av.length<3)break;
+      if(av[0].i===2||av[0].i===3)break; /* Wed or Thu is already lightest */
+      /* src = current lightest (should NOT be lightest), tgt = lighter of Wed/Thu (should become lightest) */
+      var src=av[0].i, tgt=ddx[2]<=ddx[3]?2:3;
+      /* Swap: heavy from src → tgt, light from tgt → src (makes src heavier, tgt lighter) */
+      var srcSubs=[],tgtSubs=[];
+      days[src].forEach(function(s,i){if(s)srcSubs.push({s:s,i:i,dv:gd(s,g)});});
+      days[tgt].forEach(function(s,i){if(s)tgtSubs.push({s:s,i:i,dv:gd(s,g)});});
+      srcSubs.sort(function(a2,b){return a2.dv-b.dv;}); /* light first from src (to send out) */
+      tgtSubs.sort(function(a2,b){return b.dv-a2.dv;}); /* heavy first from tgt (to send out) */
       var swapped=false;
-      for(var ti=0;ti<ts.length&&!swapped;ti++){
-        for(var pj=0;pj<ps.length&&!swapped;pj++){
-          if(ts[ti].dv<=ps[pj].dv)continue;
-          var t1=days[tgt].slice(),t2=days[pi].slice();
-          t1[ts[ti].i]=ps[pj].s;t2[ps[pj].i]=ts[ti].s;
-          var u1=new Set(t1.filter(function(s){return s;})),u2=new Set(t2.filter(function(s){return s;}));
-          if(u1.size===t1.filter(function(s){return s;}).length&&u2.size===t2.filter(function(s){return s;}).length){days[tgt][ts[ti].i]=ps[pj].s;days[pi][ps[pj].i]=ts[ti].s;swapped=true;}
+      for(var si=0;si<tgtSubs.length&&!swapped;si++){
+        for(var ti=0;ti<srcSubs.length&&!swapped;ti++){
+          if(tgtSubs[si].dv<=srcSubs[ti].dv)continue; /* tgt subject must be harder than src subject */
+          var s1=days[src].slice(),s2=days[tgt].slice();
+          s1[srcSubs[ti].i]=tgtSubs[si].s; s2[tgtSubs[si].i]=srcSubs[ti].s;
+          var u1=new Set(s1.filter(function(s){return s;})),u2=new Set(s2.filter(function(s){return s;}));
+          if(u1.size===s1.filter(function(s){return s;}).length&&u2.size===s2.filter(function(s){return s;}).length){
+            days[src][srcSubs[ti].i]=tgtSubs[si].s; days[tgt][tgtSubs[si].i]=srcSubs[ti].s; swapped=true;
+          }
         }
       }
       if(!swapped)break;
