@@ -797,33 +797,36 @@ function renderRecs(top,el){
   if(!top.length){el.innerHTML='<p class="rec-empty">Нарушений и рекомендаций не обнаружено.</p>';return;}
   var classMap={};
   top.forEach(function(t){t.classes.forEach(function(cl){if(!classMap[cl])classMap[cl]=[];classMap[cl].push(t);});});
-  /* Group by parallel */
-  var parallels={};
-  Object.keys(classMap).forEach(function(cl){var g=cl.replace(/[^0-9]/g,'');if(!parallels[g])parallels[g]=[];parallels[g].push(cl);});
-  var grades=Object.keys(parallels).sort(function(a,b){return parseInt(a)-parseInt(b);});
-  grades.forEach(function(g){parallels[g].sort(function(a,b){return a.localeCompare(b,'ru');});});
-  el.innerHTML=grades.map(function(grade){
-    var cls=parallels[grade];
-    var h='<div class="rec-parallel"><div class="rec-parallel__row">';
-    cls.forEach(function(cl){
-      var items=classMap[cl],vi=0,wa=0;
-      items.forEach(function(t){if(t.st==='v')vi++;else wa++;});
-      var cc=vi>0?'#ff453a':wa>0?'#ff9f0a':'#30d158';
-      var meta=[];if(vi)meta.push(vi+' нар.');if(wa)meta.push(wa+' рек.');
-      h+='<div class="rec-cls-card"><div class="rec-cls-card__hdr" onclick="this.parentNode.classList.toggle(\'rec-cls-card--open\')">';
-      h+='<span class="rec-cls-card__name" style="color:'+cc+'">'+cl+'</span>';
-      h+='<span class="rec-cls-card__meta">'+meta.join(' · ')+'</span>';
-      h+='<span class="rec-cls-card__arrow">›</span></div>';
-      h+='<div class="rec-cls-card__body">';
-      items.forEach(function(t){
-        var iv=t.st==='v';
-        h+='<div class="rec-item'+(iv?' rec-item--v':'')+'"><div class="rec-item__head"><span class="rec-item__badge">'+t.id+'</span><span class="rec-item__name">'+t.nm+'</span></div><div class="rec-item__desc">'+t.ds+'</div>'+(t.sg?'<div class="rec-item__suggest">'+t.sg+'</div>':'')+'</div>';
-      });
+  var allCls=Object.keys(classMap).sort(function(a,b){var na=parseInt(a),nb=parseInt(b);if(na!==nb)return na-nb;return a.localeCompare(b,'ru');});
+
+  var h='<div class="acc-list">';
+  allCls.forEach(function(cl){
+    var items=classMap[cl],vi=0,wa=0;
+    items.forEach(function(t){if(t.st==='v')vi++;else wa++;});
+    var cc=vi>0?'#ff453a':wa>0?'#ff9f0a':'#30d158';
+    var meta=[];if(vi)meta.push('<span class="acc-list__vi">'+vi+' нарушен'+(vi===1?'ие':'ий')+'</span>');
+    if(wa)meta.push('<span class="acc-list__wa">'+wa+' рекомендаци'+(wa===1?'я':'й')+'</span>');
+
+    h+='<div class="acc-list__item">';
+    h+='<button class="acc-list__trigger" onclick="var b=this.parentNode.querySelector(\'.acc-list__body\');var open=b.style.maxHeight;b.style.maxHeight=open?null:b.scrollHeight+\'px\';this.classList.toggle(\'acc-list__trigger--open\')">';
+    h+='<div class="acc-list__left"><span class="acc-list__cls" style="color:'+cc+'">'+cl+'</span><span class="acc-list__meta">'+meta.join(' · ')+'</span></div>';
+    h+='<svg class="acc-list__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
+    h+='</button>';
+    h+='<div class="acc-list__body">';
+    items.forEach(function(t){
+      var iv=t.st==='v';
+      h+='<div class="acc-list__issue">';
+      h+='<span class="acc-list__badge'+(iv?' acc-list__badge--v':' acc-list__badge--w')+'">'+t.id+'</span>';
+      h+='<div class="acc-list__content">';
+      h+='<div class="acc-list__name">'+t.nm+'</div>';
+      h+='<div class="acc-list__desc">'+t.ds+'</div>';
+      if(t.sg)h+='<div class="acc-list__suggest">💡 '+t.sg+'</div>';
       h+='</div></div>';
     });
     h+='</div></div>';
-    return h;
-  }).join('');
+  });
+  h+='</div>';
+  el.innerHTML=h;
 }
 
 function renderFixed(sch,cg,origAud,el){
