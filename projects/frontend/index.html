@@ -766,66 +766,25 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 
     h += '</div>';
 
-    /* Slider comparison: drag to reveal before/after */
-    h += '<div class="compare-slider" id="compareSlider">';
-    h += '<div class="compare-slider__side compare-slider__old" id="compareOld"><div class="compare-slider__label compare-slider__label--red">Текущее</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
-    h += '<div class="compare-slider__side compare-slider__new" id="compareNew"><div class="compare-slider__label compare-slider__label--green">Улучшенное</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
-    h += '<div class="compare-slider__handle" id="compareHandle"><div class="compare-slider__line"></div><div class="compare-slider__knob">◀▶</div></div>';
+    /* Side-by-side comparison */
+    h += '<div class="compare-pair">';
+    h += '<div class="compare-half compare-half--old"><div class="compare-half__tag">Текущее</div><div class="acc-tbl-wrap" id="cmpScrollOld"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
+    h += '<div class="compare-half compare-half--new"><div class="compare-half__tag compare-half__tag--green">Улучшенное</div><div class="acc-tbl-wrap" id="cmpScrollNew"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
     h += '</div>';
 
     el.innerHTML = h;
     renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'));
     renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true);
-    _initCompareSlider();
+    /* Sync scroll */
+    var sOld=document.getElementById('cmpScrollOld'),sNew=document.getElementById('cmpScrollNew');
+    if(sOld&&sNew){var s=false;sOld.onscroll=function(){if(!s){s=true;sNew.scrollLeft=sOld.scrollLeft;sNew.scrollTop=sOld.scrollTop;s=false;}};sNew.onscroll=function(){if(!s){s=true;sOld.scrollLeft=sNew.scrollLeft;sOld.scrollTop=sNew.scrollTop;s=false;}};}
+
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }
 }
 
 var _lastOptSch = null;
-
-function _initCompareSlider() {
-  var container = document.getElementById('compareSlider');
-  var newSide = document.getElementById('compareNew');
-  var handle = document.getElementById('compareHandle');
-  if (!container || !newSide || !handle) return;
-
-  var pos = 50;
-  function setPos(p) {
-    pos = Math.max(2, Math.min(98, p));
-    newSide.style.clipPath = 'inset(0 0 0 ' + pos + '%)';
-    handle.style.left = pos + '%';
-  }
-  setPos(50);
-
-  var dragging = false;
-  function onMove(e) {
-    if (!dragging) return;
-    var rect = container.getBoundingClientRect();
-    var x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    setPos((x / rect.width) * 100);
-  }
-  handle.addEventListener('mousedown', function(e) { dragging = true; e.preventDefault(); });
-  handle.addEventListener('touchstart', function(e) { dragging = true; });
-  document.addEventListener('mousemove', onMove);
-  document.addEventListener('touchmove', onMove);
-  document.addEventListener('mouseup', function() { dragging = false; });
-  document.addEventListener('touchend', function() { dragging = false; });
-  /* Also allow hover drag on container */
-  container.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    var rect = container.getBoundingClientRect();
-    setPos(((e.clientX - rect.left) / rect.width) * 100);
-  });
-  /* Sync scroll between both tables */
-  var oldWrap = container.querySelector('.compare-slider__old .acc-tbl-wrap');
-  var newWrap = container.querySelector('.compare-slider__new .acc-tbl-wrap');
-  if (oldWrap && newWrap) {
-    var syncing = false;
-    oldWrap.addEventListener('scroll', function() { if (!syncing) { syncing = true; newWrap.scrollLeft = oldWrap.scrollLeft; newWrap.scrollTop = oldWrap.scrollTop; syncing = false; } });
-    newWrap.addEventListener('scroll', function() { if (!syncing) { syncing = true; oldWrap.scrollLeft = newWrap.scrollLeft; oldWrap.scrollTop = newWrap.scrollTop; syncing = false; } });
-  }
-}
 
 function downloadOptSchedule() {
   if (!_lastOptSch) return;
