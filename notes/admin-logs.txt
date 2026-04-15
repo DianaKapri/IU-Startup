@@ -1,0 +1,17 @@
+==== ЛОГИ АДМИНИСТРАТОРА ШКОЛАПЛАН ====
+Создано: 2026-04-15 18:48:00 UTC+03:00
+
+=== УЧЕТНЫЕ ДАННЫЕ АДМИНА ===
+Email: admin@shkolaplan.ru
+Пароль: Admin123!@#
+
+=== URL ДОСТУПА ===
+Админка: /admin.html
+Вход в админку: /admin-login.html
+
+=== API ЭНДПОИНТЫ ===
+POST /api/auth/admin/login - Вход админа
+GET /api/subscription-requests - Получение всех запросов
+PUT /api/subscription-requests/:id - Обновление статуса запроса
+GET /api/subscription-requests/stats - Получение статистики
+
