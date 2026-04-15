@@ -419,3 +419,16 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .cmp-tbl .tbl-cell { height: 38px !important; max-height: 38px !important; box-sizing: border-box !important; padding: 2px !important; }
 .cmp-tbl .tbl-cls-cell { height: 38px !important; max-height: 38px !important; }
 .cmp-tbl .tbl-num-hdr { height: 18px !important; }
+
+/* ═══ Transposed grid: days vertical, classes horizontal ═══ */
+.acc-grid-tbl { border-collapse: collapse; }
+.tbl-day-col, .tbl-num-col { font-size: .7rem; font-weight: 700; color: #86868b; padding: 8px 6px; text-align: left; white-space: nowrap; background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.06); }
+.tbl-num-col { text-align: center; width: 28px; }
+.tbl-cls-hdr { font-size: .72rem; font-weight: 700; color: #f5f5f7; padding: 8px 4px; text-align: center; min-width: 52px; white-space: nowrap; background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.06); cursor: default; position: sticky; top: 0; z-index: 3; }
+.tbl-cls-hdr--click { cursor: pointer; }
+.tbl-cls-hdr--click:hover { background: rgba(255,255,255,.08); }
+.tbl-day-cell { font-size: .72rem; font-weight: 700; color: #f5f5f7; padding: 6px 10px; vertical-align: top; white-space: nowrap; background: rgba(255,255,255,.03); border-right: 1px solid rgba(255,255,255,.06); position: sticky; left: 0; z-index: 2; min-width: 90px; }
+.tbl-num-cell { font-size: .65rem; color: #555; text-align: center; padding: 2px 4px; width: 24px; min-width: 24px; position: sticky; left: 90px; z-index: 2; background: rgba(10,10,14,.95); border-right: 1px solid rgba(255,255,255,.06); }
+.tbl-subj-cell { padding: 2px; vertical-align: middle; min-width: 52px; }
+.tbl-day-first td { border-top: 2px solid rgba(255,255,255,.1); }
+.acc-grid-tbl tbody tr:hover { background: rgba(255,255,255,.02); }
