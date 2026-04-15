@@ -787,7 +787,7 @@ function _renderOptimizedTab(sch, cg, origAudit) {
     var maxLessons = 6;
     Object.keys(sch).forEach(function(c){sch[c].forEach(function(d){var n=0;for(var i=0;i<d.length;i++){if(d[i])n++;}if(n>maxLessons)maxLessons=n;});});
     renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'), false, maxLessons);
-    renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true, maxLessons);
+    renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), false, maxLessons);
 
     /* Slider logic */
     (function(){
