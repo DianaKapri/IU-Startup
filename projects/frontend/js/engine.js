@@ -227,6 +227,35 @@ function optSchedule(sch,cg,mode){
       }
       if(!swapped)break;
     }
+    /* Final: re-optimize within each day — move hard subjects to positions 1-3 (lessons 2-4) */
+    days.forEach(function(d){
+      var filled=[];for(var i=0;i<d.length;i++){if(d[i])filled.push(d[i]);}
+      if(filled.length<3)return;
+      for(var pass=0;pass<3;pass++){
+        var changed2=false;
+        for(var i=0;i<filled.length;i++){
+          if(!filled[i])continue;
+          var dv=gd(filled[i],g);
+          /* Hard subject at bad position (0 or 4+)? */
+          if(dv>=th&&(i<1||i>3)){
+            /* Find a light subject at good position (1-3) to swap */
+            for(var j=1;j<=3&&j<filled.length;j++){
+              if(filled[j]&&gd(filled[j],g)<th){
+                var tmp=filled[i];filled[i]=filled[j];filled[j]=tmp;
+                changed2=true;break;
+              }
+            }
+          }
+        }
+        if(!changed2)break;
+      }
+      /* Also avoid ФК at position 0 */
+      if(filled[0]==='фк'){
+        for(var sw=4;sw<filled.length;sw++){if(filled[sw]&&gd(filled[sw],g)<th&&filled[sw]!=='фк'){var tmp=filled[0];filled[0]=filled[sw];filled[sw]=tmp;break;}}
+      }
+      /* Write back */
+      var ri=0;for(var i=0;i<d.length;i++){if(d[i]){d[i]=filled[ri++];}}
+    });
     compact(days);
   }
   return f;
