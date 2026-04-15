@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Вход в Админ-панель — ШколаПлан</title>
+<link rel="stylesheet" href="/css/styles.css"/>
+<style>
+.admin-login-page {
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  color: #f5f5f7;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.admin-login-container {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  backdrop-filter: blur(20px);
+}
+
+.admin-login__logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+
+.admin-login__logo-icon {
+  width: 32px;
+  height: 32px;
+  color: #f5f5f7;
+}
+
+.admin-login__logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f5f5f7;
+}
+
+.admin-login__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f5f5f7;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.admin-login__sub {
+  color: #86868b;
+  text-align: center;
+  margin-bottom: 32px;
+  font-size: 0.95rem;
+}
+
+.admin-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-login__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-login__label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #f5f5f7;
+}
+
+.admin-login__input {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #f5f5f7;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.admin-login__input:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: rgba(255,255,255,.08);
+}
+
+.admin-login__input::placeholder {
+  color: #86868b;
+}
+
+.admin-login__error {
+  color: #ff453a;
+  font-size: 0.88rem;
+  padding: 12px 16px;
+  background: rgba(255,69,58,.1);
+  border: 1px solid rgba(255,69,58,.2);
+  border-radius: 8px;
+  display: none;
+}
+
+.admin-login__btn {
+  background: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-top: 8px;
+}
+
+.admin-login__btn:hover {
+  background: var(--blue-hover);
+}
+
+.admin-login__btn:disabled {
+  background: #86868b;
+  cursor: not-allowed;
+}
+
+.admin-login__footer {
+  text-align: center;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.admin-login__footer-link {
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 0.88rem;
+}
+
+.admin-login__footer-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .admin-login-container {
+    padding: 32px 24px;
+  }
+}
+</style>
+</head>
+<body class="admin-login-page">
+
+<div class="admin-login-container">
+  <div class="admin-login__logo">
+    <svg class="admin-login__logo-icon" width="32" height="32" viewBox="0 0 20 20" fill="none">
+      <rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/>
+      <rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/>
+      <rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/>
+      <rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/>
+    </svg>
+    <span class="admin-login__logo-text">ШколаПлан</span>
+  </div>
+
+  <h1 class="admin-login__title">Вход в Админ-панель</h1>
+  <p class="admin-login__sub">Введите email и пароль для доступа к панели управления</p>
+
+  <form class="admin-login__form" id="loginForm">
+    <div class="admin-login__field">
+      <label class="admin-login__label" for="email">Email</label>
+      <input 
+        class="admin-login__input" 
+        id="email" 
+        type="email" 
+        placeholder="admin@example.com"
+        required
+      />
+    </div>
+
+    <div class="admin-login__field">
+      <label class="admin-login__label" for="password">Пароль</label>
+      <input 
+        class="admin-login__input" 
+        id="password" 
+        type="password" 
+        placeholder="Введите пароль"
+        required
+      />
+    </div>
+
+    <div class="admin-login__error" id="loginError"></div>
+
+    <button class="admin-login__btn" type="submit" id="loginBtn">Войти</button>
+  </form>
+
+  <div class="admin-login__footer">
+    <a href="/" class="admin-login__footer-link">← Вернуться на главный сайт</a>
+  </div>
+</div>
+
+<script>
+// Данные для входа в админку (в реальном проекте это должно быть на сервере)
+const ADMIN_CREDENTIALS = {
+  email: 'admin@shkolaplan.ru',
+  password: 'Admin123!@#'
+};
+
+// Функция входа
+function handleLogin(event) {
+  event.preventDefault();
+  
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const errorEl = document.getElementById('loginError');
+  const loginBtn = document.getElementById('loginBtn');
+  
+  // Сброс ошибки
+  errorEl.style.display = 'none';
+  errorEl.textContent = '';
+  
+  // Валидация
+  if (!email || !password) {
+    showError('Заполните все поля');
+    return;
+  }
+  
+  // Блокируем кнопку
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Вход...';
+  
+  // Проверка учетных данных
+  setTimeout(() => {
+    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+      // Успешный вход
+      localStorage.setItem('adminEmail', email);
+      localStorage.setItem('adminPassword', password);
+      
+      // Перенаправление в админку
+      window.location.href = '/admin.html';
+    } else {
+      // Неверные учетные данные
+      showError('Неверный email или пароль');
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Войти';
+    }
+  }, 500); // Имитация задержки для реалистичности
+}
+
+// Показ ошибки
+function showError(message) {
+  const errorEl = document.getElementById('loginError');
+  errorEl.textContent = message;
+  errorEl.style.display = 'block';
+}
+
+// Обработчик формы
+document.getElementById('loginForm').addEventListener('submit', handleLogin);
+
+// Проверка, не авторизован ли уже пользователь
+document.addEventListener('DOMContentLoaded', function() {
+  const savedEmail = localStorage.getItem('adminEmail');
+  const savedPassword = localStorage.getItem('adminPassword');
+  
+  if (savedEmail && savedPassword) {
+    // Проверяем валидность сохраненных данных
+    if (savedEmail === ADMIN_CREDENTIALS.email && savedPassword === ADMIN_CREDENTIALS.password) {
+      window.location.href = '/admin.html';
+    } else {
+      // Очищаем неверные данные
+      localStorage.removeItem('adminEmail');
+      localStorage.removeItem('adminPassword');
+    }
+  }
+});
+
+// Автофокус на поле email
+document.getElementById('email').focus();
+</script>
+</body>
+</html>
