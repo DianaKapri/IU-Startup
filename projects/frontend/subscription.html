@@ -114,6 +114,8 @@
 <script src="/js/auth.js"></script>
 <script src="/js/scripts.js"></script>
 <script>
+// Инициализация навигации с аватаром пользователя
+spInitNav();
 (function(){
   document.querySelectorAll('.faq-item__q').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -139,9 +141,95 @@
     const ok=document.getElementById('payOk');
     err.textContent='';ok.textContent='';
     if(!org||!inn||!email){err.textContent='Заполните все поля.';return;}
-    ok.textContent='Счёт будет отправлен на '+email+' в течение 1 рабочего дня. Спасибо!';
-    document.getElementById('paySubmit').disabled=true;
+    
+    // Сохраняем запрос в Supabase
+    saveSubscriptionRequest(org, inn, email);
   });
+
+  function saveSubscriptionRequest(org, inn, email) {
+    const request = {
+      organization_name: org,
+      inn: inn,
+      email: email,
+      plan: 'school',
+      price: 14400,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    };
+
+    // Проверяем авторизацию пользователя
+    if (typeof spGetCurrentUser === 'function') {
+      spGetCurrentUser().then(function(user) {
+        if (user) {
+          request.user_id = user.id;
+          request.user_name = user.name;
+          request.user_school = user.school;
+        }
+        
+        // Отправляем в Supabase
+        if (typeof supabase !== 'undefined') {
+          supabase
+            .from('subscription_requests')
+            .insert([request])
+            .then(function(response) {
+              if (response.error) {
+                console.error('Ошибка сохранения запроса:', response.error);
+                document.getElementById('payErr').textContent = 'Ошибка при сохранении запроса. Попробуйте позже.';
+              } else {
+                console.log('Запрос на подписку сохранен:', response.data);
+                const ok = document.getElementById('payOk');
+                ok.textContent = 'Счёт будет отправлен на ' + email + ' в течение 1 рабочего дня. Спасибо!';
+                document.getElementById('paySubmit').disabled = true;
+                
+                // Очищаем форму
+                document.getElementById('payOrg').value = '';
+                document.getElementById('payInn').value = '';
+                document.getElementById('payEmail').value = '';
+              }
+            })
+            .catch(function(error) {
+              console.error('Ошибка запроса:', error);
+              document.getElementById('payErr').textContent = 'Произошла ошибка. Попробуйте позже.';
+            });
+        } else {
+          // Fallback если Supabase недоступен
+          const ok = document.getElementById('payOk');
+          ok.textContent = 'Счёт будет отправлен на ' + email + ' в течение 1 рабочего дня. Спасибо!';
+          document.getElementById('paySubmit').disabled = true;
+        }
+      }).catch(function(error) {
+        console.error('Ошибка получения пользователя:', error);
+        // Сохраняем без пользователя
+        submitSubscriptionRequest(request);
+      });
+    } else {
+      // Сохраняем без проверки авторизации
+      submitSubscriptionRequest(request);
+    }
+  }
+
+  function submitSubscriptionRequest(request) {
+    if (typeof supabase !== 'undefined') {
+      supabase
+        .from('subscription_requests')
+        .insert([request])
+        .then(function(response) {
+          if (response.error) {
+            console.error('Ошибка сохранения запроса:', response.error);
+            document.getElementById('payErr').textContent = 'Ошибка при сохранении запроса. Попробуйте позже.';
+          } else {
+            console.log('Запрос на подписку сохранен:', response.data);
+            const ok = document.getElementById('payOk');
+            ok.textContent = 'Счёт будет отправлен на ' + request.email + ' в течение 1 рабочего дня. Спасибо!';
+            document.getElementById('paySubmit').disabled = true;
+          }
+        })
+        .catch(function(error) {
+          console.error('Ошибка запроса:', error);
+          document.getElementById('payErr').textContent = 'Произошла ошибка. Попробуйте позже.';
+        });
+    }
+  }
 })();
 </script>
 </body>
