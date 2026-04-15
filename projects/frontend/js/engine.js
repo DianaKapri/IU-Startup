@@ -120,9 +120,14 @@ function optSchedule(sch,cg,mode){
         if(su.length<3)return;
         var hard=[],light=[];su.forEach(function(x){if(x.dv>=th)hard.push(x);else light.push(x);});
         hard.sort(function(a,b){return b.dv-a.dv;});light.sort(function(a,b){return a.dv-b.dv;});
+        /* E-01: hard at lessons 2,4 (0-indexed: 1,3) with light between them
+           Pattern: light, HARD, light, HARD, light, HARD, light... */
         var res=new Array(su.length),hi=0,li=0;
-        [1,3,2].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
-        [0,4,5,6,7].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
+        /* Hard subjects at odd positions (1,3,5) = lessons 2,4,6 */
+        [1,3,5].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
+        /* Remaining hard at even positions if needed */
+        [0,2,4,6,7].forEach(function(sl){if(hi<hard.length&&sl<su.length&&!res[sl])res[sl]=hard[hi++];});
+        /* Fill light subjects in remaining slots */
         for(var j=0;j<su.length;j++){if(!res[j]&&li<light.length)res[j]=light[li++];}
         var ri=0;for(var i=0;i<d.length;i++){if(d[i]){d[i]=res[ri]?res[ri].s:d[i];ri++;}}
       });
