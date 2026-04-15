@@ -435,3 +435,8 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 /* Center optimized tab content */
 #inlineDemoTabOptimized { text-align: center; }
 #inlineDemoTabOptimized .sp-alert { text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+/* Center all tab panels */
+#inlineDemoTabGrid { text-align: center; }
+#inlineDemoTabGrid .acc-tbl-wrap { display: inline-block; text-align: left; }
+#inlineDemoTabRecs { text-align: left; max-width: 800px; margin: 0 auto; }
