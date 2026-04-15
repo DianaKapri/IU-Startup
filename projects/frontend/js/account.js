@@ -3,6 +3,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ─── Scroll Animations ───
 function initScrollAnimations() {
+  if (typeof window.IntersectionObserver !== 'function') {
+    document.querySelectorAll('.fade-in').forEach(function (el) {
+      el.classList.add('fade-in--visible');
+    });
+    return;
+  }
+
   const observerOptions = {
     threshold: 0.1,
     rootMargin: '0px 0px -50px 0px'
@@ -219,6 +226,183 @@ spRequireAuth(function () {
   var dropzone  = document.getElementById('accDropzone');
   var fileInput = document.getElementById('accFileInput');
   var errEl     = document.getElementById('accError');
+  var accStart  = document.getElementById('accStart');
+  var accUpload = document.getElementById('accUpload');
+  var accIntro  = document.getElementById('accIntro');
+  var accBuilder = document.getElementById('accBuilder');
+
+  var selectedMode = '';
+  var modeCards = document.querySelectorAll('.acc-start-card');
+  var modeContinue = document.getElementById('accModeContinue');
+
+  function setMode(mode) {
+    selectedMode = mode;
+    modeCards.forEach(function (card) {
+      card.classList.toggle('acc-start-card--active', card.dataset.mode === mode);
+    });
+    if (modeContinue) modeContinue.disabled = !selectedMode;
+  }
+
+  modeCards.forEach(function (card) {
+    card.addEventListener('click', function () {
+      setMode(card.dataset.mode || '');
+    });
+  });
+  // Fallback delegation: keeps selector working even if cards are re-rendered.
+  document.addEventListener('click', function (e) {
+    var card = e.target.closest('.acc-start-card');
+    if (!card) return;
+    setMode(card.dataset.mode || '');
+  });
+
+  if (modeContinue) {
+    modeContinue.addEventListener('click', function () {
+      if (!selectedMode) return;
+      if (accStart) accStart.style.display = 'none';
+      if (selectedMode === 'audit') {
+        if (accUpload) accUpload.style.display = '';
+        if (accBuilder) accBuilder.style.display = 'none';
+        if (accIntro) accIntro.style.display = '';
+        if (dropzone) dropzone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        if (accBuilder) accBuilder.style.display = '';
+        if (accUpload) accUpload.style.display = 'none';
+        if (accIntro) accIntro.style.display = 'none';
+        initBuilderFlow();
+        if (accBuilder) accBuilder.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
+
+  /* ═══ Builder flow on account page ═══ */
+  var builderStep = 1;
+  var builderBackBtn = document.getElementById('builderBackBtn');
+  var builderNextBtn = document.getElementById('builderNextBtn');
+  var builderGenerateBtn = document.getElementById('builderGenerateBtn');
+  var builderErr = document.getElementById('builderError');
+
+  function showBuilderError(msg) {
+    if (!builderErr) return;
+    builderErr.textContent = msg || '';
+    builderErr.style.display = msg ? 'block' : 'none';
+  }
+
+  function updateBuilderStep() {
+    document.querySelectorAll('.acc-builder-panel').forEach(function (panel) {
+      panel.style.display = Number(panel.getAttribute('data-step')) === builderStep ? '' : 'none';
+    });
+    document.querySelectorAll('.acc-builder-step').forEach(function (stepEl) {
+      stepEl.classList.toggle('acc-builder-step--active', Number(stepEl.getAttribute('data-step-dot')) === builderStep);
+    });
+    if (builderBackBtn) builderBackBtn.style.display = builderStep > 1 ? '' : 'none';
+    if (builderNextBtn) builderNextBtn.style.display = builderStep < 3 ? '' : 'none';
+    if (builderGenerateBtn) builderGenerateBtn.style.display = builderStep === 3 ? '' : 'none';
+  }
+
+  function initBuilderFlow() {
+    builderStep = 1;
+    showBuilderError('');
+    updateBuilderStep();
+  }
+
+  if (builderBackBtn) {
+    builderBackBtn.addEventListener('click', function () {
+      if (builderStep > 1) {
+        builderStep -= 1;
+        updateBuilderStep();
+      }
+    });
+  }
+  if (builderNextBtn) {
+    builderNextBtn.addEventListener('click', function () {
+      if (builderStep < 3) {
+        builderStep += 1;
+        updateBuilderStep();
+      }
+    });
+  }
+
+  function parseClasses(raw) {
+    return String(raw || '')
+      .split(/[,\n;]+/)
+      .map(function (item) { return item.trim(); })
+      .filter(function (item) { return /^\d{1,2}\s*[А-ЯA-Zа-яa-z]{1,2}$/.test(item); })
+      .map(function (item) { return item.replace(/\s+/g, ''); });
+  }
+
+  function parseTeachers(raw) {
+    return String(raw || '')
+      .split('\n')
+      .map(function (line) { return line.trim(); })
+      .filter(Boolean)
+      .map(function (line) {
+        var parts = line.split('|').map(function (p) { return p.trim(); });
+        return {
+          name: parts[0] || '',
+          subject: parts[1] || '',
+          hours: Number(parts[2] || 0),
+          classes: parseClasses(parts[3] || '')
+        };
+      })
+      .filter(function (row) {
+        return row.subject && row.hours > 0 && row.classes.length > 0;
+      });
+  }
+
+  function buildScheduleFromBuilder() {
+    var classes = parseClasses((document.getElementById('builderClasses') || {}).value);
+    var maxLessons = Number((document.getElementById('builderMaxLessons') || {}).value) || 7;
+    var teachers = parseTeachers((document.getElementById('builderTeachers') || {}).value);
+
+    if (!classes.length) throw new Error('Добавьте хотя бы один класс в шаге 2');
+    if (!teachers.length) throw new Error('Добавьте корректные строки учителей в шаге 3');
+
+    var cg = {};
+    classes.forEach(function (cls) {
+      var grade = Number((cls.match(/^(\d{1,2})/) || [])[1] || 7);
+      cg[cls] = grade;
+    });
+
+    var lessonsPerClass = {};
+    classes.forEach(function (cls) { lessonsPerClass[cls] = []; });
+    teachers.forEach(function (teacher) {
+      var code = normSubj(teacher.subject);
+      teacher.classes.forEach(function (cls) {
+        if (!lessonsPerClass[cls]) return;
+        for (var i = 0; i < teacher.hours; i += 1) lessonsPerClass[cls].push(code);
+      });
+    });
+
+    var sch = {};
+    classes.forEach(function (cls) {
+      var dayBuckets = [[], [], [], [], []];
+      var lessons = lessonsPerClass[cls].slice();
+      lessons.sort(function () { return Math.random() - 0.5; });
+      lessons.forEach(function (subject) {
+        var bestDay = 0;
+        for (var d = 1; d < 5; d += 1) {
+          if (dayBuckets[d].length < dayBuckets[bestDay].length) bestDay = d;
+        }
+        if (dayBuckets[bestDay].length < maxLessons) dayBuckets[bestDay].push(subject);
+      });
+      sch[cls] = dayBuckets;
+    });
+
+    return { sch: sch, cg: cg };
+  }
+
+  if (builderGenerateBtn) {
+    builderGenerateBtn.addEventListener('click', function () {
+      try {
+        showBuilderError('');
+        var built = buildScheduleFromBuilder();
+        showResults(built.sch, built.cg);
+        switchTab('optimized');
+      } catch (err) {
+        showBuilderError(err.message || 'Ошибка генерации расписания');
+      }
+    });
+  }
 
   function showError(msg) {
     if (errEl) { errEl.textContent = msg; errEl.style.display = msg ? 'block' : 'none'; }
@@ -344,10 +528,13 @@ spRequireAuth(function () {
       var introEl2 = document.getElementById('accIntro');
       if (results)  results.style.display  = 'none';
       if (actions)  actions.style.display  = 'none';
-      if (dropzone) dropzone.style.display = '';
-      if (introEl2) introEl2.style.display = '';
+      if (accStart) accStart.style.display = '';
+      if (accBuilder) accBuilder.style.display = 'none';
+      if (accUpload) accUpload.style.display = 'none';
+      if (introEl2) introEl2.style.display = 'none';
       showError('');
       if (fileInput) fileInput.value = '';
+      setMode('');
     });
   }
 
@@ -357,13 +544,15 @@ spRequireAuth(function () {
     var results = document.getElementById('accResults');
     var actions = document.getElementById('accActions');
     var introEl = document.getElementById('accIntro');
-    
+
     // Сохраняем данные аудита для возможности сохранения
     currentAuditData = audit;
-    
-    if (dropzone) dropzone.style.display = 'none';
+
+    if (accUpload) accUpload.style.display = 'none';
+    if (accStart) accStart.style.display = 'none';
     if (results) results.style.display = '';
     if (actions) actions.style.display = '';
+    if (introEl) introEl.style.display = 'none';
 
 
     /* --- Grid tab --- */
@@ -476,18 +665,23 @@ spRequireAuth(function () {
 
   /* ─── Render Optimized Schedule ─── */
   function renderOptimized(sch, cg, audit, container) {
+    var optimized = optSchedule(sch, cg, 'bell');
+    var optimizedAudit = doAudit(optimized, cg);
+    var scoreDiff = optimizedAudit.score - audit.score;
+
     container.innerHTML = '<div class="acc-optimized-note">'
-      + '<strong>Улучшенная сетка уроков</strong> — расписание с исправленными нарушениями СанПиН. '
-      + 'Все рекомендации применены, нагрузка равномерно распределена, сложные предметы перенесены на оптимальные уроки.'
+      + '<strong>Улучшенная сетка уроков</strong> — сформирована алгоритмом оптимизации с повторной проверкой по тем же правилам.'
+      + '<div class="acc-optimized-kpi">Было: ' + audit.score + '/100 · Стало: '
+      + optimizedAudit.score + '/100'
+      + (scoreDiff > 0 ? ' <span class="acc-optimized-kpi__up">(+'
+      + scoreDiff + ')</span>' : '')
+      + '</div>'
       + '</div><div class="acc-tbl-wrap"></div>';
-    
+
     var tbl = document.createElement('table');
     tbl.className = 'acc-grid-tbl';
     container.querySelector('.acc-tbl-wrap').appendChild(tbl);
-    
-    // Здесь можно добавить логику генерации улучшенного расписания
-    // Пока используем ту же сетку, что и в Grid
-    renderGrid(sch, cg, audit, tbl);
+    renderGrid(optimized, cg, optimizedAudit, tbl);
   }
 
   /* ─── Render Rules ─── */
