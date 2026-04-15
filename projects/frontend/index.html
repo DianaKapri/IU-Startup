@@ -790,6 +790,18 @@ function _renderOptimizedTab(sch, cg, origAudit) {
     renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), false, maxLessons);
 
     /* Slider logic */
+    /* Collect class header colors from both tables for live update */
+    var oldHeaders = document.getElementById('optTblOld').querySelectorAll('.tbl-cls-hdr');
+    var newHeaders = document.getElementById('optTblNew').querySelectorAll('.tbl-cls-hdr');
+    var headerColors = [];
+    for(var hi=0;hi<oldHeaders.length;hi++){
+      headerColors.push({
+        el: oldHeaders[hi],
+        oldColor: oldHeaders[hi].style.color,
+        newColor: newHeaders[hi] ? newHeaders[hi].style.color : oldHeaders[hi].style.color
+      });
+    }
+
     (function(){
       var box = document.getElementById('cmpBox');
       var top = document.querySelector('.cmp-tbl--top');
@@ -800,6 +812,14 @@ function _renderOptimizedTab(sch, cg, origAudit) {
         pct = Math.max(3, Math.min(97, p));
         top.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
         slider.style.left = pct + '%';
+        /* Update class header colors based on slider position */
+        var boxRect = box.getBoundingClientRect();
+        var sliderX = boxRect.left + (pct / 100) * boxRect.width;
+        headerColors.forEach(function(hc) {
+          var rect = hc.el.getBoundingClientRect();
+          var mid = rect.left + rect.width / 2;
+          hc.el.style.color = mid > sliderX ? hc.newColor : hc.oldColor;
+        });
       }
       set(50);
       var drag = false;
