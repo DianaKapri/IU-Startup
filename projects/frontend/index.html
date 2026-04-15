@@ -766,34 +766,44 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 
     h += '</div>';
 
-    /* Split-view comparison with draggable divider */
-    h += '<div class="compare-split" id="compareSplit">';
-    h += '<div class="compare-split__left" id="cmpLeft" style="flex:1"><div class="compare-split__tag compare-split__tag--red">Текущее</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
-    h += '<div class="compare-split__handle" id="cmpHandle"><div class="compare-split__bar"></div><div class="compare-split__knob">◀▶</div></div>';
-    h += '<div class="compare-split__right" id="cmpRight" style="flex:1"><div class="compare-split__tag compare-split__tag--green">Улучшенное</div><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
+    /* Overlay comparison: both tables in ONE scroll container */
+    h += '<div class="cmp-overlay" id="cmpOverlay">';
+    h += '<div class="cmp-overlay__scroll" id="cmpScroll">';
+    h += '<div class="cmp-overlay__layer cmp-overlay__old"><table class="acc-grid-tbl" id="optTblOld"></table></div>';
+    h += '<div class="cmp-overlay__layer cmp-overlay__new" id="cmpNew"><table class="acc-grid-tbl" id="optTblNew"></table></div>';
+    h += '</div>';
+    h += '<div class="cmp-overlay__labels"><span class="cmp-overlay__tag cmp-overlay__tag--red">Текущее</span><span class="cmp-overlay__tag cmp-overlay__tag--green">Улучшенное</span></div>';
+    h += '<div class="cmp-overlay__handle" id="cmpHandle"><div class="cmp-overlay__line"></div><div class="cmp-overlay__knob">◀▶</div></div>';
     h += '</div>';
 
     el.innerHTML = h;
     renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'));
     renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true);
 
-    /* Draggable split handle */
+    /* Slider logic */
     (function(){
-      var split=document.getElementById('compareSplit'),left=document.getElementById('cmpLeft'),right=document.getElementById('cmpRight'),handle=document.getElementById('cmpHandle');
-      if(!split||!handle)return;
+      var wrap=document.getElementById('cmpOverlay');
+      var newLayer=document.getElementById('cmpNew');
+      var handle=document.getElementById('cmpHandle');
+      if(!wrap||!newLayer||!handle)return;
+      var pos=50;
+      function setPos(p){
+        pos=Math.max(5,Math.min(95,p));
+        newLayer.style.clipPath='inset(0 0 0 '+pos+'%)';
+        handle.style.left=pos+'%';
+      }
+      setPos(50);
       var dragging=false;
       function onMove(e){
         if(!dragging)return;
-        var rect=split.getBoundingClientRect();
+        var rect=wrap.getBoundingClientRect();
         var x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-        var pct=Math.max(15,Math.min(85,(x/rect.width)*100));
-        left.style.flex='0 0 '+pct+'%';
-        right.style.flex='0 0 '+(100-pct-1)+'%';
+        setPos((x/rect.width)*100);
       }
       handle.addEventListener('mousedown',function(e){dragging=true;e.preventDefault();});
-      handle.addEventListener('touchstart',function(){dragging=true;});
+      handle.addEventListener('touchstart',function(){dragging=true;},{passive:true});
       document.addEventListener('mousemove',onMove);
-      document.addEventListener('touchmove',onMove);
+      document.addEventListener('touchmove',onMove,{passive:true});
       document.addEventListener('mouseup',function(){dragging=false;});
       document.addEventListener('touchend',function(){dragging=false;});
     })();
