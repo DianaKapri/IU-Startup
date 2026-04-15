@@ -804,12 +804,12 @@ function renderRecs(top,el){
     var items=classMap[cl],vi=0,wa=0;
     items.forEach(function(t){if(t.st==='v')vi++;else wa++;});
     var cc=vi>0?'#ff453a':wa>0?'#ff9f0a':'#30d158';
-    var meta=[];if(vi)meta.push('<span class="acc-list__vi">'+vi+' нарушен'+(vi===1?'ие':'ий')+'</span>');
-    if(wa)meta.push('<span class="acc-list__wa">'+wa+' рекомендаци'+(wa===1?'я':'й')+'</span>');
+    var metaHtml='<span class="acc-list__vi">'+(vi?vi+' нарушен'+(vi===1?'ие':'ий'):'')+'</span>';
+    metaHtml+='<span class="acc-list__wa">'+(wa?wa+' рекомендаци'+(wa===1?'я':'й'):'')+'</span>';
 
     h+='<div class="acc-list__item">';
     h+='<button class="acc-list__trigger" onclick="var b=this.parentNode.querySelector(\'.acc-list__body\');var open=b.style.maxHeight;b.style.maxHeight=open?null:b.scrollHeight+\'px\';this.classList.toggle(\'acc-list__trigger--open\')">';
-    h+='<div class="acc-list__left"><span class="acc-list__cls" style="color:'+cc+'">'+cl+'</span><span class="acc-list__meta">'+meta.join(' · ')+'</span></div>';
+    h+='<div class="acc-list__left"><span class="acc-list__cls" style="color:'+cc+'">'+cl+'</span><span class="acc-list__meta">'+metaHtml+'</span></div>';
     h+='<svg class="acc-list__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
     h+='</button>';
     h+='<div class="acc-list__body">';

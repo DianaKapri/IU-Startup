@@ -263,10 +263,10 @@ body.demo-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 .acc-list__trigger { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 14px 4px; background: none; border: none; cursor: pointer; font-family: inherit; transition: background .15s; text-align: left; }
 .acc-list__trigger:hover { background: rgba(255,255,255,.03); }
 .acc-list__left { display: flex; align-items: center; gap: 12px; flex: 1; }
-.acc-list__cls { font-size: 1rem; font-weight: 700; min-width: 36px; }
-.acc-list__meta { font-size: .78rem; color: #86868b; display: flex; gap: 8px; flex-wrap: wrap; }
-.acc-list__vi { color: #ff453a; }
-.acc-list__wa { color: #ff9f0a; }
+.acc-list__cls { font-size: 1rem; font-weight: 700; min-width: 42px; width: 42px; text-align: left; }
+.acc-list__meta { font-size: .78rem; color: #86868b; display: flex; gap: 16px; }
+.acc-list__vi { color: #ff453a; min-width: 100px; }
+.acc-list__wa { color: #ff9f0a; min-width: 110px; }
 .acc-list__chevron { color: #555; flex-shrink: 0; transition: transform .25s ease; }
 .acc-list__trigger--open .acc-list__chevron { transform: rotate(180deg); }
 .acc-list__body { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
