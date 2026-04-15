@@ -40,7 +40,7 @@
       <input type="file" id="accFileInput" accept=".xlsx,.xls" hidden/>
       <svg class="acc-dropzone__icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
       <p class="acc-dropzone__title">Перетащите файл расписания</p>
-      <p class="acc-dropzone__sub">или <button class="acc-dropzone__btn" type="button" id="accDemoBtn">загрузить демо-файл</button></p>
+      <p class="acc-dropzone__sub">или <button class="acc-dropzone__btn" type="button" id="accDemoBtn">Загрузите Демо-файл</button></p>
       <p class="acc-dropzone__fmt">Форматы: .xlsx, .xls · Максимум 5 МБ</p>
     </div>
     <p class="acc-error" id="accError"></p>
@@ -50,31 +50,98 @@
   </section>
 
   <section class="acc-intro" id="accIntro">
-    <h2 class="acc-intro__title">Что вы получите после загрузки</h2>
-    <div class="acc-intro__grid">
-      <div class="acc-intro-card">
-        <div class="acc-intro-card__num">01</div>
-        <h3 class="acc-intro-card__name">Аудит по СанПиН</h3>
-        <p class="acc-intro-card__desc">23 автоматические проверки: дневная и недельная нагрузка, сдвоенные уроки, трудные предметы утром, пик нагрузки в середине недели.</p>
-        <div class="acc-intro-card__tags"><span>C-01</span><span>C-02</span><span>C-03</span><span>E-01</span><span>X-01</span></div>
+    <div class="acc-intro__header fade-in">
+      <p class="acc-intro__eyebrow">ЧТО ВЫ ПОЛУЧИТЕ</p>
+      <h2 class="acc-intro__title">Полный анализ расписания за секунды</h2>
+    </div>
+    
+    <div class="pg-products fade-in fade-in--d1">
+      <div class="pg-product-card">
+        <div class="pg-product-card__img">
+          <div class="pg-product-mock pg-product-mock--audit">
+            <div class="pg-product-mock__bar">
+              <span class="pg-product-mock__dots"><span></span><span></span><span></span></span>
+              <span class="pg-product-mock__tab">Аудит СанПиН</span>
+            </div>
+            <div class="pg-product-mock__body">
+              <div class="pg-product-mock__badge pg-product-mock__badge--red">3 нарушения · 2 предупреждения</div>
+              <div class="pg-product-mock__summary">Score: 78/100</div>
+            </div>
+          </div>
+        </div>
+        <h3 class="pg-product-card__title">Аудит по СанПиН</h3>
+        <p class="pg-product-card__desc">23 автоматические проверки: дневная и недельная нагрузка, сдвоенные уроки, трудные предметы утром, пик нагрузки в середине недели.</p>
+        <div class="pg-product-card__tags"><span>C-01</span><span>C-02</span><span>C-03</span><span>E-01</span><span>X-01</span></div>
       </div>
-      <div class="acc-intro-card">
-        <div class="acc-intro-card__num">02</div>
-        <h3 class="acc-intro-card__name">Сетка уроков</h3>
-        <p class="acc-intro-card__desc">Визуальная таблица по всем классам и дням недели. Нарушения подсвечены красным, рекомендации — жёлтым, норма — зелёным.</p>
-        <div class="acc-intro-card__tags"><span>Все классы</span><span>Пн–Пт</span></div>
+
+      <div class="pg-product-card">
+        <div class="pg-product-card__img">
+          <div class="pg-product-mock pg-product-mock--grid">
+            <div class="pg-product-mock__bar">
+              <span class="pg-product-mock__dots"><span></span><span></span><span></span></span>
+              <span class="pg-product-mock__tab">Сетка уроков</span>
+            </div>
+            <div class="pg-product-mock__body">
+              <div class="pg-product-mock__grid-mini">
+                <div class="pg-product-mock__grid-head">
+                  <span></span><span>5А</span><span>7В</span><span>9А</span>
+                </div>
+                <div class="pg-product-mock__grid-row">
+                  <span class="pg-product-mock__day">Пн</span>
+                  <span class="pg-product-mock__cell pg-product-mock__cell--ok">✓</span>
+                  <span class="pg-product-mock__cell pg-product-mock__cell--err">7</span>
+                  <span class="pg-product-mock__cell pg-product-mock__cell--ok">✓</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3 class="pg-product-card__title">Сетка уроков</h3>
+        <p class="pg-product-card__desc">Визуальная таблица по всем классам и дням недели. Нарушения подсвечены красным, рекомендации — жёлтым, норма — зелёным.</p>
+        <div class="pg-product-card__tags"><span>Все классы</span><span>Пн–Пт</span></div>
       </div>
-      <div class="acc-intro-card">
-        <div class="acc-intro-card__num">03</div>
-        <h3 class="acc-intro-card__name">Тепловая карта</h3>
-        <p class="acc-intro-card__desc">Нагрузка в баллах по каждому дню и классу. Сразу видно, где перегруз и где есть резерв для перестановки уроков.</p>
-        <div class="acc-intro-card__tags"><span>Баллы нагрузки</span><span>По дням</span></div>
+
+      <div class="pg-product-card">
+        <div class="pg-product-card__img">
+          <div class="pg-product-mock pg-product-mock--heat">
+            <div class="pg-product-mock__bar">
+              <span class="pg-product-mock__dots"><span></span><span></span><span></span></span>
+              <span class="pg-product-mock__tab">Тепловая карта</span>
+            </div>
+            <div class="pg-product-mock__body">
+              <div class="pg-product-mock__heat-grid">
+                <div class="pg-product-mock__heat-cell pg-product-mock__heat-cell--low"></div>
+                <div class="pg-product-mock__heat-cell pg-product-mock__heat-cell--high"></div>
+                <div class="pg-product-mock__heat-cell pg-product-mock__heat-cell--med"></div>
+                <div class="pg-product-mock__heat-cell pg-product-mock__heat-cell--low"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3 class="pg-product-card__title">Тепловая карта</h3>
+        <p class="pg-product-card__desc">Нагрузка в баллах по каждому дню и классу. Сразу видно, где перегруз и где есть резерв для перестановки уроков.</p>
+        <div class="pg-product-card__tags"><span>Баллы нагрузки</span><span>По дням</span></div>
       </div>
-      <div class="acc-intro-card">
-        <div class="acc-intro-card__num">04</div>
-        <h3 class="acc-intro-card__name">Рекомендации</h3>
-        <p class="acc-intro-card__desc">Конкретные советы по исправлению каждого нарушения: какой урок переставить, на какое место и почему.</p>
-        <div class="acc-intro-card__tags"><span>Нарушения</span><span>Рекомендации</span></div>
+
+      <div class="pg-product-card">
+        <div class="pg-product-card__img">
+          <div class="pg-product-mock pg-product-mock--recs">
+            <div class="pg-product-mock__bar">
+              <span class="pg-product-mock__dots"><span></span><span></span><span></span></span>
+              <span class="pg-product-mock__tab">Рекомендации</span>
+            </div>
+            <div class="pg-product-mock__body">
+              <div class="pg-product-mock__rec-list">
+                <div class="pg-product-mock__rec-item">🔄 Перенести физику с 1-го на 3-й урок</div>
+                <div class="pg-product-mock__rec-item">⚖️ Уменьшить нагрузку в среду</div>
+                <div class="pg-product-mock__rec-item">📅 Добавить облегченный день</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3 class="pg-product-card__title">Рекомендации</h3>
+        <p class="pg-product-card__desc">Конкретные советы по исправлению каждого нарушения: какой урок переставить, на какое место и почему.</p>
+        <div class="pg-product-card__tags"><span>Нарушения</span><span>Рекомендации</span></div>
       </div>
     </div>
     <div class="acc-tip">
@@ -88,20 +155,24 @@
   </section>
 
   <section class="acc-results" id="accResults" style="display:none">
-    <div class="acc-tabs" id="accTabs">
-      <button class="acc-tab acc-tab--active" data-tab="audit">Аудит</button>
-      <button class="acc-tab" data-tab="grid">Сетка уроков</button>
-      <button class="acc-tab" data-tab="heat">Тепловая карта</button>
-      <button class="acc-tab" data-tab="recs">Рекомендации</button>
-      <button class="acc-tab" data-tab="fixed">Исправленный вариант</button>
+    <div class="acc-results-header">
+      <div class="acc-tabs" id="accTabs">
+        <button class="acc-tab acc-tab--active" data-tab="grid">Сетка уроков</button>
+        <button class="acc-tab" data-tab="recs">Требует корректировки</button>
+        <button class="acc-tab" data-tab="optimized">Улучшенная сетка уроков</button>
+        <button class="acc-tab" data-tab="rules">Как работает аудит</button>
+      </div>
+      <div class="acc-actions-header">
+        <button class="btn btn--primary btn--sm" id="saveAuditBtn" type="button">Сохранить аудит</button>
+      </div>
     </div>
-    <div id="tabAudit" class="acc-tab-panel"></div>
-    <div id="tabGrid" class="acc-tab-panel" style="display:none"></div>
-    <div id="tabHeat" class="acc-tab-panel" style="display:none"></div>
+    <div id="tabGrid" class="acc-tab-panel"></div>
     <div id="tabRecs" class="acc-tab-panel" style="display:none"></div>
-    <div id="tabFixed" class="acc-tab-panel" style="display:none"></div>
+    <div id="tabOptimized" class="acc-tab-panel" style="display:none"></div>
+    <div id="tabRules" class="acc-tab-panel" style="display:none"></div>
   </section>
-</main>
+
+  </main>
 
 <!-- Profile Modal -->
 <div class="profile-overlay" id="profileOverlay"></div>
@@ -144,6 +215,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/engine.js"></script>
+<script>
+// Инициализация навигации с аватаром пользователя
+spInitNav();
+</script>
 <script src="/js/account.js"></script>
 </body>
 </html>
