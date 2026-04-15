@@ -394,9 +394,9 @@ function _sortClasses(classes,cg,au){
   return sorted;
 }
 
-function renderGrid(sch,cg,au,tbl,clean){
-  var classes=Object.keys(sch),ml=6;
-  classes.forEach(function(c){sch[c].forEach(function(d){var n=0;for(var i=0;i<d.length;i++){if(d[i])n++;}if(n>ml)ml=n;});});
+function renderGrid(sch,cg,au,tbl,clean,forceMl){
+  var classes=Object.keys(sch),ml=forceMl||6;
+  if(!forceMl) classes.forEach(function(c){sch[c].forEach(function(d){var n=0;for(var i=0;i<d.length;i++){if(d[i])n++;}if(n>ml)ml=n;});});
 
   var sorted=_sortClasses(classes,cg,au);
 
