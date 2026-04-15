@@ -766,47 +766,17 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 
     h += '</div>';
 
-    /* Overlay comparison: both tables in ONE scroll container */
-    h += '<div class="cmp-overlay" id="cmpOverlay">';
-    h += '<div class="cmp-overlay__scroll" id="cmpScroll">';
-    h += '<div class="cmp-overlay__layer cmp-overlay__old"><table class="acc-grid-tbl" id="optTblOld"></table></div>';
-    h += '<div class="cmp-overlay__layer cmp-overlay__new" id="cmpNew"><table class="acc-grid-tbl" id="optTblNew"></table></div>';
+    /* Toggle between old and new grid */
+    h += '<div class="cmp-toggle">';
+    h += '<button class="cmp-toggle__btn cmp-toggle__btn--active" id="cmpBtnOld" onclick="document.getElementById(\'cmpOldGrid\').style.display=\'\';document.getElementById(\'cmpNewGrid\').style.display=\'none\';this.classList.add(\'cmp-toggle__btn--active\');document.getElementById(\'cmpBtnNew\').classList.remove(\'cmp-toggle__btn--active\')"><span class="cmp-toggle__dot cmp-toggle__dot--red"></span>Текущее</button>';
+    h += '<button class="cmp-toggle__btn" id="cmpBtnNew" onclick="document.getElementById(\'cmpNewGrid\').style.display=\'\';document.getElementById(\'cmpOldGrid\').style.display=\'none\';this.classList.add(\'cmp-toggle__btn--active\');document.getElementById(\'cmpBtnOld\').classList.remove(\'cmp-toggle__btn--active\')"><span class="cmp-toggle__dot cmp-toggle__dot--green"></span>Улучшенное</button>';
     h += '</div>';
-    h += '<div class="cmp-overlay__labels"><span class="cmp-overlay__tag cmp-overlay__tag--red">Текущее</span><span class="cmp-overlay__tag cmp-overlay__tag--green">Улучшенное</span></div>';
-    h += '<div class="cmp-overlay__handle" id="cmpHandle"><div class="cmp-overlay__line"></div><div class="cmp-overlay__knob">◀▶</div></div>';
-    h += '</div>';
+    h += '<div id="cmpOldGrid"><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblOld"></table></div></div>';
+    h += '<div id="cmpNewGrid" style="display:none"><div class="acc-tbl-wrap"><table class="acc-grid-tbl" id="optTblNew"></table></div></div>';
 
     el.innerHTML = h;
     renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'));
     renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), true);
-
-    /* Slider logic */
-    (function(){
-      var wrap=document.getElementById('cmpOverlay');
-      var newLayer=document.getElementById('cmpNew');
-      var handle=document.getElementById('cmpHandle');
-      if(!wrap||!newLayer||!handle)return;
-      var pos=50;
-      function setPos(p){
-        pos=Math.max(5,Math.min(95,p));
-        newLayer.style.clipPath='inset(0 0 0 '+pos+'%)';
-        handle.style.left=pos+'%';
-      }
-      setPos(50);
-      var dragging=false;
-      function onMove(e){
-        if(!dragging)return;
-        var rect=wrap.getBoundingClientRect();
-        var x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-        setPos((x/rect.width)*100);
-      }
-      handle.addEventListener('mousedown',function(e){dragging=true;e.preventDefault();});
-      handle.addEventListener('touchstart',function(){dragging=true;},{passive:true});
-      document.addEventListener('mousemove',onMove);
-      document.addEventListener('touchmove',onMove,{passive:true});
-      document.addEventListener('mouseup',function(){dragging=false;});
-      document.addEventListener('touchend',function(){dragging=false;});
-    })();
   } catch (err) {
     el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
   }
