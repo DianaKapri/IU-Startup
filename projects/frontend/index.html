@@ -1010,25 +1010,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   if (backdrop) backdrop.addEventListener('click', closeDrawer);
   drawerLinks.forEach(function(l) { l.addEventListener('click', closeDrawer); });
-
-  /* Auth: show ЛК button if logged in */
-  if (typeof spIsLoggedIn === 'function') {
-    spIsLoggedIn().then(function(loggedIn) {
-      var guest = document.getElementById('navGuestLinks');
-      var user = document.getElementById('navUserLink');
-      if (loggedIn) {
-        if (guest) guest.style.display = 'none';
-        if (user) user.style.display = '';
-        spGetCurrentUser().then(function(u) {
-          if (!u) return;
-          var nameEl = document.getElementById('navUserName');
-          var avatarEl = document.getElementById('navAvatar');
-          if (nameEl) nameEl.textContent = u.name || u.email;
-          if (avatarEl) avatarEl.textContent = (u.name || u.email || '?')[0].toUpperCase();
-        }).catch(function(){});
-      }
-    }).catch(function(){});
-  }
 });
 </script>
 </body>
