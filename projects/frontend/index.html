@@ -243,12 +243,10 @@
     <div class="demo-tabs" id="inlineDemoTabs">
       <button class="demo-tab demo-tab--active" data-tab="grid">Сетка уроков</button>
       <button class="demo-tab" data-tab="recs">Требует корректировки</button>
-      <button class="demo-tab" data-tab="optimized">Улучшенная сетка уроков</button>
       <button class="demo-tab" data-tab="rules">Как работает аудит</button>
     </div>
     <div class="demo-tab-desc" id="inlineDemoTabDesc"></div>
     <div id="inlineDemoTabGrid" class="demo-tab-panel"></div>
-    <div id="inlineDemoTabOptimized" class="demo-tab-panel" style="display:none"></div>
     <div id="inlineDemoTabRecs" class="demo-tab-panel" style="display:none"></div>
     <div id="inlineDemoTabRules" class="demo-tab-panel" style="display:none">
       <div class="rules-hero">
@@ -891,7 +889,7 @@ function _initInlineDemo() {
     renderGrid(DEM, DCG, audit, tbl);
     var recsEl = document.getElementById('inlineDemoTabRecs');
     renderRecs(audit.top, recsEl);
-    _renderOptimizedTab(DEM, DCG, audit);
+    // _renderOptimizedTab removed
   } catch(e) { console.warn('Demo init error:', e); }
 }
 function toggleInlineDemo() {
@@ -934,7 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
           renderGrid(result.sch, result.cg, audit, tbl);
           var recsEl = document.getElementById('inlineDemoTabRecs');
           renderRecs(audit.top, recsEl);
-          _renderOptimizedTab(result.sch, result.cg, audit);
+          // _renderOptimizedTab removed
           /* Show summary above grid */
           var summary = '<div style="margin-bottom:16px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:600px;margin-left:auto;margin-right:auto">';
           summary += '<span style="font-size:1.2rem;font-weight:700;color:'+(audit.score>=90?'#30d158':audit.score>=70?'#ffd60a':'#ff453a')+'">Score: '+audit.score+'</span>';
@@ -996,11 +994,8 @@ document.addEventListener('DOMContentLoaded', function() {
       this.classList.add('demo-tab--active');
       var which = this.getAttribute('data-tab');
       document.getElementById('inlineDemoTabGrid').style.display = which === 'grid' ? '' : 'none';
-      document.getElementById('inlineDemoTabOptimized').style.display = which === 'optimized' ? '' : 'none';
       document.getElementById('inlineDemoTabRecs').style.display = which === 'recs' ? '' : 'none';
       document.getElementById('inlineDemoTabRules').style.display = which === 'rules' ? '' : 'none';
-      var tplRow = document.getElementById('auditTemplateRow');
-      if (tplRow) tplRow.style.display = which === 'optimized' ? 'none' : '';
     });
   });
 
