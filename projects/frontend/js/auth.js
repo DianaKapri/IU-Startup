@@ -84,17 +84,6 @@ function spGetCurrentUser() {
   });
 }
 
-// Возвращает текущий профиль из public.profiles (создаёт, если нет).
-// null — если юзер не залогинен или профиль не удалось получить.
-function spGetCurrentProfile() {
-  return _initSupabase().then(function (sb) {
-    return sb.auth.getUser().then(function (res) {
-      if (res.error || !res.data.user) return null;
-      return spEnsureProfile(sb, res.data.user);
-    });
-  });
-}
-
 function spIsLoggedIn() {
   return _initSupabase().then(function (sb) {
     return sb.auth.getSession().then(function (res) {

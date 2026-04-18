@@ -104,17 +104,6 @@ initParallaxEffects();
 spRequireAuth(function () {
   var user = null;
 
-  /* ═══ Paywall: загрузить профиль и заблокировать контент, если не оплачено ═══ */
-  spGetCurrentProfile().then(function (profile) {
-    if (!profile || !profile.paid) {
-      document.body.classList.add('acc-paywall-active');
-      var pw = document.getElementById('accPaywall');
-      if (pw) pw.style.display = '';
-    }
-  }).catch(function (e) {
-    console.warn('[paywall] не удалось загрузить профиль:', e && e.message);
-  });
-
   /* ═══ Fill nav header ═══ */
   function refreshHeader() {
     spGetCurrentUser().then(function (u) {
