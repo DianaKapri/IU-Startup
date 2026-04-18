@@ -3,11 +3,27 @@ services:
     build: .
     container_name: shkolaplan
     restart: unless-stopped
-    ports:
-      - "80:5000"
+    expose:
+      - "5000"
     env_file: .env
     volumes:
       - uploads:/app/projects/sanpin-audit-ui/uploads
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: shkolaplan-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
 volumes:
   uploads:
+  caddy_data:
+  caddy_config:

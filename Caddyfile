@@ -1,0 +1,12 @@
+{
+    email evlgorbachev@gmail.com
+}
+
+:443 {
+    tls internal
+    reverse_proxy app:5000
+}
+
+:80 {
+    reverse_proxy app:5000
+}
