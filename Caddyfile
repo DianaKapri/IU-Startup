@@ -1,8 +1,0 @@
-{
-    email evlgorbachev@gmail.com
-}
-
-shkolaplan.ru, www.shkolaplan.ru {
-    reverse_proxy app:5000
-    encode gzip
-}
