@@ -1,0 +1,19 @@
+# Mac OS
+**/.DS_Store
+
+# IDEA
+.idea/
+
+# Node
+node_modules/
+**/node_modules/
+
+# Env / secrets
+.env
+**/.env
+
+# Logs
+*.log
+
+# Runtime
+**/uploads/

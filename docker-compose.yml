@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    container_name: shkolaplan
+    restart: unless-stopped
+    ports:
+      - "80:5000"
+    env_file: .env
+    volumes:
+      - uploads:/app/projects/sanpin-audit-ui/uploads
+
+volumes:
+  uploads:
