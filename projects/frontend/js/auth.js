@@ -92,6 +92,30 @@ function spIsLoggedIn() {
   });
 }
 
+// Гарантирует наличие записи в public.profiles. Возвращает профиль (новый или существующий).
+// Требует, чтобы у sb-клиента была активная сессия — иначе RLS отклонит insert.
+function spEnsureProfile(sb, user) {
+  return sb.from('profiles').select('*').eq('id', user.id).maybeSingle()
+    .then(function (res) {
+      if (res.error) {
+        console.warn('[spEnsureProfile] select error:', res.error.message);
+        return null;
+      }
+      if (res.data) return res.data;
+      return sb.from('profiles').insert({
+        id: user.id,
+        email: user.email,
+        paid: false,
+      }).select().maybeSingle().then(function (ins) {
+        if (ins.error) {
+          console.warn('[spEnsureProfile] insert error:', ins.error.message);
+          return null;
+        }
+        return ins.data;
+      });
+    });
+}
+
 function spLogin(email, password) {
   return _initSupabase().then(function (sb) {
     return sb.auth.signInWithPassword({ email: email, password: password })
@@ -99,16 +123,19 @@ function spLogin(email, password) {
         if (res.error) return { ok: false, error: _translateError(res.error.message) };
         var u = res.data.user;
         var meta = u.user_metadata || {};
-        return {
-          ok: true,
-          user: {
-            id: u.id,
-            email: u.email,
-            name: meta.name || u.email,
-            school: meta.school || '',
-            plan: meta.plan || 'trial',
-          },
-        };
+        return spEnsureProfile(sb, u).then(function (profile) {
+          return {
+            ok: true,
+            user: {
+              id: u.id,
+              email: u.email,
+              name: meta.name || u.email,
+              school: meta.school || '',
+              plan: meta.plan || 'trial',
+              paid: profile ? !!profile.paid : false,
+            },
+          };
+        });
       });
   });
 }
@@ -137,8 +164,16 @@ function spRegister(name, school, city, email, password) {
       if (!u) return { ok: false, error: 'Не удалось создать пользователя. Попробуйте ещё раз.' };
 
       var confirmRequired = !session;
+      var resultUser = { id: u.id, email: email, name: name, school: school, plan: 'free' };
 
-      return fetch('/api/auth/register', {
+      var profilePromise = session
+        ? spEnsureProfile(sb, u).catch(function (e) {
+            console.warn('[spRegister] ensureProfile error:', e && e.message);
+            return null;
+          })
+        : Promise.resolve(null);
+
+      var backendPromise = fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -148,36 +183,16 @@ function spRegister(name, school, city, email, password) {
           schoolName: school.trim(),
           city: (city || '').trim(),
         }),
-      }).then(function (r) {
-        return r.json();
-      }).then(function (data) {
-        if (!data.ok) {
-          console.warn('[spRegister] backend register error:', data.error);
-        }
-        return {
-          ok: true,
-          confirmRequired: confirmRequired,
-          user: {
-            id: u.id,
-            email: email,
-            name: name,
-            school: school,
-            plan: 'free',
-          },
-        };
-      }).catch(function (err) {
-        console.warn('[spRegister] backend register fetch error:', err.message);
-        return {
-          ok: true,
-          confirmRequired: confirmRequired,
-          user: {
-            id: u.id,
-            email: email,
-            name: name,
-            school: school,
-            plan: 'free',
-          },
-        };
+      }).then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.ok) console.warn('[spRegister] backend register error:', data.error);
+        })
+        .catch(function (err) {
+          console.warn('[spRegister] backend register fetch error:', err.message);
+        });
+
+      return Promise.all([profilePromise, backendPromise]).then(function () {
+        return { ok: true, confirmRequired: confirmRequired, user: resultUser };
       });
     });
   });
