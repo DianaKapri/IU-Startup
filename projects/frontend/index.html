@@ -392,7 +392,7 @@
     </div>
   </div>
   <div class="audit-template-row fade-in fade-in--d3" id="auditTemplateRow">
-    <a href="/assets/shablon-raspisaniya.xlsx" download class="audit-template-link">
+    <a href="/assets/shablon-raspisaniya.xlsx" download class="audit-template-link" onclick="if(!cooldown('templateDl')){event.preventDefault();return false;}">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v9M3.5 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       Скачать шаблон расписания
     </a>
