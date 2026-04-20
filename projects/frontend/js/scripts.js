@@ -226,6 +226,7 @@ function wizNext(){
 
 function wizStartGeneration(){
   if(!cooldown('wizGenerate',5000))return;
+  requireHuman(function() {
   var el=document.getElementById('wizStep4');if(!el)return;
   var school=escH(wizData.schoolName||'школы');
   el.innerHTML='<div class="wiz-gen">'
@@ -261,6 +262,7 @@ function wizStartGeneration(){
     setTimeout(tick,i===steps.length?600:900);
   }
   setTimeout(tick,300);
+  }); /* end requireHuman */
 }
 function wizPrev(){if(wizStep>0){wizStep--;wizShowStep();}}
 

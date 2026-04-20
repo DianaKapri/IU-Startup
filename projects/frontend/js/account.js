@@ -431,6 +431,11 @@ spRequireAuth(function () {
 
   function handleFile(file) {
     if (typeof cooldown === 'function' && !cooldown('accUpload')) return;
+    if (typeof requireHuman === 'function') {
+      requireHuman(function() { _doHandleFile(file); });
+    } else { _doHandleFile(file); }
+  }
+  function _doHandleFile(file) {
     showError('');
     if (!file.name.match(/\.(xlsx|xls)$/i)) { showError('Поддерживаются файлы .xlsx и .xls'); return; }
     if (file.size > 5 * 1024 * 1024) { showError('Файл слишком большой (максимум 5 МБ)'); return; }

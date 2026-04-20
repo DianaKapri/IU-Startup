@@ -901,10 +901,12 @@ function _initInlineDemo() {
 }
 function toggleInlineDemo() {
   if (!cooldown('demo')) return;
-  var panel = document.getElementById('inlineDemo');
-  var visible = panel.style.display !== 'none';
-  panel.style.display = visible ? 'none' : 'block';
-  if (!visible) { _initInlineDemo(); panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  requireHuman(function() {
+    var panel = document.getElementById('inlineDemo');
+    var visible = panel.style.display !== 'none';
+    panel.style.display = visible ? 'none' : 'block';
+    if (!visible) { _initInlineDemo(); panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
 }
 function showInlineDemo() {
   var panel = document.getElementById('inlineDemo');
@@ -921,8 +923,9 @@ document.addEventListener('DOMContentLoaded', function() {
       var file = e.target.files[0];
       if (!file) return;
       if (!cooldown('upload')) return;
-      var btn = document.querySelector('.audit-upload-btn span');
-      if (btn) btn.textContent = 'Загрузка...';
+      requireHuman(function() {
+        var btn = document.querySelector('.audit-upload-btn span');
+        if (btn) btn.textContent = 'Загрузка...';
       parseXls(file).then(function(result) {
         if (btn) btn.textContent = 'Загрузить своё расписание (.xlsx)';
         /* Show inline demo panel with user's data */
@@ -992,6 +995,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) btn.textContent = 'Загрузить своё расписание (.xlsx)';
         alert('Ошибка: ' + err);
       });
+      }); /* end requireHuman */
       fileInput.value = '';
     });
   }
