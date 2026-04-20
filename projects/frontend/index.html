@@ -709,11 +709,175 @@
 <script src="/js/auth.js"></script>
 <script src="/js/engine.js"></script>
 <script src="/js/scripts.js"></script>
-<script src="/js/generator.js"></script>
 <script>
 spInitNav();
 
-/* _renderOptimizedTab and downloadOptSchedule moved to generator.js */
+
+function _renderOptimizedTab(sch, cg, origAudit) {
+  var el = document.getElementById('inlineDemoTabOptimized');
+  if (!el) return;
+  try {
+    var opt = optSchedule(sch, cg, 'bell');
+    _lastOptSch = opt;
+    var optAudit = doAudit(opt, cg);
+    var diffV = origAudit.vi.length - optAudit.vi.length;
+    var diffW = origAudit.wa.length - optAudit.wa.length;
+    var diffS = optAudit.score - origAudit.score;
+
+    var h = '<div style="margin-bottom:16px;padding:14px 18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;max-width:600px;margin-left:auto;margin-right:auto">';
+    h += '<div style="display:flex;gap:20px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:10px">';
+    h += '<div style="text-align:center"><div style="font-size:.7rem;color:#86868b;margin-bottom:2px">Было</div><div style="font-size:1.3rem;font-weight:700;color:#ff453a">' + origAudit.score + '</div></div>';
+    h += '<div style="font-size:1.2rem;color:#555">→</div>';
+    h += '<div style="text-align:center"><div style="font-size:.7rem;color:#86868b;margin-bottom:2px">Стало</div><div style="font-size:1.3rem;font-weight:700;color:' + (optAudit.score >= 90 ? '#30d158' : optAudit.score >= 70 ? '#ffd60a' : '#ff453a') + '">' + optAudit.score + '</div></div>';
+    if (diffS > 0) h += '<div style="font-size:.85rem;font-weight:600;color:#30d158;padding:4px 12px;background:rgba(48,209,88,.1);border-radius:8px">+' + diffS + ' баллов</div>';
+    h += '</div>';
+    h += '<div style="display:flex;gap:14px;font-size:.78rem;flex-wrap:wrap;justify-content:center">';
+    if (diffV > 0) h += '<span style="color:#30d158">−' + diffV + ' нарушений</span>';
+    if (diffW > 0) h += '<span style="color:#30d158">−' + diffW + ' рекомендаций</span>';
+    h += '</div>';
+
+    /* Show only C-02 (weekly overload) — the only truly unfixable violation */
+    var WM_map={1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
+    var c02list = [];
+    optAudit.vi.forEach(function(v) {
+      if (v.id === 'C-02') {
+        var g = cg[v.cls] || 5;
+        var days = opt[v.cls];
+        var total = 0;
+        days.forEach(function(d){ d.forEach(function(s){ if(s) total++; }); });
+        var wm = WM_map[g] || 34;
+        c02list.push({ cls: v.cls, total: total, max: wm, over: total - wm, grade: g });
+      }
+    });
+
+    if (c02list.length) {
+      h += '<div class="sp-alert sp-alert--warn">';
+      h += '<div class="sp-alert__icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2L1.5 17h17L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 8v4M10 14v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>';
+      h += '<div class="sp-alert__body">';
+      h += '<div class="sp-alert__title">Превышение недельной нагрузки</div>';
+      h += '<div class="sp-alert__desc">В учебном плане больше часов, чем допускает СанПиН 1.2.3685-21 (табл. 6.6). Автоматическая оптимизация не может убрать лишние уроки — нужна ручная корректировка.</div>';
+      h += '<div class="sp-alert__list">';
+      c02list.forEach(function(c) {
+        h += '<div class="sp-alert__item"><span class="sp-alert__cls">' + c.cls + '</span><span class="sp-alert__detail">' + c.total + ' ч/нед (максимум ' + c.max + ' для ' + c.grade + ' кл.) — сократите на ' + c.over + ' ч</span></div>';
+      });
+      h += '</div>';
+      h += '<div class="sp-alert__tip">Рекомендуем: пересмотрите учебный план — сократите количество часов до нормы СанПиН</div>';
+      h += '</div></div>';
+    }
+
+    h += '</div>';
+
+    /* Image-comparison style: fixed-width tables overlaid */
+    h += '<div class="cmp-box" id="cmpBox">';
+    h += '<div class="cmp-box__scroll">';
+    h += '<div class="cmp-box__layers">';
+    h += '<table class="acc-grid-tbl cmp-tbl" id="optTblOld"></table>';
+    h += '<table class="acc-grid-tbl cmp-tbl cmp-tbl--top" id="optTblNew"></table>';
+    h += '</div>';
+    h += '</div>';
+    h += '<div class="cmp-box__tag cmp-box__tag--left">Текущее</div>';
+    h += '<div class="cmp-box__tag cmp-box__tag--right">Улучшенное</div>';
+    h += '<div class="cmp-box__slider" id="cmpSlider">';
+    h += '<div class="cmp-box__line"></div>';
+    h += '<div class="cmp-box__knob">◀ ▶</div>';
+    h += '</div>';
+    h += '</div>';
+    h += '<div style="text-align:center;margin-top:16px"><button onclick="downloadOptSchedule()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:rgba(10,132,255,.15);border:1px solid rgba(10,132,255,.35);border-radius:8px;color:#3b82f6;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v8M2 9l5 5 5-5" stroke="#3b82f6" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h10" stroke="#3b82f6" stroke-width="1.3" stroke-linecap="round"/></svg> Скачать улучшенное расписание .xlsx</button></div>';
+
+    el.innerHTML = h;
+    /* Calculate ml from OLD schedule — both tables use same column count */
+    var maxLessons = 6;
+    Object.keys(sch).forEach(function(c){sch[c].forEach(function(d){var n=0;for(var i=0;i<d.length;i++){if(d[i])n++;}if(n>maxLessons)maxLessons=n;});});
+    renderGrid(sch, cg, origAudit, document.getElementById('optTblOld'), false, maxLessons);
+    renderGrid(opt, cg, optAudit, document.getElementById('optTblNew'), false, maxLessons);
+
+    /* Slider logic */
+    /* Collect class header colors from both tables for live update */
+    var oldHeaders = document.getElementById('optTblOld').querySelectorAll('.tbl-cls-hdr');
+    var newHeaders = document.getElementById('optTblNew').querySelectorAll('.tbl-cls-hdr');
+    var headerColors = [];
+    for(var hi=0;hi<oldHeaders.length;hi++){
+      headerColors.push({
+        el: oldHeaders[hi],
+        oldColor: oldHeaders[hi].style.color,
+        newColor: newHeaders[hi] ? newHeaders[hi].style.color : oldHeaders[hi].style.color
+      });
+    }
+
+    (function(){
+      var box = document.getElementById('cmpBox');
+      var top = document.querySelector('.cmp-tbl--top');
+      var slider = document.getElementById('cmpSlider');
+      if (!box||!top||!slider) return;
+      var pct = 50;
+      function set(p) {
+        pct = Math.max(3, Math.min(97, p));
+        top.style.clipPath = 'inset(0 0 0 ' + pct + '%)';
+        slider.style.left = pct + '%';
+        /* Update class header colors based on slider position */
+        var boxRect = box.getBoundingClientRect();
+        var sliderX = boxRect.left + (pct / 100) * boxRect.width;
+        headerColors.forEach(function(hc) {
+          var rect = hc.el.getBoundingClientRect();
+          var mid = rect.left + rect.width / 2;
+          hc.el.style.color = mid > sliderX ? hc.newColor : hc.oldColor;
+        });
+      }
+      set(50);
+      var drag = false;
+      function move(e) {
+        if (!drag) return;
+        var r = box.getBoundingClientRect();
+        set(((e.touches ? e.touches[0].clientX : e.clientX) - r.left) / r.width * 100);
+      }
+      slider.onmousedown = function(e) { drag=true; e.preventDefault(); };
+      slider.ontouchstart = function() { drag=true; };
+      document.addEventListener('mousemove', move);
+      document.addEventListener('touchmove', move, {passive:true});
+      document.addEventListener('mouseup', function() { drag=false; });
+      document.addEventListener('touchend', function() { drag=false; });
+    })();
+  } catch (err) {
+    el.innerHTML = '<p style="color:#ff453a;padding:20px">Ошибка оптимизации: ' + err + '</p>';
+  }
+}
+
+var _lastOptSch = null;
+
+function downloadOptSchedule() {
+  if (!_lastOptSch) return;
+  var sch = _lastOptSch;
+  var FULL_DAYS = ['Понедельник','Вторник','Среда','Четверг','Пятница'];
+  var classes = Object.keys(sch).sort(function(a,b){
+    var na=parseInt(a),nb=parseInt(b);
+    if(na!==nb)return na-nb;
+    return a.localeCompare(b,'ru');
+  });
+  var wb = XLSX.utils.book_new();
+  FULL_DAYS.forEach(function(dayName,di){
+    var maxL=0;
+    classes.forEach(function(cl){
+      var cnt=(sch[cl][di]||[]).filter(function(s){return s;}).length;
+      if(cnt>maxL)maxL=cnt;
+    });
+    if(maxL<1)maxL=7;
+    var rows=[['Урок'].concat(classes)];
+    for(var li=0;li<maxL;li++){
+      var row=[li+1];
+      classes.forEach(function(cl){
+        var filled=(sch[cl][di]||[]).filter(function(s){return s;});
+        var subj=filled[li]||'';
+        row.push(SF[subj]||subj);
+      });
+      rows.push(row);
+    }
+    var ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:8}].concat(classes.map(function(){return{wch:16};}));
+    ws['!freeze']={xSplit:1,ySplit:1};
+    XLSX.utils.book_append_sheet(wb,ws,dayName);
+  });
+  XLSX.writeFile(wb,'raspisanie-uluchshennoe.xlsx');
+}
 
 var _inlineDemoReady = false;
 function _initInlineDemo() {
