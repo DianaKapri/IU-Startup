@@ -18,11 +18,11 @@
       <a href="#audit" class="nav__link">Аудит</a>
       <a href="#schedule-gen" class="nav__link">Составить расписание</a>
       <a href="#price" class="nav__link">Тарифы</a>
-      <a href="#" onclick="event.preventDefault();showContactsModal()" class="nav__link">Контакты</a>
+      <a href="/contacts.html" class="nav__link">Контакты</a>
     </div>
     <div id="navGuestLinks" class="nav__guest">
-      <a href="#" onclick="event.preventDefault();showLoginModal()" class="nav__pill nav__pill--ghost">Войти</a>
-      <a href="#" onclick="event.preventDefault();showLoginModal()" class="nav__pill nav__pill--primary">Начать бесплатно</a>
+      <a href="/login.html" class="nav__pill nav__pill--ghost">Войти</a>
+      <a href="/login.html?tab=register" class="nav__pill nav__pill--primary">Начать бесплатно</a>
     </div>
     <div id="navUserLink" style="display:none">
       <a href="/account.html" class="nav__user-link">
@@ -41,11 +41,11 @@
     <a href="#audit" class="nav__drawer-link">Аудит</a>
     <a href="#schedule-gen" class="nav__drawer-link">Составить расписание</a>
     <a href="#price" class="nav__drawer-link">Тарифы</a>
-    <a href="#" onclick="event.preventDefault();showContactsModal()" class="nav__drawer-link">Контакты</a>
+    <a href="/contacts.html" class="nav__drawer-link">Контакты</a>
   </div>
   <div class="nav__drawer-footer">
-    <a href="#" onclick="event.preventDefault();showLoginModal()" class="nav__drawer-btn nav__drawer-btn--outline">Войти</a>
-    <a href="#" onclick="event.preventDefault();showLoginModal()" class="nav__drawer-btn nav__drawer-btn--primary">Начать бесплатно</a>
+    <a href="/login.html" class="nav__drawer-btn nav__drawer-btn--outline">Войти</a>
+    <a href="/login.html?tab=register" class="nav__drawer-btn nav__drawer-btn--primary">Начать бесплатно</a>
   </div>
 </div>
 <div class="nav__backdrop" id="navBackdrop"></div>
@@ -567,7 +567,7 @@
           <span class="plan__amount">0 ₽</span>
           <span class="plan__period">/ бессрочно</span>
         </div>
-        <a href="#" onclick="event.preventDefault();showLoginModal()" class="plan__btn plan__btn--dark">
+        <a href="/login.html?tab=register" class="plan__btn plan__btn--dark">
           Начать бесплатно
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
@@ -594,7 +594,7 @@
           <span class="plan__period plan__period--lt">/ год</span>
         </div>
         <p class="plan__monthly">1 200 ₽/мес · ≈ 40 ₽ в день</p>
-        <a href="#" onclick="event.preventDefault();showLoginModal()" class="plan__btn plan__btn--light">
+        <a href="/login.html?tab=register" class="plan__btn plan__btn--light">
           Попробовать 14 дней бесплатно
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
@@ -654,7 +654,7 @@
     <p class="wiz-auth-box__title">Рекомендуем войти или зарегистрироваться</p>
     <p class="wiz-auth-box__desc">Данные сохранятся в личном кабинете и не потеряются.<br>Без входа всё будет работать, но только в этой сессии.</p>
     <div class="wiz-auth-box__btns">
-      <a href="#" onclick="event.preventDefault();showLoginModal()" class="wiz-btn wiz-btn--primary">Войти / Регистрация</a>
+      <a href="/login.html" class="wiz-btn wiz-btn--primary">Войти / Регистрация</a>
       <div class="wiz-btn wiz-btn--ghost" onclick="wizNext()">Пропустить →</div>
     </div>
   </div>
@@ -700,7 +700,7 @@
 
 <footer class="footer"><div class="footer__inner">
   <span class="footer__logo">ШколаПлан</span>
-  <a href="#" onclick="event.preventDefault();showContactsModal()" class="footer__link">Контакты</a>
+  <a href="/contacts.html" class="footer__link">Контакты</a>
   <span class="footer__copy">© 2026 ШколаПлан</span>
 </div></footer>
 
@@ -1016,90 +1016,5 @@ document.addEventListener('DOMContentLoaded', function() {
   drawerLinks.forEach(function(l) { l.addEventListener('click', closeDrawer); });
 });
 </script>
-<!-- ═══ SCHEDULE OVERLAY ═══ -->
-<div id="scheduleOverlay" style="display:none;position:fixed;inset:0;background:#0d0d0f;z-index:9999;flex-direction:column;align-items:stretch;overflow:auto;">
-  <div style="background:#111;min-height:100vh;padding:24px;max-width:1200px;margin:0 auto;width:100%">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-      <h2 id="schedOverlayTitle" style="font-size:1.1rem;font-weight:700;color:#f5f5f7;letter-spacing:-.02em"></h2>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <span id="schedOverlayScore" style="font-size:.82rem;color:#86868b"></span>
-        <button onclick="document.getElementById('scheduleOverlay').style.display='none'" style="background:#222;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:.82rem">&#10005; Закрыть</button>
-      </div>
-    </div>
-    <div style="display:flex;gap:4px;margin-bottom:16px;background:rgba(255,255,255,.04);border-radius:8px;padding:4px;width:fit-content">
-      <button id="sotTabSch" onclick="sotTab('sch')" style="padding:6px 16px;border-radius:6px;border:none;background:#3b82f6;color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit">&#128197; Расписание</button>
-      <button id="sotTabTch" onclick="sotTab('tch')" style="padding:6px 16px;border-radius:6px;border:none;background:transparent;color:#86868b;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit">&#128104;&#8205;&#127979; Учителя</button>
-      <button id="sotTabAudit" onclick="sotTab('audit')" style="padding:6px 16px;border-radius:6px;border:none;background:transparent;color:#86868b;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit">&#9989; Аудит</button>
-    </div>
-    <div id="sotPaneSch" style="overflow-x:auto;margin-bottom:24px">
-      <div class="acc-tbl-wrap" id="schedOverlayGrid"></div>
-    </div>
-    <div id="sotPaneTch" style="display:none">
-      <div id="schedOverlayWindows" style="padding-bottom:8px"></div>
-    </div>
-    <div id="sotPaneAudit" style="display:none">
-      <div id="schedOverlayAudit"></div>
-    </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:10px;flex-wrap:wrap">
-      <button id="schedDlBtn" style="background:#3b82f6;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit">⬇ Скачать расписание (неделя)</button>
-      <button onclick="if(typeof sotTab==='function')sotTab('audit')" style="background:rgba(255,255,255,.06);color:#86868b;border:1px solid rgba(255,255,255,.1);padding:10px 16px;border-radius:8px;font-size:.82rem;cursor:pointer;font-family:inherit">📋 Аудит СанПиН</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ CONTACTS MODAL ═══ -->
-<div id="contactsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center">
-  <div style="background:#1a1a1f;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:32px;max-width:440px;width:90%;position:relative">
-    <button onclick="document.getElementById('contactsModal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;line-height:1">&#10005;</button>
-    <h3 style="font-size:1.1rem;font-weight:700;color:#f5f5f7;margin-bottom:6px">Контакты</h3>
-    <p style="font-size:.85rem;color:#86868b;margin-bottom:20px">Свяжитесь с нами — ответим в течение рабочего дня</p>
-    <div style="display:flex;flex-direction:column;gap:12px">
-      <a href="mailto:hello@shkolaplan.ru" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;text-decoration:none;color:#f5f5f7;font-size:.85rem">
-        <span style="font-size:1.1rem">📧</span><div><div style="font-weight:500">Email</div><div style="font-size:.75rem;color:#86868b">hello@shkolaplan.ru</div></div>
-      </a>
-      <a href="https://t.me/shkolaplan" target="_blank" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;text-decoration:none;color:#f5f5f7;font-size:.85rem">
-        <span style="font-size:1.1rem">✈️</span><div><div style="font-weight:500">Telegram</div><div style="font-size:.75rem;color:#86868b">@shkolaplan</div></div>
-      </a>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ LOGIN MODAL ═══ -->
-<div id="loginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center">
-  <div style="background:#1a1a1f;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:32px;max-width:400px;width:90%;position:relative">
-    <button onclick="document.getElementById('loginModal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;line-height:1">&#10005;</button>
-    <h3 style="font-size:1.1rem;font-weight:700;color:#f5f5f7;margin-bottom:6px">Войти в ШколаПлан</h3>
-    <p style="font-size:.82rem;color:#86868b;margin-bottom:20px">Это демо-версия. В полной версии доступна авторизация, сохранение расписаний и совместная работа.</p>
-    <button onclick="document.getElementById('loginModal').style.display='none';wizSelect(1);wizOpen();document.getElementById('wizard-section').scrollIntoView({behavior:'smooth'})" style="width:100%;padding:11px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px">
-      Попробовать демо →
-    </button>
-    <p style="font-size:.72rem;color:#555;text-align:center">Полный доступ — на shkolaplan.ru</p>
-  </div>
-</div>
-
-<script>
-function sotTab(tab){
-  ['Sch','Tch','Audit'].forEach(function(t){
-    var btn=document.getElementById('sotTab'+t);
-    var pane=document.getElementById('sotPane'+t);
-    var match=t.toLowerCase()===tab;
-    if(btn){btn.style.background=match?'#3b82f6':'transparent';btn.style.color=match?'#fff':'#86868b';}
-    if(pane)pane.style.display=match?'block':'none';
-  });
-}
-function showContactsModal(){
-  document.getElementById('contactsModal').style.display='flex';
-}
-function showLoginModal(){
-  document.getElementById('loginModal').style.display='flex';
-}
-document.addEventListener('click',function(e){
-  var cm=document.getElementById('contactsModal');
-  var lm=document.getElementById('loginModal');
-  if(e.target===cm)cm.style.display='none';
-  if(e.target===lm)lm.style.display='none';
-});
-</script>
-
 </body>
 </html>
