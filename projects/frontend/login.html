@@ -122,6 +122,7 @@
 
   document.getElementById('loginForm').addEventListener('submit', function(e){
     e.preventDefault();
+    if (!cooldown('login')) return;
     var email = document.getElementById('loginEmail').value.trim();
     var pass  = document.getElementById('loginPass').value;
     var err   = document.getElementById('loginErr');
@@ -148,6 +149,7 @@
 
   document.getElementById('registerForm').addEventListener('submit', function(e){
     e.preventDefault();
+    if (!cooldown('register')) return;
     var name   = document.getElementById('userName').value.trim();
     var school = document.getElementById('schoolName').value.trim();
     var city   = document.getElementById('city').value.trim();

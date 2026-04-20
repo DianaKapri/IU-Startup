@@ -179,6 +179,7 @@ function wizSelect(i){
 }
 
 function wizOpen(){
+  if(!cooldown('wizOpen'))return;
   if(wizSel<0)return;
   /* Path 0 = audit → show inline demo */
   if(wizSel===0){showInlineDemo();return;}
@@ -218,11 +219,13 @@ function wizShowStep(){
 }
 
 function wizNext(){
+  if(!cooldown('wizNext',1500))return;
   if(wizStep<4){wizStep++;wizShowStep();}
   if(wizStep===4){wizStartGeneration();}
 }
 
 function wizStartGeneration(){
+  if(!cooldown('wizGenerate',5000))return;
   var el=document.getElementById('wizStep4');if(!el)return;
   var school=escH(wizData.schoolName||'школы');
   el.innerHTML='<div class="wiz-gen">'
@@ -297,6 +300,7 @@ function wizBuildSchedule(){
 }
 
 function wizOpenSchedule(){
+  if(!cooldown('wizSchedule'))return;
   var built=wizBuildSchedule();
   if(!built){alert('Добавьте учителей с классами на шаге 2');return;}
   built.school=wizData.schoolName||'';

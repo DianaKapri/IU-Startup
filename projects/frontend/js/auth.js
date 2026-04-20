@@ -1,5 +1,29 @@
 /* ШколаПлан — Authentication via Supabase */
 
+/* ═══ Cooldown utility — prevents rapid repeated actions ═══ */
+var _cooldowns = {};
+function cooldown(key, ms) {
+  if (!ms) ms = 3000;
+  var now = Date.now();
+  if (_cooldowns[key] && now - _cooldowns[key] < ms) {
+    _showCooldownMsg();
+    return false;
+  }
+  _cooldowns[key] = now;
+  return true;
+}
+function _showCooldownMsg() {
+  var existing = document.getElementById('cooldownToast');
+  if (existing) existing.remove();
+  var el = document.createElement('div');
+  el.id = 'cooldownToast';
+  el.textContent = 'Подождите немного';
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 24px;border-radius:10px;font-size:.85rem;font-weight:500;z-index:99999;opacity:0;transition:opacity .3s;font-family:inherit;pointer-events:none;';
+  document.body.appendChild(el);
+  requestAnimationFrame(function() { el.style.opacity = '1'; });
+  setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 300); }, 2000);
+}
+
 function _translateError(msg) {
   if (!msg) return 'Неизвестная ошибка. Попробуйте ещё раз.';
   var m = msg.toLowerCase();

@@ -179,6 +179,7 @@ spRequireAuth(function () {
   if (profileForm) {
     profileForm.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (typeof cooldown === 'function' && !cooldown('profileSave')) return;
       clearProfileErrors();
       var globalErr = document.getElementById('profileGlobalErr');
       if (globalErr) globalErr.textContent = '';
@@ -216,6 +217,7 @@ spRequireAuth(function () {
   var profileLogout = document.getElementById('profileLogout');
   if (profileLogout) {
     profileLogout.addEventListener('click', function () {
+      if (typeof cooldown === 'function' && !cooldown('logout')) return;
       spLogout().then(function () {
         window.location.href = '/';
       });
@@ -393,6 +395,7 @@ spRequireAuth(function () {
 
   if (builderGenerateBtn) {
     builderGenerateBtn.addEventListener('click', function () {
+      if (typeof cooldown === 'function' && !cooldown('generate')) return;
       try {
         showBuilderError('');
         var built = buildScheduleFromBuilder();
@@ -427,6 +430,7 @@ spRequireAuth(function () {
   }
 
   function handleFile(file) {
+    if (typeof cooldown === 'function' && !cooldown('accUpload')) return;
     showError('');
     if (!file.name.match(/\.(xlsx|xls)$/i)) { showError('Поддерживаются файлы .xlsx и .xls'); return; }
     if (file.size > 5 * 1024 * 1024) { showError('Файл слишком большой (максимум 5 МБ)'); return; }

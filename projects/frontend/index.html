@@ -847,6 +847,7 @@ function _renderOptimizedTab(sch, cg, origAudit) {
 var _lastOptSch = null;
 
 function downloadOptSchedule() {
+  if (!cooldown('download')) return;
   if (!_lastOptSch) return;
   var sch = _lastOptSch;
   var FULL_DAYS = ['Понедельник','Вторник','Среда','Четверг','Пятница'];
@@ -899,6 +900,7 @@ function _initInlineDemo() {
   } catch(e) { console.warn('Demo init error:', e); }
 }
 function toggleInlineDemo() {
+  if (!cooldown('demo')) return;
   var panel = document.getElementById('inlineDemo');
   var visible = panel.style.display !== 'none';
   panel.style.display = visible ? 'none' : 'block';
@@ -918,6 +920,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fileInput.addEventListener('change', function(e) {
       var file = e.target.files[0];
       if (!file) return;
+      if (!cooldown('upload')) return;
       var btn = document.querySelector('.audit-upload-btn span');
       if (btn) btn.textContent = 'Загрузка...';
       parseXls(file).then(function(result) {
