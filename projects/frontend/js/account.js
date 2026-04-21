@@ -119,8 +119,13 @@ spRequireAuth(function () {
       if (accName)    accName.textContent    = u.name;
       if (accSchool)  accSchool.textContent  = u.school;
       if (accAvatar)  accAvatar.textContent  = (u.name || 'У').charAt(0).toUpperCase();
-      if (dashTitle)  dashTitle.textContent  = u.school || 'Личный кабинет';
-      if (accWelcome) accWelcome.textContent = 'Добро пожаловать, ' + firstName + '. Загрузите файл расписания — аудит займёт секунды.';
+      if (dashTitle) {
+        var schoolLabel = u.school ? String(u.school) : '';
+        dashTitle.innerHTML = schoolLabel
+          ? ('С возвращением,<br/><span class="acc-header__title--gradient">' + schoolLabel.replace(/[<>&"']/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c];}) + '</span>')
+          : 'Ваше расписание —<br/><span class="acc-header__title--gradient">без нарушений СанПиН</span>';
+      }
+      if (accWelcome) accWelcome.innerHTML = 'Привет, ' + firstName + '. Загрузите готовое расписание — найдём нарушения за минуту.<br class="hide-mobile"/>Или соберём новое из учебного плана с учётом всех норм.';
       if (navBuyBtn)  navBuyBtn.style.display = u.plan === 'paid' ? 'none' : '';
     });
   }
