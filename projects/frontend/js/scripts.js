@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function () {
 'use strict';
 
+loadWizardComponent();
+
 /* ═══ Scroll reveal ═══ */
 var sio = new IntersectionObserver(function (en) {
   en.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('visible'); sio.unobserve(e.target); } });
@@ -107,8 +109,289 @@ var wizData={
   ]
 };
 
+var WIZARD_STORAGE_KEY = 'shkolaplan_wizard_runs';
+var WIZARD_SOURCE_KEY = 'shkolaplan_wizard_source';
+var WIZARD_OPEN_KEY = 'shkolaplan_wizard_open_item';
+var CURRENT_WIZARD_CONTEXT = null;
+
+function loadWizardComponent() {
+  var mounts = document.querySelectorAll('[data-wizard-mount]');
+  if (!mounts.length) return;
+  fetch('./wizard.html').then(function (res) {
+    if (!res.ok) throw new Error('wizard template unavailable');
+    return res.text();
+  }).then(function (html) {
+    mounts.forEach(function (mount) {
+      mount.innerHTML = html;
+      CURRENT_WIZARD_CONTEXT = mount.getAttribute('data-wizard-mount') || CURRENT_WIZARD_CONTEXT;
+    });
+    mounts.forEach(function (mount) {
+      var mode = mount.getAttribute('data-wizard-mount');
+      if (mode === 'account') {
+        var sec = mount.querySelector('#wizard-section');
+        if (sec) sec.scrollMarginTop = '92px';
+      }
+    });
+    renderSavedWizardRuns();
+  }).catch(function (err) {
+    console.warn('Wizard load failed:', err.message);
+  });
+}
+
+function getSavedWizardRuns() {
+  try {
+    var raw = localStorage.getItem(WIZARD_STORAGE_KEY);
+    var parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function setSavedWizardRuns(items) {
+  localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(items));
+}
+
+function saveWizardRun(type, title, data) {
+  var items = getSavedWizardRuns();
+  var id = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 7);
+  items.unshift({
+    id: id,
+    type: type,
+    title: title,
+    createdAt: new Date().toISOString(),
+    payload: data
+  });
+  setSavedWizardRuns(items.slice(0, 50));
+  renderSavedWizardRuns();
+  return id;
+}
+
+function deleteWizardRun(id) {
+  var next = getSavedWizardRuns().filter(function (item) { return item.id !== id; });
+  setSavedWizardRuns(next);
+  renderSavedWizardRuns();
+}
+
+function renderSavedWizardRuns() {
+  var host = document.getElementById('savedRunsList');
+  if (!host) return;
+  var items = getSavedWizardRuns();
+  if (!items.length) {
+    host.innerHTML = '<div class="profile-wizard-history__empty">Пока нет сохранённых элементов.</div>';
+    return;
+  }
+  host.innerHTML = items.map(function (item) {
+    var dt = new Date(item.createdAt).toLocaleString('ru-RU');
+    return '<div class="profile-wizard-history__item">'
+      + '<div><span class="profile-wizard-history__name">' + escH(item.title) + '</span>'
+      + '<span class="profile-wizard-history__date">' + dt + '</span></div>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button class="profile-wizard-history__open" onclick="openWizardRun(\'' + item.id + '\')">Открыть</button>'
+      + '<button class="profile-wizard-history__delete" onclick="deleteWizardRun(\'' + item.id + '\')">Удалить</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function openWizardRun(id) {
+  var item = getSavedWizardRuns().find(function (entry) { return entry.id === id; });
+  if (!item) return;
+  if (item.type === 'schedule') {
+    try { sessionStorage.setItem('wizSchedule', JSON.stringify(item.payload || {})); } catch (_) {}
+    localStorage.setItem(WIZARD_SOURCE_KEY, 'account');
+    localStorage.setItem(WIZARD_OPEN_KEY, id);
+    window.location.href = './schedule.html';
+    return;
+  }
+  if (item.type === 'audit' && item.payload && item.payload.sch) {
+    localStorage.setItem(WIZARD_SOURCE_KEY, 'account');
+    localStorage.setItem(WIZARD_OPEN_KEY, id);
+    window.location.href = './audit-view.html';
+    return;
+  }
+  /* Legacy fallback for old "Проверка расписания" stubs without payload */
+  var auditSection = document.getElementById('accountAuditSection') || document.getElementById('audit');
+  if (auditSection) auditSection.style.display = 'block';
+  var panel = document.getElementById('inlineDemo');
+  if (panel) {
+    panel.style.display = 'block';
+    _initInlineDemo();
+  }
+  if (auditSection && auditSection.scrollIntoView) auditSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function _accFmtDate(d) {
+  d = d || new Date();
+  return ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2);
+}
+
+function _accBuildAuditTitle(school) {
+  var s = (school || '').trim() || 'расписание';
+  return 'Аудит — ' + s + ', ' + _accFmtDate();
+}
+
+function _accSaveAuditRun(sch, cg, school, fileName, isDemo) {
+  try {
+    var audit = doAudit(sch, cg);
+    return {
+      id: saveWizardRun('audit', _accBuildAuditTitle(school), {
+        sch: sch,
+        cg: cg,
+        school: school || '',
+        fileName: fileName || '',
+        isDemo: !!isDemo,
+        score: audit.score,
+        violations: audit.vi ? audit.vi.length : 0,
+        warnings: audit.wa ? audit.wa.length : 0
+      }),
+      audit: audit
+    };
+  } catch (e) {
+    console.warn('Save audit run failed:', e);
+    return null;
+  }
+}
+
+/* In-wizard audit step: open audit-view.html for a fresh saved record */
+function _wizGotoAuditView(id) {
+  if (!id) return;
+  try {
+    localStorage.setItem(WIZARD_SOURCE_KEY, CURRENT_WIZARD_CONTEXT === 'account' ? 'account' : 'index');
+    localStorage.setItem(WIZARD_OPEN_KEY, id);
+  } catch (_) {}
+  window.location.href = './audit-view.html';
+}
+
+function _wizShowAuditResult(saved, schoolLabel) {
+  var resultEl = document.getElementById('wizAuditResult');
+  var cardEl = document.getElementById('wizAuditResultCard');
+  var openBtn = document.getElementById('wizAuditOpenBtn');
+  var statusEl = document.getElementById('wizAuditStatus');
+  if (statusEl) { statusEl.style.display = 'none'; statusEl.textContent = ''; }
+  if (!saved || !cardEl || !resultEl || !openBtn) return;
+  var a = saved.audit || {};
+  var score = (typeof a.score === 'number') ? a.score : '—';
+  var vi = (a.vi || []).length;
+  var wa = (a.wa || []).length;
+  var color = score === '—' ? '#86868b' : (score >= 90 ? '#30d158' : (score >= 70 ? '#ffd60a' : '#ff453a'));
+  cardEl.innerHTML = ''
+    + '<div><b>' + escH(schoolLabel || 'Расписание') + '</b></div>'
+    + '<div style="margin-top:6px">Оценка: <b style="color:' + color + '">' + score + '/100</b> · '
+    + 'Нарушений: <b>' + vi + '</b> · Рекомендаций: <b>' + wa + '</b></div>';
+  resultEl.style.display = 'flex';
+  openBtn.onclick = function () { _wizGotoAuditView(saved.id); };
+}
+
+function _wizSetAuditStatus(text, isError) {
+  var statusEl = document.getElementById('wizAuditStatus');
+  if (!statusEl) return;
+  statusEl.textContent = text || '';
+  statusEl.style.color = isError ? '#ff453a' : '#86868b';
+  statusEl.style.display = text ? 'block' : 'none';
+}
+
+function _wizBindAuditStep() {
+  var fi = document.getElementById('wizAuditFileInput');
+  if (fi && !fi._bound) {
+    fi._bound = true;
+    fi.addEventListener('change', function () {
+      var file = fi.files && fi.files[0];
+      if (!file) return;
+      if (typeof parseXls !== 'function') { _wizSetAuditStatus('Движок аудита недоступен. Перезагрузите страницу.', true); return; }
+      _wizSetAuditStatus('Анализируем файл…');
+      var resultEl = document.getElementById('wizAuditResult');
+      if (resultEl) resultEl.style.display = 'none';
+      parseXls(file).then(function (result) {
+        var schoolName = '';
+        try {
+          var s = document.getElementById('accSchool');
+          if (s) schoolName = (s.textContent || '').trim();
+        } catch (_) {}
+        if (!schoolName || schoolName === '—') schoolName = file.name.replace(/\.xlsx?$/i, '');
+        var saved = _accSaveAuditRun(result.sch, result.cg, schoolName, file.name, false);
+        _wizShowAuditResult(saved, schoolName);
+      }).catch(function (err) {
+        _wizSetAuditStatus('Не удалось обработать файл: ' + (err && err.message ? err.message : err), true);
+      });
+      fi.value = '';
+    });
+  }
+  var demo = document.getElementById('wizAuditDemoBtn');
+  if (demo && !demo._bound) {
+    demo._bound = true;
+    demo.addEventListener('click', function () {
+      if (typeof cooldown === 'function' && !cooldown('wizAuditDemo', 800)) return;
+      _wizSetAuditStatus('Запускаем аудит на демо-данных…');
+      setTimeout(function () {
+        var saved = _accSaveAuditRun(DEM, DCG, 'Школа №42 (демо)', '', true);
+        _wizShowAuditResult(saved, 'Школа №42 (демо-данные)');
+      }, 250);
+    });
+  }
+}
+
+function _wizShowAuditStep() {
+  /* Hide all numeric steps and progress bar; show only the audit step */
+  for (var i = 0; i <= 4; i++) {
+    var el = document.getElementById('wizStep' + i);
+    if (el) el.style.display = 'none';
+  }
+  var prog = document.getElementById('wizProgress');
+  if (prog) prog.style.display = 'none';
+  var back = document.getElementById('wizBack');
+  if (back) back.style.display = 'none';
+  var next = document.getElementById('wizNext');
+  if (next) next.style.display = 'none';
+  var lbl = document.getElementById('wizStepLabel');
+  if (lbl) lbl.textContent = 'Проверка расписания';
+  var step = document.getElementById('wizStepAudit');
+  if (step) step.style.display = 'block';
+  var resultEl = document.getElementById('wizAuditResult');
+  if (resultEl) resultEl.style.display = 'none';
+  _wizSetAuditStatus('');
+  _wizBindAuditStep();
+}
+
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function subjOpts(sel){return SUBJECTS.map(function(s){return '<option value="'+escH(s)+'"'+(s===sel?' selected':'')+'>'+escH(s)+'</option>';}).join('');}
+
+var _inlineDemoReady = false;
+function _initInlineDemo() {
+  if (_inlineDemoReady) return;
+  var gridEl = document.getElementById('inlineDemoTabGrid');
+  if (!gridEl || typeof renderGrid !== 'function') return;
+  _inlineDemoReady = true;
+  try {
+    var audit = doAudit(DEM, DCG);
+    var tbl = document.createElement('table');
+    tbl.className = 'acc-grid-tbl';
+    gridEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
+    gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
+    renderGrid(DEM, DCG, audit, tbl);
+    var recsEl = document.getElementById('inlineDemoTabRecs');
+    if (recsEl && typeof renderRecs === 'function') renderRecs(audit.top, recsEl);
+  } catch (_) {}
+}
+
+function showInlineDemo() {
+  var panel = document.getElementById('inlineDemo');
+  if (!panel) return;
+  panel.style.display = 'block';
+  _initInlineDemo();
+  if (CURRENT_WIZARD_CONTEXT !== 'account') {
+    var auditEl = document.getElementById('audit');
+    if (auditEl) auditEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function toggleInlineDemo() {
+  var panel = document.getElementById('inlineDemo');
+  if (!panel) return;
+  var visible = panel.style.display !== 'none';
+  panel.style.display = visible ? 'none' : 'block';
+  if (!visible) _initInlineDemo();
+}
 
 function renderTeachers(){
   var el=document.getElementById('wizTeachersTable');if(!el)return;
@@ -169,6 +452,74 @@ document.addEventListener('click',function(e){
 document.getElementById('wizAddFloorBtn')&&document.getElementById('wizAddFloorBtn').addEventListener('click',wizAddFloor);
 document.getElementById('wizSchoolNameInput')&&document.getElementById('wizSchoolNameInput').addEventListener('change',function(){wizData.schoolName=this.value;});
 
+document.addEventListener('DOMContentLoaded', function () {
+  if (!document.body.classList.contains('acc-page')) return;
+  var fileInput = document.getElementById('auditFileInput');
+  if (fileInput) {
+    fileInput.addEventListener('change', function (e) {
+      var file = e.target.files[0];
+      if (!file || typeof parseXls !== 'function') return;
+      parseXls(file).then(function (result) {
+        var panel = document.getElementById('inlineDemo');
+        if (panel) panel.style.display = 'block';
+        _inlineDemoReady = true;
+        var audit = doAudit(result.sch, result.cg);
+        var gridEl = document.getElementById('inlineDemoTabGrid');
+        if (gridEl) {
+          var tbl = document.createElement('table');
+          tbl.className = 'acc-grid-tbl';
+          gridEl.innerHTML = '<div class="acc-tbl-wrap"></div>';
+          gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
+          renderGrid(result.sch, result.cg, audit, tbl);
+        }
+        var recsEl = document.getElementById('inlineDemoTabRecs');
+        if (recsEl) renderRecs(audit.top, recsEl);
+        var schoolName = '';
+        try {
+          var nameEl = document.getElementById('accSchool');
+          if (nameEl) schoolName = (nameEl.textContent || '').trim();
+        } catch (_) {}
+        if (!schoolName || schoolName === '—') schoolName = file.name.replace(/\.xlsx?$/i, '');
+        _accSaveAuditRun(result.sch, result.cg, schoolName, file.name, false);
+        if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      fileInput.value = '';
+    });
+  }
+
+  /* Демо-кнопка "Смотреть аудит на демо-данных" — раскрывает панель и сохраняет аудит */
+  var demoBtn = document.getElementById('accountDemoAuditBtn');
+  if (demoBtn) {
+    demoBtn.addEventListener('click', function () {
+      if (typeof cooldown === 'function' && !cooldown('accDemoAudit', 800)) return;
+      var panel = document.getElementById('inlineDemo');
+      if (!panel) return;
+      var visible = panel.style.display !== 'none';
+      panel.style.display = visible ? 'none' : 'block';
+      if (!visible) {
+        _initInlineDemo();
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        _accSaveAuditRun(DEM, DCG, 'Школа №42 (демо)', '', true);
+      }
+    });
+  }
+
+  var tabs = document.querySelectorAll('#inlineDemoTabs .demo-tab');
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      tabs.forEach(function (t) { t.classList.remove('demo-tab--active'); });
+      tab.classList.add('demo-tab--active');
+      var which = tab.getAttribute('data-tab');
+      var grid = document.getElementById('inlineDemoTabGrid');
+      var recs = document.getElementById('inlineDemoTabRecs');
+      var rules = document.getElementById('inlineDemoTabRules');
+      if (grid) grid.style.display = which === 'grid' ? '' : 'none';
+      if (recs) recs.style.display = which === 'recs' ? '' : 'none';
+      if (rules) rules.style.display = which === 'rules' ? '' : 'none';
+    });
+  });
+});
+
 function wizSelect(i){
   wizSel=i;
   var c1=document.getElementById('wizCard1'),c2=document.getElementById('wizCard2');
@@ -181,13 +532,26 @@ function wizSelect(i){
 function wizOpen(){
   if(!cooldown('wizOpen'))return;
   if(wizSel<0)return;
-  /* Path 0 = audit → show inline demo */
-  if(wizSel===0){showInlineDemo();return;}
+  /* Path 0 = audit */
+  if(wizSel===0){
+    if (CURRENT_WIZARD_CONTEXT === 'account') {
+      /* Account page: show the in-wizard audit step (no scrolling, no duplicated section) */
+      var l0=document.getElementById('wizLanding'),f0=document.getElementById('wizFlow');
+      if(l0)l0.style.display='none';
+      if(f0)f0.style.display='block';
+      _wizShowAuditStep();
+    } else {
+      /* Index page: keep original behavior — show the inline demo block at #audit */
+      showInlineDemo();
+    }
+    return;
+  }
   /* Path 1 = generation → open wizard */
   var l=document.getElementById('wizLanding'),f=document.getElementById('wizFlow');
   if(l)l.style.display='none';
   if(f)f.style.display='block';
-  wizStep=0;wizShowStep();
+  wizStep = CURRENT_WIZARD_CONTEXT === 'account' ? 1 : 0;
+  wizShowStep();
 }
 
 function wizClose(){
@@ -196,11 +560,23 @@ function wizClose(){
   if(l)l.style.display='block';
 }
 
+function wizBackToLanding(){
+  wizStep=0;
+  var auditStep = document.getElementById('wizStepAudit');
+  if (auditStep) auditStep.style.display = 'none';
+  var inline = document.getElementById('inlineDemo');
+  if (inline) inline.style.display = 'none';
+  wizClose();
+}
+
 function wizShowStep(){
   var lbl=document.getElementById('wizStepLabel');
   if(lbl)lbl.textContent=wizLabels[wizStep];
   var prog=document.getElementById('wizProgress');
   if(prog)prog.style.display=wizStep===0?'none':'';
+  /* Always hide the audit step when navigating numeric generation steps */
+  var auditStepEl=document.getElementById('wizStepAudit');
+  if(auditStepEl)auditStepEl.style.display='none';
   for(var i=0;i<=4;i++){var el=document.getElementById('wizStep'+i);if(el)el.style.display=i===wizStep?'block':'none';}
   if(wizStep===2)renderTeachers();
   if(wizStep===3)renderRooms();
@@ -264,7 +640,10 @@ function wizStartGeneration(){
   setTimeout(tick,300);
   }); /* end requireHuman */
 }
-function wizPrev(){if(wizStep>0){wizStep--;wizShowStep();}}
+function wizPrev(){
+  var minStep = CURRENT_WIZARD_CONTEXT === 'account' ? 1 : 0;
+  if(wizStep>minStep){wizStep--;wizShowStep();}
+}
 
 function wizBuildSchedule(){
   var days=wizData.days||5;
@@ -306,6 +685,8 @@ function wizOpenSchedule(){
   var built=wizBuildSchedule();
   if(!built){alert('Добавьте учителей с классами на шаге 2');return;}
   built.school=wizData.schoolName||'';
+  saveWizardRun('schedule','Расписание: ' + (built.school || 'Без названия'),built);
+  localStorage.setItem(WIZARD_SOURCE_KEY, CURRENT_WIZARD_CONTEXT === 'account' ? 'account' : 'index');
   try{sessionStorage.setItem('wizSchedule',JSON.stringify(built));}catch(e){}
-  window.location.href='/schedule.html';
+  window.location.href='./schedule.html';
 }
