@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Аудит расписания — ШколаПлан</title>
+<link rel="stylesheet" href="./css/styles.css"/>
+<link rel="stylesheet" href="./css/demo.css"/>
+<link rel="stylesheet" href="./css/account.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<style>
+body{background:#000;color:#f5f5f7;min-height:100vh;}
+.av-page{max-width:1100px;margin:0 auto;padding:100px 24px 60px;}
+.av-back{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:#86868b;text-decoration:none;margin-bottom:24px;transition:color .15s;background:none;border:none;cursor:pointer;font-family:inherit;}
+.av-back:hover{color:#f5f5f7;}
+.av-eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#0071e3;margin-bottom:8px;}
+.av-title{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;letter-spacing:-.04em;color:#f5f5f7;margin-bottom:4px;}
+.av-sub{font-size:.9rem;color:#86868b;margin-bottom:24px;}
+.av-stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;}
+.av-stat{flex:1;min-width:120px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;}
+.av-stat__val{font-size:1.6rem;font-weight:700;color:#f5f5f7;line-height:1;}
+.av-stat__lbl{font-size:.7rem;color:#86868b;margin-top:6px;text-transform:uppercase;letter-spacing:.06em;}
+.av-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:6px;}
+.av-tab{background:none;border:none;color:#86868b;font:inherit;font-size:.85rem;padding:8px 14px;border-radius:8px;cursor:pointer;transition:all .15s;}
+.av-tab--active{background:rgba(255,255,255,.08);color:#fff;}
+.av-tab:hover:not(.av-tab--active){color:#f5f5f7;}
+.av-panel{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:20px;}
+.av-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.av-empty{padding:60px 20px;text-align:center;color:#86868b;}
+</style>
+</head>
+<body class="acc-page">
+
+<nav class="nav nav--dark" id="nav"><div class="nav__inner">
+  <a href="./index.html" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
+</div></nav>
+
+<div class="av-page">
+  <a href="./account.html" class="av-back" id="avBack"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Назад к мастеру</a>
+
+  <p class="av-eyebrow" id="avEyebrow">Результат аудита</p>
+  <h1 class="av-title" id="avTitle">Аудит расписания</h1>
+  <p class="av-sub" id="avSub">Загружаем сохранённые данные…</p>
+
+  <div class="av-stat-row" id="avStats" style="display:none"></div>
+
+  <div class="av-tabs" id="avTabs" style="display:none">
+    <button class="av-tab av-tab--active" type="button" data-tab="grid">Сетка уроков</button>
+    <button class="av-tab" type="button" data-tab="recs">Требует корректировки</button>
+    <button class="av-tab" type="button" data-tab="rules">Как работает аудит</button>
+  </div>
+
+  <div class="av-panel" id="avPanel">
+    <div id="avTabGrid" class="av-tab-panel"><div class="av-empty" id="avEmpty">Не удалось загрузить данные аудита. Вернитесь и запустите аудит заново.</div></div>
+    <div id="avTabRecs" class="av-tab-panel" style="display:none"></div>
+    <div id="avTabRules" class="av-tab-panel" style="display:none"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="./js/engine.js"></script>
+<script>
+(function () {
+  var WIZARD_STORAGE_KEY = 'shkolaplan_wizard_runs';
+  var WIZARD_OPEN_KEY = 'shkolaplan_wizard_open_item';
+  var WIZARD_SOURCE_KEY = 'shkolaplan_wizard_source';
+
+  /* Source-aware "Назад к мастеру" button */
+  try {
+    var src = localStorage.getItem(WIZARD_SOURCE_KEY);
+    var backEl = document.getElementById('avBack');
+    if (backEl) backEl.setAttribute('href', src === 'index' ? './index.html' : './account.html');
+  } catch (_) {}
+
+  function getRuns() {
+    try {
+      var raw = localStorage.getItem(WIZARD_STORAGE_KEY);
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) { return []; }
+  }
+
+  var openId = localStorage.getItem(WIZARD_OPEN_KEY);
+  localStorage.removeItem(WIZARD_OPEN_KEY);
+
+  var item = null;
+  if (openId) item = getRuns().find(function (r) { return r.id === openId; }) || null;
+  if (!item) {
+    var auds = getRuns().filter(function (r) { return r.type === 'audit' && r.payload && r.payload.sch; });
+    if (auds.length) item = auds[0];
+  }
+
+  var titleEl = document.getElementById('avTitle');
+  var subEl = document.getElementById('avSub');
+  var statsEl = document.getElementById('avStats');
+  var tabsEl = document.getElementById('avTabs');
+  var emptyEl = document.getElementById('avEmpty');
+
+  if (!item || !item.payload || !item.payload.sch) {
+    titleEl.textContent = 'Нет данных аудита';
+    subEl.textContent = 'Вернитесь в личный кабинет и запустите аудит расписания.';
+    return;
+  }
+
+  var p = item.payload;
+  var school = p.school || '';
+  var dt = item.createdAt ? new Date(item.createdAt) : new Date();
+  var dtStr = dt.toLocaleString('ru-RU');
+
+  titleEl.textContent = school ? ('Аудит — ' + school) : (item.title || 'Аудит расписания');
+  subEl.textContent = 'Сохранён ' + dtStr + (p.fileName ? ' · ' + p.fileName : (p.isDemo ? ' · демо-данные' : ''));
+  document.title = titleEl.textContent + ' | ШколаПлан';
+
+  var audit = doAudit(p.sch, p.cg);
+
+  /* Stats */
+  var classCount = Object.keys(p.sch).length;
+  statsEl.style.display = '';
+  statsEl.innerHTML = [
+    { v: classCount, l: 'Классов' },
+    { v: audit.score !== undefined ? audit.score + '/100' : '—', l: 'Оценка' },
+    { v: (audit.vi || []).length, l: 'Нарушений' },
+    { v: (audit.wa || []).length, l: 'Рекомендаций' }
+  ].map(function (s) {
+    return '<div class="av-stat"><div class="av-stat__val">' + s.v + '</div><div class="av-stat__lbl">' + s.l + '</div></div>';
+  }).join('');
+
+  /* Render grid */
+  var gridEl = document.getElementById('avTabGrid');
+  gridEl.innerHTML = '<div class="av-tbl-wrap"></div>';
+  var tbl = document.createElement('table');
+  tbl.className = 'acc-grid-tbl';
+  gridEl.querySelector('.av-tbl-wrap').appendChild(tbl);
+  renderGrid(p.sch, p.cg, audit, tbl);
+
+  /* Render recs */
+  var recsEl = document.getElementById('avTabRecs');
+  if (typeof renderRecs === 'function') {
+    renderRecs(audit.top, recsEl);
+  }
+
+  /* Render rules (compact) */
+  var rulesEl = document.getElementById('avTabRules');
+  rulesEl.innerHTML = ''
+    + '<div class="rules-score-box">'
+    +   '<div class="rules-score-box__formula">Score = (7 × кол-во классов − нарушения − рекомендации) ÷ (7 × кол-во классов) × 100</div>'
+    +   '<div class="rules-score-box__scale">'
+    +     '<span class="rules-scale rules-scale--green">90–100 соответствует</span>'
+    +     '<span class="rules-scale rules-scale--yellow">70–89 рекомендации</span>'
+    +     '<span class="rules-scale rules-scale--red">0–69 нарушения</span>'
+    +   '</div>'
+    + '</div>'
+    + '<div style="margin-top:18px;color:#86868b;font-size:.88rem;line-height:1.55">'
+    +   'Аудит проверяет каждый класс по 7 правилам СанПиН: максимум уроков в день (C-01), недельная нагрузка (C-02), равномерность (C-03), сложные предметы в 2–4 уроки (E-01), облегчённый день (E-02), чередование (E-03) и окна (X-01).'
+    + '</div>';
+
+  /* Tabs */
+  tabsEl.style.display = '';
+  tabsEl.addEventListener('click', function (e) {
+    var btn = e.target.closest('.av-tab');
+    if (!btn) return;
+    tabsEl.querySelectorAll('.av-tab').forEach(function (t) { t.classList.remove('av-tab--active'); });
+    btn.classList.add('av-tab--active');
+    var which = btn.getAttribute('data-tab');
+    document.getElementById('avTabGrid').style.display = which === 'grid' ? '' : 'none';
+    document.getElementById('avTabRecs').style.display = which === 'recs' ? '' : 'none';
+    document.getElementById('avTabRules').style.display = which === 'rules' ? '' : 'none';
+  });
+})();
+</script>
+</body>
+</html>
