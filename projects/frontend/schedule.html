@@ -5,9 +5,9 @@
 <script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "weqg9ebzqd");</script>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Сгенерированное расписание — ШколаПлан</title>
-<link rel="stylesheet" href="/css/styles.css"/>
-<link rel="stylesheet" href="/css/demo.css"/>
-<link rel="stylesheet" href="/css/account.css"/>
+<link rel="stylesheet" href="./css/styles.css"/>
+<link rel="stylesheet" href="./css/demo.css"/>
+<link rel="stylesheet" href="./css/account.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
@@ -40,11 +40,11 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 <body>
 
 <nav class="nav" id="nav"><div class="nav__inner">
-  <a href="/" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
+  <a href="./index.html" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
 </div></nav>
 
 <div class="sch-page">
-  <a href="/#wizard-section" class="sch-back"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Назад к мастеру</a>
+  <a href="./index.html#wizard-section" class="sch-back" id="schBack"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg> Назад к мастеру</a>
 
   <div class="sch-header">
     <p class="sch-eyebrow">Результат генерации</p>
@@ -64,16 +64,30 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
       Скачать .xlsx
     </button>
     <button class="sch-btn sch-btn--ghost" onclick="window.print()">Распечатать</button>
-    <a href="/login.html?tab=register" class="sch-btn sch-btn--ghost">Сохранить и войти</a>
+    <a href="./login.html?tab=register" class="sch-btn sch-btn--ghost">Сохранить и войти</a>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="/js/engine.js"></script>
+<script src="./js/engine.js"></script>
 <script>
 var _schData=null;
 
 (function(){
+  var src = localStorage.getItem('shkolaplan_wizard_source');
+  var backLink = document.getElementById('schBack');
+  if (backLink && src === 'account') backLink.href = './account.html';
+
+  var openId = localStorage.getItem('shkolaplan_wizard_open_item');
+  if (openId && !sessionStorage.getItem('wizSchedule')) {
+    try {
+      var runs = JSON.parse(localStorage.getItem('shkolaplan_wizard_runs') || '[]');
+      var picked = runs.find(function (r) { return r.id === openId; });
+      if (picked && picked.payload) sessionStorage.setItem('wizSchedule', JSON.stringify(picked.payload));
+    } catch (_) {}
+  }
+  localStorage.removeItem('shkolaplan_wizard_open_item');
+
   var raw;
   try{raw=sessionStorage.getItem('wizSchedule');}catch(e){}
   if(!raw){
