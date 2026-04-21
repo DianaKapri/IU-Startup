@@ -399,12 +399,20 @@ body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
   border-bottom: 1px solid rgba(255,255,255,.06);
 }
 .acc-header__title {
-  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-size: clamp(2rem, 5.5vw, 3.4rem);
   font-weight: 700;
   letter-spacing: -.04em;
   color: #f5f5f7;
-  line-height: 1.08;
-  margin-bottom: 10px;
+  line-height: 1.05;
+  margin-bottom: 18px;
+}
+.acc-header__title--gradient {
+  background: linear-gradient(90deg, #a1c4fd 0%, #c2e9fb 50%, #a1c4fd 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
 }
 .acc-header__sub {
   font-size: 1.05rem;
@@ -412,6 +420,120 @@ body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
   font-weight: 300;
   line-height: 1.6;
   max-width: 560px;
+}
+
+.profile-wizard-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 28px 0 0;
+}
+
+.profile-wizard-wrapper .wizard-section {
+  width: 100%;
+  max-width: 1120px;
+  padding-top: 0;
+}
+
+.account-wizard .wizard-section {
+  background: transparent;
+}
+
+.account-wizard .wizard-inner {
+  max-width: 980px;
+}
+
+.account-wizard .wiz-landing,
+.account-wizard .wiz-flow {
+  padding: 3rem 2.5rem;
+  border-radius: 16px;
+}
+
+.account-wizard .wiz-title { font-size: clamp(2.2rem, 5vw, 3.8rem); }
+.account-wizard .wiz-sub { font-size: clamp(1rem, 2.2vw, 1.24rem); }
+.account-wizard .wiz-cards { max-width: 620px; gap: 16px; }
+.account-wizard .wiz-card { padding: 20px; }
+.account-wizard .wiz-card__title { font-size: 15px; }
+.account-wizard .wiz-card__desc { font-size: 12px; }
+.account-wizard .wiz-cta { max-width: 620px; }
+
+.profile-wizard-history {
+  max-width: 1120px;
+  margin: 24px auto 0;
+  padding: 0 24px;
+}
+
+.profile-wizard-history__title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f5f5f7;
+  margin: 0 0 16px;
+}
+
+.profile-wizard-history__list {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-wizard-history__empty {
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  padding: 14px;
+  color: #86868b;
+  font-size: .88rem;
+}
+
+.profile-wizard-history__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  background: rgba(255,255,255,.03);
+  padding: 12px 14px;
+}
+
+.profile-wizard-history__name {
+  display: block;
+  font-size: .92rem;
+  color: #f5f5f7;
+  font-weight: 600;
+}
+
+.profile-wizard-history__date {
+  display: block;
+  font-size: .76rem;
+  color: #86868b;
+  margin-top: 2px;
+}
+
+.profile-wizard-history__delete {
+  border: 1px solid rgba(255,69,58,.45);
+  color: #ff453a;
+  background: rgba(255,69,58,.1);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: var(--font);
+  font-size: .78rem;
+  cursor: pointer;
+}
+
+.profile-wizard-history__open {
+  border: 1px solid rgba(0,113,227,.45);
+  color: #4da3ff;
+  background: rgba(0,113,227,.12);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: var(--font);
+  font-size: .78rem;
+  cursor: pointer;
+}
+
+#accountAuditSection.showcase--dark {
+  background: transparent;
+  padding-top: 24px;
 }
 
 /* ─── Upload / Dropzone ─── */
