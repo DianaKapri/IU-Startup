@@ -382,6 +382,7 @@ function displayRequests(requests) {
                   <button class="admin-btn admin-btn--reject" onclick="updateRequestStatus('${req.id}', 'rejected')">Отклонить</button>
                 ` : req.status === 'awaiting_payment' ? `
                   <button class="admin-btn" onclick="copyPaymentLink('${req.payment_url || ''}')">Скопировать ссылку</button>
+                  <button class="admin-btn admin-btn--approve" onclick="checkPayment('${req.payment_id || ''}')">Проверить оплату</button>
                 ` : '—'}
               </div>
             </td>
@@ -458,6 +459,28 @@ function copyPaymentLink(url) {
   }).catch(function() {
     prompt('Скопируйте ссылку:', url);
   });
+}
+
+// Ручная проверка оплаты через ЮKassa API (fallback к webhook)
+async function checkPayment(paymentId) {
+  if (!paymentId) { alert('ID платежа недоступен'); return; }
+  try {
+    const response = await adminFetch(`/api/payments/check/${paymentId}`, { method: 'POST' });
+    const result = await response.json();
+    if (!result.success) {
+      alert('Ошибка: ' + (result.error?.message || 'Неизвестная ошибка'));
+      return;
+    }
+    if (result.data.paid) {
+      alert('Оплата подтверждена! Подписка активирована.');
+      loadRequests();
+    } else {
+      alert('Платёж ещё не оплачен (статус: ' + result.data.status + ')');
+    }
+  } catch (err) {
+    if (err && err.message === 'UNAUTHORIZED') return;
+    alert('Произошла ошибка при проверке оплаты');
+  }
 }
 
 // Показ ошибки

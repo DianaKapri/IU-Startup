@@ -137,7 +137,7 @@ router.put('/:id', async (req, res) => {
       try {
         const returnUrl = `${process.env.FRONTEND_URL || 'https://shkolaplan.ru'}/account.html`;
         const payment = await yokassa.createPayment({
-          amount: row.price / 100,
+          amount: row.price,
           description: `Подписка ШколаПлан — ${escapeHtml(row.organization_name)}`,
           returnUrl,
           metadata: { subscription_request_id: id },
@@ -177,7 +177,7 @@ router.put('/:id', async (req, res) => {
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
               <h2 style="margin-bottom:8px">Ваша заявка одобрена</h2>
               <p>Организация: <strong>${safeOrg}</strong></p>
-              <p>Тариф: <strong>Школа</strong> &mdash; <strong>${(row.price / 100).toLocaleString('ru-RU')} ₽/год</strong></p>
+              <p>Тариф: <strong>Школа</strong> &mdash; <strong>${Number(row.price).toLocaleString('ru-RU')} ₽/год</strong></p>
               <p style="margin:24px 0">
                 <a href="${safeUrl}"
                    style="background:#0071e3;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">

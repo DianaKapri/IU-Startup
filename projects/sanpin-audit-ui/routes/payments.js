@@ -126,7 +126,7 @@ router.post(
           html: `
             <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
               <h2 style="margin-bottom:8px">Оплата получена</h2>
-              <p>Оплата <strong>${(row.price / 100).toLocaleString('ru-RU')} ₽</strong> успешно зачислена.</p>
+              <p>Оплата <strong>${Number(row.price).toLocaleString('ru-RU')} ₽</strong> успешно зачислена.</p>
               <p>Ваша подписка на тариф <strong>«Школа»</strong> активирована до <strong>${expiresLabel}</strong>.</p>
               <p style="margin:24px 0">
                 <a href="${accountUrl}"
@@ -153,5 +153,109 @@ router.post(
     }
   }
 );
+
+// ─── POST /api/payments/check/:paymentId ───────────────────
+// Ручная проверка статуса платежа — для админа и как fallback к webhook.
+// Используется когда webhook не настроен (localhost) или не дошёл.
+const requireAdmin = require('../middleware/requireAdmin');
+
+router.post('/check/:paymentId', requireAdmin, async (req, res) => {
+  const { paymentId } = req.params;
+  if (!paymentId) {
+    return res.status(400).json({ success: false, error: { code: 'MISSING_ID' } });
+  }
+
+  let yokassaPayment;
+  try {
+    yokassaPayment = await yokassa.getPayment(paymentId);
+  } catch (err) {
+    console.error('[payments check] getPayment error:', err.message);
+    return res.status(502).json({ success: false, error: { code: 'YOKASSA_ERROR', message: err.message } });
+  }
+
+  if (yokassaPayment.status !== 'succeeded') {
+    return res.json({ success: true, data: { paid: false, status: yokassaPayment.status } });
+  }
+
+  // Платёж прошёл — применяем ту же логику что и в webhook
+  let client;
+  try { client = await db.getClient(); } catch (err) {
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR' } });
+  }
+
+  try {
+    await client.query('BEGIN');
+
+    const selectResult = await client.query(
+      `SELECT id, user_id, email, organization_name, price, status
+         FROM subscription_requests
+        WHERE payment_id = $1
+        FOR UPDATE`,
+      [paymentId]
+    );
+
+    if (selectResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND' } });
+    }
+
+    const row = selectResult.rows[0];
+
+    if (row.status === 'paid') {
+      await client.query('ROLLBACK');
+      return res.json({ success: true, data: { paid: true, already: true } });
+    }
+
+    await client.query(
+      `UPDATE subscription_requests SET status = 'paid', paid_at = NOW() WHERE id = $1`,
+      [row.id]
+    );
+
+    let planExpiresAt = null;
+    if (row.user_id) {
+      const userResult = await client.query(
+        `UPDATE users SET plan = 'paid', plan_expires_at = NOW() + INTERVAL '1 year'
+          WHERE id = $1 RETURNING plan_expires_at`,
+        [row.user_id]
+      );
+      if (userResult.rows.length > 0) planExpiresAt = userResult.rows[0].plan_expires_at;
+    }
+
+    await client.query('COMMIT');
+
+    if (row.email) {
+      const expiresLabel = planExpiresAt
+        ? new Date(planExpiresAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+        : 'на 1 год';
+      const accountUrl = `${process.env.FRONTEND_URL || 'https://shkolaplan.ru'}/account.html`;
+      resend.emails.send({
+        from: FROM_EMAIL,
+        to: row.email,
+        subject: 'Подписка активирована — ШколаПлан',
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
+            <h2 style="margin-bottom:8px">Оплата получена</h2>
+            <p>Оплата <strong>${Number(row.price).toLocaleString('ru-RU')} ₽</strong> успешно зачислена.</p>
+            <p>Ваша подписка на тариф <strong>«Школа»</strong> активирована до <strong>${expiresLabel}</strong>.</p>
+            <p style="margin:24px 0">
+              <a href="${accountUrl}" style="background:#0071e3;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">
+                Перейти в личный кабинет →
+              </a>
+            </p>
+            <p style="color:#888;font-size:13px">Спасибо, что выбрали ШколаПлан!</p>
+          </div>
+        `,
+      }).catch(err => console.error('[payments check] resend error:', err.message));
+    }
+
+    return res.json({ success: true, data: { paid: true, plan_expires_at: planExpiresAt } });
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch (_) {}
+    console.error('[payments check] tx error:', err.message);
+    return res.status(500).json({ success: false, error: { code: 'SERVER_ERROR' } });
+  } finally {
+    try { client.release(); } catch (_) {}
+  }
+});
 
 module.exports = router;
