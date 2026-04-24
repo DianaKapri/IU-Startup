@@ -325,11 +325,14 @@ function downloadExcel(){
     }
     getHeaders().then(function(authH){
       var headers = Object.assign({'Content-Type':'application/json'}, authH);
+      // Используем оригинальное расписание с полными именами предметов
+      // (в _schData.sch они нормализованы для UI и не совпадут с curriculum).
+      var scheduleForSub = _schData.originalSch || _schData.sch;
       return fetch('/api/generate/substitute', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
-          schedule: _schData.sch,
+          schedule: scheduleForSub,
           curriculum: _schData.curriculum,
           shifts: _schData.shifts || {},
           absentTeacherId: absentTeacherId,

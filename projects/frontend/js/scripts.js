@@ -801,6 +801,9 @@ function wizXlsxUpload(file){
       if(!resp||!resp.ok){
         throw new Error(spExtractError(resp,'Не удалось обработать шаблон'));
       }
+      // Оригинальное расписание (с полными названиями предметов) —
+      // нужно для /api/generate/substitute, где сравнение идёт по строке.
+      var originalSch = JSON.parse(JSON.stringify(resp.schedule));
       var sch={};
       Object.keys(resp.schedule).forEach(function(cls){
         sch[cls]=resp.schedule[cls].map(function(day){
@@ -817,6 +820,7 @@ function wizXlsxUpload(file){
       var shifts=(resp.meta&&resp.meta.shifts)||{};
       var built={
         sch:sch,cg:cg,school:wizData.schoolName||'',
+        originalSch:originalSch,
         shifts:shifts,
         curriculum:(resp.meta&&resp.meta.curriculum)||[],
         teachers:(resp.meta&&resp.meta.teachers)||[],
