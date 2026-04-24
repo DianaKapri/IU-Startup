@@ -133,6 +133,7 @@ function loadWizardComponent() {
       }
     });
     renderSavedWizardRuns();
+    spLoadRunsFromSupabase();
   }).catch(function (err) {
     console.warn('Wizard load failed:', err.message);
   });
@@ -155,15 +156,17 @@ function setSavedWizardRuns(items) {
 function saveWizardRun(type, title, data) {
   var items = getSavedWizardRuns();
   var id = String(Date.now()) + '-' + Math.random().toString(36).slice(2, 7);
-  items.unshift({
+  var item = {
     id: id,
     type: type,
     title: title,
     createdAt: new Date().toISOString(),
     payload: data
-  });
+  };
+  items.unshift(item);
   setSavedWizardRuns(items.slice(0, 50));
   renderSavedWizardRuns();
+  spSyncRunToSupabase(item);
   return id;
 }
 
@@ -171,6 +174,71 @@ function deleteWizardRun(id) {
   var next = getSavedWizardRuns().filter(function (item) { return item.id !== id; });
   setSavedWizardRuns(next);
   renderSavedWizardRuns();
+  spDeleteRunFromSupabase(id);
+}
+
+// ─── 2.2.2 sync с Supabase (таблица schedules_generated) ──────
+// Если пользователь залогинен и таблица существует — записи дублируются
+// в Supabase, что даёт сохранность между устройствами и сессиями.
+// Если что-то падает — silently fallback на localStorage (UI работает как раньше).
+
+function spSyncRunToSupabase(item) {
+  if (typeof _initSupabase !== 'function' || !item) return;
+  _initSupabase().then(function (sb) {
+    return sb.auth.getUser().then(function (res) {
+      if (!res.data || !res.data.user) return null;
+      return sb.from('schedules_generated').insert({
+        id:         item.id,
+        user_id:    res.data.user.id,
+        type:       item.type,
+        title:      item.title,
+        payload:    item.payload,
+        created_at: item.createdAt,
+      });
+    });
+  }).then(function (res) {
+    if (res && res.error) console.warn('[sync→supabase] insert:', res.error.message);
+  }).catch(function (e) { console.warn('[sync→supabase] error:', e && e.message); });
+}
+
+function spDeleteRunFromSupabase(id) {
+  if (typeof _initSupabase !== 'function' || !id) return;
+  _initSupabase().then(function (sb) {
+    return sb.from('schedules_generated').delete().eq('id', id);
+  }).then(function (res) {
+    if (res && res.error) console.warn('[sync→supabase] delete:', res.error.message);
+  }).catch(function (e) { console.warn('[sync→supabase] error:', e && e.message); });
+}
+
+function spLoadRunsFromSupabase() {
+  if (typeof _initSupabase !== 'function') return Promise.resolve();
+  return _initSupabase().then(function (sb) {
+    return sb.auth.getUser().then(function (res) {
+      if (!res.data || !res.data.user) return null;
+      return sb.from('schedules_generated')
+        .select('*')
+        .eq('user_id', res.data.user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+    });
+  }).then(function (res) {
+    if (!res || res.error || !Array.isArray(res.data)) return;
+    var local = getSavedWizardRuns();
+    var localIds = {};
+    local.forEach(function (x) { localIds[x.id] = true; });
+    var merged = local.slice();
+    res.data.forEach(function (r) {
+      if (!localIds[r.id]) {
+        merged.push({
+          id: r.id, type: r.type, title: r.title,
+          createdAt: r.created_at, payload: r.payload,
+        });
+      }
+    });
+    merged.sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); });
+    setSavedWizardRuns(merged.slice(0, 50));
+    renderSavedWizardRuns();
+  }).catch(function (e) { console.warn('[sync→supabase] load:', e && e.message); });
 }
 
 function renderSavedWizardRuns() {
