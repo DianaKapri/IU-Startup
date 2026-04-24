@@ -15,11 +15,33 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          envs: SUPABASE_URL,SUPABASE_KEY,DATABASE_URL,RESEND_API_KEY,RESEND_FROM_EMAIL,ADMIN_API_TOKEN,FRONTEND_URL
           script: |
             set -e
             cd /opt/shkolaplan
+
+            # Write .env from GitHub Secrets
+            cat > .env << EOF
+            SUPABASE_URL=$SUPABASE_URL
+            SUPABASE_KEY=$SUPABASE_KEY
+            DATABASE_URL=$DATABASE_URL
+            NODE_ENV=production
+            FRONTEND_URL=$FRONTEND_URL
+            RESEND_API_KEY=$RESEND_API_KEY
+            RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL
+            ADMIN_API_TOKEN=$ADMIN_API_TOKEN
+            EOF
+
             git checkout -- .
             git pull origin main
             docker compose up -d --build --remove-orphans
             docker compose restart caddy
             docker image prune -f
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          ADMIN_API_TOKEN: ${{ secrets.ADMIN_API_TOKEN }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
