@@ -1,22 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-
-async function verifySupabaseToken(token) {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_KEY;
-  if (!url || !key) return null;
-  try {
-    const resp = await fetch(`${url}/auth/v1/user`, {
-      headers: { apikey: key, Authorization: `Bearer ${token}` },
-    });
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    return data && data.id ? data.id : null;
-  } catch {
-    return null;
-  }
-}
+const verifySupabaseToken = require('../services/auth/verifySupabaseToken');
 
 // GET /api/users/me
 // Requires: Authorization: Bearer <supabase_access_token>
@@ -31,7 +16,7 @@ router.get('/me', async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT u.id, u.email, u.name, u.plan, u.role,
+      `SELECT u.id, u.email, u.name, u.plan, u.plan_expires_at, u.role,
               s.name AS school, s.city
        FROM users u
        LEFT JOIN schools s ON s.id = u.school_id

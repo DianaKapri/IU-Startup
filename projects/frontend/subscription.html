@@ -140,103 +140,53 @@ spInitNav();
   document.getElementById('buyBtn').addEventListener('click',openModal);
   document.getElementById('payClose').addEventListener('click',closeModal);
   overlay.addEventListener('click',closeModal);
-  document.getElementById('paySubmit').addEventListener('click',()=>{
-    const org=document.getElementById('payOrg').value.trim();
-    const inn=document.getElementById('payInn').value.trim();
-    const email=document.getElementById('payEmail').value.trim();
-    const err=document.getElementById('payErr');
-    const ok=document.getElementById('payOk');
-    err.textContent='';ok.textContent='';
-    if(!org||!inn||!email){err.textContent='Заполните все поля.';return;}
-    
-    // Сохраняем запрос в Supabase
-    saveSubscriptionRequest(org, inn, email);
-  });
+  document.getElementById('paySubmit').addEventListener('click', async function() {
+    const org   = document.getElementById('payOrg').value.trim();
+    const inn   = document.getElementById('payInn').value.trim();
+    const email = document.getElementById('payEmail').value.trim();
+    const err   = document.getElementById('payErr');
+    const ok    = document.getElementById('payOk');
+    err.textContent = ''; ok.textContent = '';
 
-  function saveSubscriptionRequest(org, inn, email) {
-    const request = {
-      organization_name: org,
-      inn: inn,
-      email: email,
-      plan: 'school',
-      price: 14400,
-      status: 'pending',
-      created_at: new Date().toISOString()
-    };
+    if (!org || !inn || !email) { err.textContent = 'Заполните все поля.'; return; }
 
-    // Проверяем авторизацию пользователя
+    const btn = document.getElementById('paySubmit');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Отправляем…';
+
+    const body = { organization_name: org, inn, email };
     if (typeof spGetCurrentUser === 'function') {
-      spGetCurrentUser().then(function(user) {
-        if (user) {
-          request.user_id = user.id;
-          request.user_name = user.name;
-          request.user_school = user.school;
-        }
-        
-        // Отправляем в Supabase
-        if (typeof supabase !== 'undefined') {
-          supabase
-            .from('subscription_requests')
-            .insert([request])
-            .then(function(response) {
-              if (response.error) {
-                console.error('Ошибка сохранения запроса:', response.error);
-                document.getElementById('payErr').textContent = 'Ошибка при сохранении запроса. Попробуйте позже.';
-              } else {
-                console.log('Запрос на подписку сохранен:', response.data);
-                const ok = document.getElementById('payOk');
-                ok.textContent = 'Счёт будет отправлен на ' + email + ' в течение 1 рабочего дня. Спасибо!';
-                document.getElementById('paySubmit').disabled = true;
-                
-                // Очищаем форму
-                document.getElementById('payOrg').value = '';
-                document.getElementById('payInn').value = '';
-                document.getElementById('payEmail').value = '';
-              }
-            })
-            .catch(function(error) {
-              console.error('Ошибка запроса:', error);
-              document.getElementById('payErr').textContent = 'Произошла ошибка. Попробуйте позже.';
-            });
-        } else {
-          // Fallback если Supabase недоступен
-          const ok = document.getElementById('payOk');
-          ok.textContent = 'Счёт будет отправлен на ' + email + ' в течение 1 рабочего дня. Спасибо!';
-          document.getElementById('paySubmit').disabled = true;
-        }
-      }).catch(function(error) {
-        console.error('Ошибка получения пользователя:', error);
-        // Сохраняем без пользователя
-        submitSubscriptionRequest(request);
-      });
-    } else {
-      // Сохраняем без проверки авторизации
-      submitSubscriptionRequest(request);
+      try {
+        const user = await spGetCurrentUser();
+        if (user) { body.user_id = user.id; body.user_name = user.name; body.user_school = user.school; }
+      } catch (_) {}
     }
-  }
 
-  function submitSubscriptionRequest(request) {
-    if (typeof supabase !== 'undefined') {
-      supabase
-        .from('subscription_requests')
-        .insert([request])
-        .then(function(response) {
-          if (response.error) {
-            console.error('Ошибка сохранения запроса:', response.error);
-            document.getElementById('payErr').textContent = 'Ошибка при сохранении запроса. Попробуйте позже.';
-          } else {
-            console.log('Запрос на подписку сохранен:', response.data);
-            const ok = document.getElementById('payOk');
-            ok.textContent = 'Счёт будет отправлен на ' + request.email + ' в течение 1 рабочего дня. Спасибо!';
-            document.getElementById('paySubmit').disabled = true;
-          }
-        })
-        .catch(function(error) {
-          console.error('Ошибка запроса:', error);
-          document.getElementById('payErr').textContent = 'Произошла ошибка. Попробуйте позже.';
-        });
+    try {
+      const res = await fetch('/api/subscription-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        err.textContent = data.error?.message || 'Ошибка. Попробуйте позже.';
+        btn.disabled = false;
+        btn.textContent = originalText;
+        return;
+      }
+      ok.textContent = 'Счёт будет отправлен на ' + email + ' в течение 1 рабочего дня. Спасибо!';
+      btn.textContent = 'Заявка отправлена';
+      document.getElementById('payOrg').value = '';
+      document.getElementById('payInn').value = '';
+      document.getElementById('payEmail').value = '';
+    } catch (_) {
+      err.textContent = 'Произошла ошибка. Попробуйте позже.';
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
-  }
+  });
 })();
 </script>
 </body>

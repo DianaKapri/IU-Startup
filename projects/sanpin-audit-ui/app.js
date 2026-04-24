@@ -68,6 +68,12 @@ app.use('/generate', generatorRouter);
 // const paymentsRouter = require('./routes/payments');      // EP-09 (TODO)
 // app.use('/api/payments', paymentsRouter);
 
+const subscriptionsRouter = require('./routes/subscriptions');
+app.use('/subscription-request', subscriptionsRouter);
+
+const adminSubscriptionsRouter = require('./routes/adminSubscriptions');
+app.use('/subscription-requests', adminSubscriptionsRouter);
+
 // const dashboardRouter = require('./routes/dashboard');    // EP-07 (TODO)
 // app.use('/api/dashboard', dashboardRouter);
 

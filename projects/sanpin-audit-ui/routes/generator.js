@@ -24,10 +24,11 @@ const router  = express.Router();
 
 const runGenerator       = require('../../services/generator/index.js');
 const { calculateScore } = require('../services/audit/scoring.js');
-// const { authenticate } = require('../middleware/auth');  // включить после EP-03
+const requirePlan        = require('../middleware/requirePlan');
 
 // ── POST /api/generate ──────────────────────────────────────
-router.post('/', /* authenticate, */ (req, res) => {
+// Paid-gated: только plan='paid' с неистёкшим plan_expires_at.
+router.post('/generate', requirePlan(['paid']), (req, res) => {
   try {
     const { classes, curriculum, weekDays } = req.body;
 

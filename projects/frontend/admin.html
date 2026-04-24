@@ -263,49 +263,57 @@
 </div>
 
 <script>
-let currentAdmin = null;
+// Авторизация администратора через токен, переданный в заголовке X-Admin-Token.
+// Токен хранится в sessionStorage['adminToken'] и выставляется на admin-login.html.
+// sessionStorage не сохраняется между сессиями и не доступен другим вкладкам.
+
+function getAdminToken() {
+  return sessionStorage.getItem('adminToken');
+}
+
+function redirectToLogin() {
+  sessionStorage.removeItem('adminToken');
+  // Также чистим устаревшие ключи из localStorage на случай старого браузера.
+  localStorage.removeItem('adminToken');
+  window.location.href = '/admin-login.html';
+}
+
+function adminFetch(url, options) {
+  const opts = options ? Object.assign({}, options) : {};
+  const headers = Object.assign({}, opts.headers || {});
+  const token = getAdminToken();
+  if (token) {
+    headers['X-Admin-Token'] = token;
+  }
+  opts.headers = headers;
+  return fetch(url, opts).then(function (response) {
+    if (response.status === 401) {
+      redirectToLogin();
+      // Возвращаем rejected promise, чтобы вызывающий код не обрабатывал пустой ответ.
+      throw new Error('UNAUTHORIZED');
+    }
+    return response;
+  });
+}
 
 // Проверка авторизации админа
 function checkAdminAuth() {
-  const adminEmail = localStorage.getItem('adminEmail');
-  const adminPassword = localStorage.getItem('adminPassword');
-  
-  if (!adminEmail || !adminPassword) {
-    window.location.href = '/admin-login.html';
+  if (!getAdminToken()) {
+    redirectToLogin();
     return;
   }
-  
-  // Проверяем учетные данные с сервером
-  verifyAdminCredentials(adminEmail, adminPassword);
-}
 
-// Проверка учетных данных админа
-async function verifyAdminCredentials(email, password) {
-  // Проверяем учетные данные локально (для демонстрации)
-  const ADMIN_CREDENTIALS = {
-    email: 'admin@shkolaplan.ru',
-    password: 'Admin123!@#'
-  };
-  
-  if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-    currentAdmin = { email: email };
-    document.getElementById('adminEmail').textContent = email;
-    loadRequests();
-    return;
-  }
-  
-  // Если учетные данные неверны, перенаправляем на страницу входа
-  localStorage.removeItem('adminEmail');
-  localStorage.removeItem('adminPassword');
-  window.location.href = '/admin-login.html';
+  const nameEl = document.getElementById('adminEmail');
+  if (nameEl) nameEl.textContent = 'Администратор';
+  loadRequests();
 }
 
 // Загрузка запросов
 async function loadRequests() {
   try {
-    const response = await fetch('/api/subscription-requests');
+    const response = await adminFetch('/api/subscription-requests');
     const result = await response.json();
-    
+
     if (result.success) {
       displayRequests(result.data);
       updateStats(result.data);
@@ -314,6 +322,7 @@ async function loadRequests() {
       showError('Ошибка загрузки данных: ' + (result.error?.message || 'Неизвестная ошибка'));
     }
   } catch (err) {
+    if (err && err.message === 'UNAUTHORIZED') return; // редирект уже произошёл
     console.error('Ошибка:', err);
     showError('Произошла ошибка при загрузке данных');
   }
@@ -387,16 +396,16 @@ function updateStats(requests) {
 // Обновление статуса запроса
 async function updateRequestStatus(requestId, newStatus) {
   try {
-    const response = await fetch(`/api/subscription-requests/${requestId}`, {
+    const response = await adminFetch(`/api/subscription-requests/${requestId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ status: newStatus })
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       // Перезагружаем данные
       loadRequests();
@@ -406,6 +415,7 @@ async function updateRequestStatus(requestId, newStatus) {
       alert('Ошибка при обновлении статуса: ' + (result.error?.message || 'Неизвестная ошибка'));
     }
   } catch (err) {
+    if (err && err.message === 'UNAUTHORIZED') return;
     console.error('Ошибка:', err);
     alert('Произошла ошибка при обновлении статуса');
   }
@@ -430,6 +440,9 @@ function showError(message) {
 document.getElementById('refreshBtn').addEventListener('click', loadRequests);
 
 document.getElementById('logoutBtn').addEventListener('click', function() {
+  sessionStorage.removeItem('adminToken');
+  // Чистим устаревшие ключи из localStorage.
+  localStorage.removeItem('adminToken');
   localStorage.removeItem('adminEmail');
   localStorage.removeItem('adminPassword');
   window.location.href = '/admin-login.html';

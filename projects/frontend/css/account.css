@@ -1,6 +1,53 @@
 /* ===== ACCOUNT PAGE ===== */
 body.acc-page { background: #0a0a0a; color: #f5f5f7; min-height: 100vh; }
 
+/* ─── Plan badge (nav, right of name/school) ─── */
+.plan-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  align-self: center;
+  flex-shrink: 0;
+}
+.plan-badge--free  {
+  background: rgba(255,255,255,.1);
+  color: #aeaeb2;
+  border: 1px solid rgba(255,255,255,.12);
+}
+.plan-badge--trial {
+  background: rgba(255,159,10,.18);
+  color: #ff9f0a;
+  border: 1px solid rgba(255,159,10,.3);
+}
+.plan-badge--paid  {
+  background: #1a4d2e;
+  color: #4ade80;
+  border: 1px solid #2d7a46;
+}
+
+/* ─── Plan lock icon (on gated CTAs) ─── */
+.plan-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-left: 6px;
+  color: #ff9f0a;
+  opacity: .9;
+}
+.plan-lock svg { display: block; }
+.acc-start-card .plan-lock {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  margin-left: 0;
+}
+.acc-start-card { position: relative; }
+
 /* ─── Scroll Animations ─── */
 .fade-in {
   opacity: 0;

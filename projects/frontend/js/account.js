@@ -104,11 +104,73 @@ initParallaxEffects();
 spRequireAuth(function () {
   var user = null;
 
+  /* ═══ Plan helpers (T-3.1, T-3.2) ═══ */
+  function formatPlanDate(isoString) {
+    if (!isoString) return '';
+    try {
+      var d = new Date(isoString);
+      if (isNaN(d.getTime())) return '';
+      return new Intl.DateTimeFormat('ru-RU', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+      }).format(d);
+    } catch (_) { return ''; }
+  }
+
+  function isPlanExpired(u) {
+    if (!u) return true;
+    if (!u.plan_expires_at) return u.plan !== 'paid' ? false : true; // paid without date = expired (fail-closed)
+    var t = new Date(u.plan_expires_at).getTime();
+    if (isNaN(t)) return true;
+    return t <= Date.now();
+  }
+
+  function hasPaidAccess(u) {
+    return !!u && u.plan === 'paid' && !isPlanExpired(u);
+  }
+
+  function renderPlanBadge(u) {
+    var badge = document.getElementById('planBadge');
+    if (!badge || !u) return;
+    badge.className = 'plan-badge';
+    if (u.plan === 'paid') {
+      var dateStr = formatPlanDate(u.plan_expires_at);
+      badge.textContent = dateStr ? ('Тариф активен до ' + dateStr) : 'Тариф активен';
+      badge.classList.add('plan-badge--paid');
+    } else if (u.plan === 'trial') {
+      var td = formatPlanDate(u.plan_expires_at);
+      badge.textContent = td ? ('Пробный до ' + td) : 'Пробный период';
+      badge.classList.add('plan-badge--trial');
+    } else {
+      badge.textContent = 'Тариф: Бесплатно';
+      badge.classList.add('plan-badge--free');
+    }
+    badge.hidden = false;
+  }
+
+  var LOCK_SVG = '<svg class="plan-lock" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
+  function decorateBuildCardLock(u) {
+    var buildCard = document.getElementById('accModeBuild');
+    if (!buildCard) return;
+    var existing = buildCard.querySelector('.plan-lock');
+    if (hasPaidAccess(u)) {
+      if (existing) existing.remove();
+    } else {
+      if (!existing) {
+        var wrap = document.createElement('span');
+        wrap.innerHTML = LOCK_SVG;
+        var svg = wrap.firstChild;
+        if (svg) buildCard.appendChild(svg);
+      }
+    }
+  }
+
   /* ═══ Fill nav header ═══ */
   function refreshHeader() {
     spGetCurrentUser().then(function (u) {
       if (!u) return;
       user = u;
+      window.currentUser = u;
       var accName    = document.getElementById('accName');
       var accSchool  = document.getElementById('accSchool');
       var accAvatar  = document.getElementById('accAvatar');
@@ -126,7 +188,10 @@ spRequireAuth(function () {
           : 'Ваше расписание —<br/><span class="acc-header__title--gradient">без нарушений СанПиН</span>';
       }
       if (accWelcome) accWelcome.innerHTML = 'Привет, ' + firstName + '. Загрузите готовое расписание — найдём нарушения за минуту.<br class="hide-mobile"/>Или соберём новое из учебного плана с учётом всех норм.';
-      if (navBuyBtn)  navBuyBtn.style.display = u.plan === 'paid' ? 'none' : '';
+      if (navBuyBtn)  navBuyBtn.style.display = hasPaidAccess(u) ? 'none' : '';
+
+      renderPlanBadge(u);
+      decorateBuildCardLock(u);
     });
   }
   refreshHeader();
@@ -265,6 +330,17 @@ spRequireAuth(function () {
   if (modeContinue) {
     modeContinue.addEventListener('click', function () {
       if (!selectedMode) return;
+
+      // T-3.2: gate schedule builder for non-paid users. Audit stays free.
+      if (selectedMode === 'build' && !hasPaidAccess(window.currentUser)) {
+        if (typeof window.openPaywall === 'function') {
+          window.openPaywall({
+            reason: 'Составление расписания доступно на тарифе «Школа». Оформите подписку, чтобы продолжить.'
+          });
+        }
+        return;
+      }
+
       if (accStart) accStart.style.display = 'none';
       if (selectedMode === 'audit') {
         if (accUpload) accUpload.style.display = '';
@@ -400,6 +476,16 @@ spRequireAuth(function () {
 
   if (builderGenerateBtn) {
     builderGenerateBtn.addEventListener('click', function () {
+      // T-3.2: block generator execution for non-paid users even if they
+      // bypassed the start-screen gate (e.g. cached open builder).
+      if (!hasPaidAccess(window.currentUser)) {
+        if (typeof window.openPaywall === 'function') {
+          window.openPaywall({
+            reason: 'Генерация расписания доступна на тарифе «Школа». Оформите подписку, чтобы продолжить.'
+          });
+        }
+        return;
+      }
       if (typeof cooldown === 'function' && !cooldown('generate')) return;
       showBuilderError('');
 

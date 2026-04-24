@@ -159,6 +159,7 @@ function spGetCurrentUser() {
             school: db.school || '',
             city:   db.city   || '',
             plan:   db.plan   || 'free',
+            plan_expires_at: db.plan_expires_at || null,
           };
         })
         .catch(function () { return null; });
