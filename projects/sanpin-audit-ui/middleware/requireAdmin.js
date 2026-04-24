@@ -66,18 +66,23 @@ function safeCompare(a, b) {
  * @param {import('express').NextFunction} next
  */
 function requireAdmin(req, res, next) {
-  const expected = process.env.ADMIN_API_TOKEN;
-
-  if (!expected || typeof expected !== 'string' || expected.length === 0) {
-    return res.status(401).json(UNAUTHORIZED_RESPONSE);
-  }
-
   const provided = extractToken(req);
   if (!provided) {
     return res.status(401).json(UNAUTHORIZED_RESPONSE);
   }
 
-  if (!safeCompare(provided, expected)) {
+  const tokenFromEnv = process.env.ADMIN_API_TOKEN;
+  // Derived token — тот же, что возвращает /api/auth/admin/login при отсутствии ADMIN_API_TOKEN
+  const email = process.env.ADMIN_EMAIL;
+  const pass = process.env.ADMIN_PASSWORD;
+  const derivedToken = email && pass
+    ? crypto.createHash('sha256').update(email + ':' + pass).digest('hex')
+    : null;
+
+  const validByEnvToken = tokenFromEnv && safeCompare(provided, tokenFromEnv);
+  const validByDerived = derivedToken && safeCompare(provided, derivedToken);
+
+  if (!validByEnvToken && !validByDerived) {
     return res.status(401).json(UNAUTHORIZED_RESPONSE);
   }
 

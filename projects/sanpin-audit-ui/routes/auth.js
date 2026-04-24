@@ -18,17 +18,17 @@ function safeCompare(a, b) {
 }
 
 // POST /api/auth/admin/login
-// Проверяет email и пароль администратора из env-переменных.
-// Возвращает ADMIN_API_TOKEN для дальнейших запросов к /api/subscription-requests и т.д.
+// Проверяет ADMIN_EMAIL и ADMIN_PASSWORD из env.
+// Если ADMIN_API_TOKEN задан — возвращает его; иначе возвращает derived-токен
+// (SHA-256 от email:password), который requireAdmin тоже принимает.
 router.post('/admin/login', (req, res) => {
   const { email, password } = req.body || {};
 
   const expectedEmail = process.env.ADMIN_EMAIL;
   const expectedPassword = process.env.ADMIN_PASSWORD;
-  const token = process.env.ADMIN_API_TOKEN;
 
-  if (!expectedEmail || !expectedPassword || !token) {
-    console.error('[POST /api/auth/admin/login] ADMIN_EMAIL / ADMIN_PASSWORD / ADMIN_API_TOKEN не заданы в env');
+  if (!expectedEmail || !expectedPassword) {
+    console.error('[POST /api/auth/admin/login] ADMIN_EMAIL / ADMIN_PASSWORD не заданы в env');
     return res.status(500).json({ success: false, error: 'Сервер не настроен' });
   }
 
@@ -39,6 +39,9 @@ router.post('/admin/login', (req, res) => {
   ) {
     return res.status(401).json({ success: false, error: 'Неверный логин или пароль' });
   }
+
+  const token = process.env.ADMIN_API_TOKEN ||
+    crypto.createHash('sha256').update(expectedEmail + ':' + expectedPassword).digest('hex');
 
   return res.json({ success: true, token });
 });
