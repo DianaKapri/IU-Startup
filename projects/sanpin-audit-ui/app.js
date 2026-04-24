@@ -52,19 +52,23 @@ app.use('/auth', authRouter);
 const usersRouter = require('./routes/users');
 app.use('/users', usersRouter);
 
-// const auditRouter = require('./routes/audit');            // EP-05
+// const auditRouter = require('./routes/audit');            // EP-05 (TODO)
 // app.use('/api/audit', auditRouter);
 
-// const teachersRouter = require('./routes/teachers');      // EP-06
+// ─── Генератор расписания (EP-06) ─────────────────────────────
+const generatorRouter = require('./routes/generator');
+app.use('/api/generate', generatorRouter);
+
+// const teachersRouter = require('./routes/teachers');      // EP-06 (TODO)
 // app.use('/api/teachers', teachersRouter);
 
-// const roomsRouter = require('./routes/rooms');            // EP-06
+// const roomsRouter = require('./routes/rooms');            // EP-06 (TODO)
 // app.use('/api/rooms', roomsRouter);
 
-// const paymentsRouter = require('./routes/payments');      // EP-09
+// const paymentsRouter = require('./routes/payments');      // EP-09 (TODO)
 // app.use('/api/payments', paymentsRouter);
 
-// const dashboardRouter = require('./routes/dashboard');    // EP-07
+// const dashboardRouter = require('./routes/dashboard');    // EP-07 (TODO)
 // app.use('/api/dashboard', dashboardRouter);
 
 // ─── Обработка ошибок ───────────────────────────────────────
