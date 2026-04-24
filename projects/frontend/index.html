@@ -9,6 +9,7 @@
 <title>ШколаПлан — Расписание. Переосмыслено.</title>
 <link rel="stylesheet" href="./css/styles.css"/>
 <link rel="stylesheet" href="./css/demo.css"/>
+<link rel="stylesheet" href="./css/subscription.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
@@ -597,8 +598,8 @@
           <span class="plan__amount plan__amount--lt">12 000 ₽</span>
           <span class="plan__period plan__period--lt">/ год</span>
         </div>
-        <p class="plan__monthly">1 200 ₽/мес · ≈ 40 ₽ в день</p>
-        <a href="./login.html?tab=register" class="plan__btn plan__btn--light">
+        <p class="plan__monthly">1 000 ₽/мес · ≈ 33 ₽ в день</p>
+        <a href="./login.html?tab=register" id="trialBtn" class="plan__btn plan__btn--light">
           Попробовать 14 дней бесплатно
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
@@ -620,6 +621,22 @@
 <div data-wizard-mount="index"></div>
 
 
+<!-- Payment Modal (for authenticated users) -->
+<div class="pay-overlay" id="indexPayOverlay"></div>
+<div class="pay-modal" id="indexPayModal">
+  <div class="pay-modal__header">
+    <h2 class="pay-modal__title">Оформить подписку</h2>
+    <button class="pay-modal__close" id="indexPayClose">✕</button>
+  </div>
+  <p class="pay-modal__plan">Тариф «Школа» — 12 000 ₽/год</p>
+  <div class="field"><label class="field__label" for="indexPayOrg">Название организации</label><input class="field__input" id="indexPayOrg" type="text" placeholder="МБОУ СОШ №42"/></div>
+  <div class="field"><label class="field__label" for="indexPayInn">ИНН</label><input class="field__input" id="indexPayInn" type="text" placeholder="1234567890"/></div>
+  <div class="field"><label class="field__label" for="indexPayEmail">Email для счёта</label><input class="field__input" id="indexPayEmail" type="email" placeholder="buh@school.ru"/></div>
+  <p class="pay-modal__err" id="indexPayErr"></p>
+  <p class="pay-modal__ok" id="indexPayOk"></p>
+  <button class="btn btn--primary btn--full" id="indexPaySubmit" type="button">Запросить счёт</button>
+</div>
+
 <footer class="footer"><div class="footer__inner">
   <span class="footer__logo">ШколаПлан</span>
   <a href="./contacts.html" class="footer__link">Контакты</a>
@@ -633,6 +650,78 @@
 <script src="./js/scripts.js"></script>
 <script>
 spInitNav();
+
+(function () {
+  var overlay = document.getElementById('indexPayOverlay');
+  var modal   = document.getElementById('indexPayModal');
+
+  function openPayModal() {
+    modal.classList.add('pay-modal--open');
+    overlay.classList.add('pay-overlay--open');
+  }
+  function closePayModal() {
+    modal.classList.remove('pay-modal--open');
+    overlay.classList.remove('pay-overlay--open');
+  }
+
+  document.getElementById('indexPayClose').addEventListener('click', closePayModal);
+  overlay.addEventListener('click', closePayModal);
+
+  document.getElementById('trialBtn').addEventListener('click', function (e) {
+    spIsLoggedIn().then(function (loggedIn) {
+      if (loggedIn) {
+        e.preventDefault();
+        openPayModal();
+      }
+    });
+  });
+
+  document.getElementById('indexPaySubmit').addEventListener('click', async function () {
+    var org   = document.getElementById('indexPayOrg').value.trim();
+    var inn   = document.getElementById('indexPayInn').value.trim();
+    var email = document.getElementById('indexPayEmail').value.trim();
+    var err   = document.getElementById('indexPayErr');
+    var ok    = document.getElementById('indexPayOk');
+    err.textContent = ''; ok.textContent = '';
+
+    if (!org || !inn || !email) { err.textContent = 'Заполните все поля.'; return; }
+
+    var btn = document.getElementById('indexPaySubmit');
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Отправляем…';
+
+    var body = { organization_name: org, inn: inn, email: email };
+    try {
+      var user = await spGetCurrentUser();
+      if (user) { body.user_id = user.id; body.user_name = user.name; body.user_school = user.school; }
+    } catch (_) {}
+
+    try {
+      var res = await fetch('/api/subscription-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var data = await res.json();
+      if (!res.ok) {
+        err.textContent = (data.error && data.error.message) || 'Ошибка. Попробуйте позже.';
+        btn.disabled = false;
+        btn.textContent = originalText;
+        return;
+      }
+      ok.textContent = 'Счёт будет отправлен на ' + email + ' в течение 1 рабочего дня. Спасибо!';
+      btn.textContent = 'Заявка отправлена';
+      document.getElementById('indexPayOrg').value = '';
+      document.getElementById('indexPayInn').value = '';
+      document.getElementById('indexPayEmail').value = '';
+    } catch (_) {
+      err.textContent = 'Произошла ошибка. Попробуйте позже.';
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  });
+})();
 
 
 function _renderOptimizedTab(sch, cg, origAudit) {
