@@ -342,10 +342,57 @@ var _schData=null;
     bar.innerHTML = html;
   }
 
+  // T-01: проверка переходов между этажами
+  function checkFloorTransitions(filt) {
+    var rooms = _schData.rooms || [];
+    var curriculum = _schData.curriculum || [];
+    if (!rooms.length || !curriculum.length) return [];
+    // room id → floor
+    var floorMap = {};
+    rooms.forEach(function(r){ if (r.id && r.floor != null) floorMap[r.id] = r.floor; });
+    // (classId, subject) → roomId via curriculum
+    var curRoom = {};
+    curriculum.forEach(function(c){
+      if (c.classId && c.subject && c.roomId) curRoom[c.classId + ':' + c.subject] = c.roomId;
+    });
+    var origSch = _schData.originalSch || {};
+    var days = ['Пн','Вт','Ср','Чт','Пт','Сб'];
+    var violations = [];
+    Object.keys(filt).forEach(function(cls){
+      var daysArr = origSch[cls] || [];
+      for (var d = 0; d < daysArr.length; d++) {
+        var transitions = 0;
+        var prevFloor = null;
+        for (var s = 0; s < daysArr[d].length; s++) {
+          var subj = daysArr[d][s];
+          if (!subj) { prevFloor = null; continue; }
+          var room = curRoom[cls + ':' + subj];
+          var floor = room ? floorMap[room] : null;
+          if (floor == null) { prevFloor = null; continue; }
+          if (prevFloor != null && floor !== prevFloor) transitions++;
+          prevFloor = floor;
+        }
+        if (transitions >= 3) {
+          violations.push({
+            id: 'T-01', nm: 'Много переходов по этажам', st: 'w',
+            ds: cls + ', ' + days[d] + ': ' + transitions + ' перехода',
+            cls: cls,
+          });
+        }
+      }
+    });
+    return violations;
+  }
+
   function render(target) {
     var filt = filterByShift(target);
     var tbl = document.getElementById('schGridTbl');
     var au = doAudit(filt, cg);
+    // Добавить T-01 нарушения к аудиту
+    var t01 = checkFloorTransitions(filt);
+    if (t01.length) {
+      au.wa = (au.wa || []).concat(t01);
+    }
     renderGrid(filt, cg, au, tbl, false, undefined, roomsMap);
     renderAuditBar(au);
   }

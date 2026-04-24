@@ -929,6 +929,7 @@ function wizXlsxUpload(file){
         shifts:shifts,
         curriculum:(resp.meta&&resp.meta.curriculum)||[],
         teachers:(resp.meta&&resp.meta.teachers)||[],
+        rooms:(resp.meta&&resp.meta.rooms)||[],
       };
       saveWizardRun('schedule','Расписание (Excel): '+(built.school||'Без названия'),built);
       localStorage.setItem(WIZARD_SOURCE_KEY,CURRENT_WIZARD_CONTEXT==='account'?'account':'index');
