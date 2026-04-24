@@ -346,5 +346,8 @@ function spInitNav() {
     } else {
       if (guestLinks) guestLinks.style.display = '';
     }
+  }).catch(function () {
+    loader.remove();
+    if (guestLinks) guestLinks.style.display = '';
   });
 }
