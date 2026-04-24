@@ -56,6 +56,27 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .sub-item--none{border-left-color:#ff9f0a;}
 .sub-item__head{font-weight:600;color:#f5f5f7;}
 .sub-item__msg{font-size:.82rem;color:#86868b;margin-top:2px;}
+
+/* ═══ PDF/Print вёрстка — Эпик 2.3.2 ═══ */
+@media print {
+  body { background: #fff !important; color: #000 !important; }
+  .nav, .sch-back, .sch-stat-row, .sch-shift-tabs, .sch-cta-bar,
+  .sub-overlay, #schSubBtn { display: none !important; }
+  .sch-page { padding: 0 !important; max-width: 100% !important; }
+  .sch-header { margin-bottom: 12px !important; }
+  .sch-title { color: #000 !important; font-size: 18pt !important; }
+  .sch-eyebrow, .sch-sub { color: #555 !important; }
+  .sch-panel { background: #fff !important; border: 1px solid #ccc !important; }
+  .acc-grid-tbl { font-size: 8pt !important; border-collapse: collapse; width: 100%; }
+  .acc-grid-tbl th, .acc-grid-tbl td {
+    border: 1px solid #999 !important;
+    background: #fff !important;
+    color: #000 !important;
+    padding: 3px 5px !important;
+  }
+  .acc-grid-tbl th { background: #f0f0f0 !important; font-weight: 700; }
+  @page { size: A3 landscape; margin: 10mm; }
+}
 </style>
 </head>
 <body>
@@ -91,7 +112,7 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
       Скачать .xlsx
     </button>
     <button class="sch-btn sch-btn--primary" id="schSubBtn" style="display:none">🚨 Учитель заболел</button>
-    <button class="sch-btn sch-btn--ghost" onclick="window.print()">Распечатать</button>
+    <button class="sch-btn sch-btn--ghost" onclick="downloadPDF()">📄 Скачать PDF</button>
     <a href="./login.html?tab=register" class="sch-btn sch-btn--ghost">Сохранить и войти</a>
   </div>
 </div>
@@ -123,6 +144,7 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="./js/auth.js"></script>
 <script src="./js/engine.js"></script>
@@ -277,6 +299,87 @@ function downloadExcel(){
 
   var filename=(school?school.replace(/[\/\\?*\[\]:]/g,''):'Расписание')+'.xlsx';
   XLSX.writeFile(wb,filename);
+}
+
+/* ═══ Эпик 2.3.2: PDF через html2pdf.js ═══ */
+function downloadPDF(){
+  if(!_schData){return;}
+  var school=_schData.school||'Расписание';
+  var dateStr=new Date().toLocaleDateString('ru-RU');
+  var sch=_schData.sch;
+  var dayNames=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+
+  var classes=Object.keys(sch).sort(function(a,b){
+    var na=parseInt(a)||0, nb=parseInt(b)||0;
+    return na!==nb?na-nb:a.localeCompare(b,'ru');
+  });
+  if(!classes.length){ alert('Нет данных для PDF'); return; }
+
+  var numD=0;
+  classes.forEach(function(cls){ if(sch[cls].length>numD) numD=sch[cls].length; });
+  if(numD<5) numD=5;
+  var maxLessons=0;
+  classes.forEach(function(cls){
+    sch[cls].forEach(function(d){ if(d.length>maxLessons) maxLessons=d.length; });
+  });
+  if(maxLessons<1) maxLessons=7;
+
+  // Строим HTML-блок для печати
+  var html='<div style="font-family:DM Sans,sans-serif;padding:20px;color:#000;background:#fff">';
+  html+='<h1 style="margin:0 0 4px;font-size:18pt">'+escH(school)+'</h1>';
+  html+='<p style="margin:0 0 16px;font-size:10pt;color:#555">Сгенерировано '+dateStr+' · ШколаПлан</p>';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:8pt">';
+
+  // Заголовок
+  html+='<thead><tr style="background:#e5e7eb;font-weight:700">';
+  html+='<th style="border:1px solid #888;padding:5px;width:70px">День</th>';
+  html+='<th style="border:1px solid #888;padding:5px;width:40px">Урок</th>';
+  classes.forEach(function(cls){
+    html+='<th style="border:1px solid #888;padding:5px">'+escH(cls)+'</th>';
+  });
+  html+='</tr></thead><tbody>';
+
+  for(var d=0; d<numD; d++){
+    var dayBg = d%2===0 ? '#fff' : '#fafafa';
+    for(var s=0; s<maxLessons; s++){
+      html+='<tr style="background:'+dayBg+'">';
+      if(s===0){
+        html+='<td rowspan="'+maxLessons+'" style="border:1px solid #888;padding:5px;font-weight:700;text-align:center;vertical-align:middle">'+dayNames[d]+'</td>';
+      }
+      html+='<td style="border:1px solid #888;padding:5px;text-align:center;font-weight:600">'+(s+1)+'</td>';
+      classes.forEach(function(cls){
+        var dayArr=sch[cls][d]||[];
+        var code=dayArr[s]||'';
+        var text=SF[code]||code||'';
+        html+='<td style="border:1px solid #888;padding:5px">'+escH(text)+'</td>';
+      });
+      html+='</tr>';
+    }
+  }
+  html+='</tbody></table></div>';
+
+  function escH(s){ return String(s||'').replace(/[<>&"']/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+  // Временный контейнер для html2pdf (вне viewport'а)
+  var container=document.createElement('div');
+  container.style.position='absolute';
+  container.style.left='-9999px';
+  container.innerHTML=html;
+  document.body.appendChild(container);
+
+  var filename=(school?school.replace(/[\/\\?*\[\]:]/g,''):'Расписание')+'.pdf';
+  html2pdf()
+    .from(container)
+    .set({
+      margin: [10,10,10,10],
+      filename: filename,
+      image: { type:'jpeg', quality:0.95 },
+      html2canvas: { scale:2, useCORS:true },
+      jsPDF: { unit:'mm', format:'a3', orientation:'landscape' },
+    })
+    .save()
+    .then(function(){ document.body.removeChild(container); })
+    .catch(function(err){ console.error('PDF error:',err); document.body.removeChild(container); alert('Ошибка генерации PDF: '+err.message); });
 }
 
 /* ═══ Эпик 3.3: экстренные замены ═══ */
