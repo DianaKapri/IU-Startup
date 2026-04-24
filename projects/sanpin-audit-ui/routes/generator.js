@@ -57,7 +57,8 @@ router.post('/generate', requirePlan(['paid']), (req, res) => {
     }
 
     const days = weekDays === 6 ? 6 : 5;
-    const result = runGenerator({ classes, curriculum, weekDays: days });
+    const seed = Number(req.body.seed) || 0;
+    const result = runGenerator({ classes, curriculum, weekDays: days, seed });
     const audit  = calculateScore(result.schedule, { weekDays: days });
 
     return res.status(result.ok ? 200 : 207).json({
@@ -101,6 +102,7 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
     }
 
     const weekDays = req.body && req.body.weekDays === '6' ? 6 : 5;
+    const seed = Number(req.body && req.body.seed) || 0;
 
     const result = runGenerator({
       classes:     parsed.classes,
@@ -108,6 +110,7 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
       weekDays,
       constraints: parsed.constraints,
       shifts:      parsed.shifts,
+      seed,
     });
     const audit = calculateScore(result.schedule, { weekDays });
 

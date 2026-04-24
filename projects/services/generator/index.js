@@ -95,6 +95,23 @@ function parseGrade(cls) {
   return m ? parseInt(m[1], 10) : 5;
 }
 
+// Seeded pseudo-random (LCG). Детерминирован при том же seed.
+function seededRand(seed) {
+  let s = (seed | 0) || 1;
+  return function () {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    return s / 0x7fffffff;
+  };
+}
+
+function shuffleInPlace(arr, rand) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
 function normSubj(raw) {
   const { value } = normalizeSubject(raw);
   return value || String(raw).trim();
@@ -145,9 +162,10 @@ function c03ok(cls, d, clsDayCnt, clsTotal, numD, pdLimDay) {
 
 // ─── Построение очереди событий ──────────────────────────────
 
-function buildEvents(curriculum, classIds, numD, shifts) {
+function buildEvents(curriculum, classIds, numD, shifts, seed) {
   const byTeacher = {};
   shifts = shifts || {};
+  const rand = seed ? seededRand(seed) : null;
 
   for (const cls of classIds) {
     const grade   = parseGrade(cls);
@@ -180,7 +198,11 @@ function buildEvents(curriculum, classIds, numD, shifts) {
     }
   }
 
-  const sortedTids = Object.keys(byTeacher)
+  // Если есть seed — предварительно перетасовываем tids и classes внутри tiers,
+  // чтобы stable-sort по количеству events сохранил случайный порядок равных.
+  const allTids = Object.keys(byTeacher);
+  if (rand) shuffleInPlace(allTids, rand);
+  const sortedTids = allTids
     .sort((a, b) => byTeacher[b].length - byTeacher[a].length);
 
   const ordered = [];
@@ -191,7 +213,9 @@ function buildEvents(curriculum, classIds, numD, shifts) {
       if (!byClass[ev.cls]) byClass[ev.cls] = [];
       byClass[ev.cls].push(ev);
     }
-    const classes = Object.keys(byClass).sort();
+    const classes = Object.keys(byClass);
+    if (rand) shuffleInPlace(classes, rand);
+    else classes.sort();
     let any = true;
     while (any) {
       any = false;
@@ -777,7 +801,8 @@ function runGenerator(data) {
     }
   }
 
-  const allEv = buildEvents(curriculum, classes, numD, data.shifts);
+  const seed = Number(data.seed) || 0;
+  const allEv = buildEvents(curriculum, classes, numD, data.shifts, seed);
   const { schedules, ok, calls, placed, total, t02Violations } = placeAllClasses(allEv, classes, numD, tConstraints, data.shifts);
 
   // Если constraint учителя был релаксирован в Fallback 2 — сообщаем пользователю
@@ -829,6 +854,8 @@ function runGenerator(data) {
       swapsApplied:    optMetrics.swapsApplied,
       penaltyBefore:   Math.round(optMetrics.penaltyBefore),
       penaltyAfter:    Math.round(optMetrics.penaltyAfter),
+      // Эпик 1.1.3 — seed использованный для генерации (для регенерации)
+      seed:            seed,
     },
     warnings,
   };

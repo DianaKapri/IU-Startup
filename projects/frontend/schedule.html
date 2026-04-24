@@ -159,6 +159,7 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
       Скачать .xlsx
     </button>
     <button class="sch-btn sch-btn--primary" id="schSubBtn" style="display:none">🚨 Учитель заболел</button>
+    <button class="sch-btn sch-btn--ghost" id="schRegenBtn" style="display:none">🔄 Другой вариант</button>
     <button class="sch-btn sch-btn--ghost" onclick="downloadPDF()">📄 Скачать PDF</button>
     <a href="./login.html?tab=register" class="sch-btn sch-btn--ghost">Сохранить и войти</a>
   </div>
@@ -331,6 +332,90 @@ var _schData=null;
   var hasOriginalSch = _schData.originalSch;
   if (hasCurriculum && hasOriginalSch) {
     document.getElementById('schViewTeacherBtn').style.display = '';
+  }
+
+  // Эпик 1.1.3: «Другой вариант» — регенерация с новым seed
+  if (hasCurriculum) {
+    var regenBtn = document.getElementById('schRegenBtn');
+    regenBtn.style.display = '';
+    regenBtn.addEventListener('click', function(){
+      if (!confirm('Сгенерировать альтернативный вариант расписания? Текущий останется в истории.')) return;
+      var origLabel = regenBtn.textContent;
+      regenBtn.disabled = true;
+      regenBtn.textContent = 'Генерируется…';
+
+      function getHeaders(){
+        if (typeof _initSupabase !== 'function') return Promise.resolve({});
+        return _initSupabase().then(function(sb){
+          return sb.auth.getSession().then(function(res){
+            var t = res.data && res.data.session && res.data.session.access_token;
+            return t ? { Authorization: 'Bearer ' + t } : {};
+          });
+        }).catch(function(){ return {}; });
+      }
+
+      var newSeed = Math.floor(Math.random() * 1000000) + 1;
+      var weekDays = 5;
+      // Восстанавливаем classes из curriculum
+      var classSet = {};
+      (_schData.curriculum||[]).forEach(function(c){ if (c.classId) classSet[c.classId] = true; });
+      var classes = Object.keys(classSet);
+
+      getHeaders().then(function(authH){
+        var headers = Object.assign({'Content-Type':'application/json'}, authH);
+        return fetch('/api/generate', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            classes: classes,
+            curriculum: _schData.curriculum,
+            weekDays: weekDays,
+            seed: newSeed,
+            shifts: _schData.shifts,
+          }),
+        });
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(resp){
+        if (!resp || !resp.ok) {
+          var msg = (resp && resp.error && (resp.error.message || resp.error)) || 'Не удалось';
+          throw new Error(typeof msg==='string' ? msg : JSON.stringify(msg));
+        }
+        var originalSch = JSON.parse(JSON.stringify(resp.schedule));
+        var newSch = {};
+        Object.keys(resp.schedule).forEach(function(cls){
+          newSch[cls] = resp.schedule[cls].map(function(day){
+            return day.map(function(subj){ return (typeof normSubj==='function'?normSubj(subj):subj)||subj; });
+          });
+        });
+        var newCg = {};
+        Object.keys(newSch).forEach(function(cls){
+          var m = cls.match(/^(\d+)/);
+          newCg[cls] = m ? parseInt(m[1],10) : 7;
+        });
+        var built = {
+          sch: newSch, cg: newCg,
+          school: _schData.school || '',
+          originalSch: originalSch,
+          shifts: _schData.shifts || {},
+          curriculum: _schData.curriculum || [],
+          teachers: _schData.teachers || [],
+        };
+        var title = 'Вариант — ' + (_schData.school || 'Без названия') + ' (seed ' + newSeed + ')';
+        if (typeof saveWizardRun === 'function') {
+          var id = saveWizardRun('schedule', title, built);
+          localStorage.setItem('shkolaplan_wizard_source', 'account');
+          localStorage.setItem('shkolaplan_wizard_open_item', id);
+        }
+        try { sessionStorage.setItem('wizSchedule', JSON.stringify(built)); } catch(e){}
+        window.location.reload();
+      })
+      .catch(function(err){
+        alert('Ошибка: ' + (err.message || err));
+        regenBtn.disabled = false;
+        regenBtn.textContent = origLabel;
+      });
+    });
   }
 
   Array.prototype.forEach.call(document.querySelectorAll('.sch-view-tab'), function(btn){
