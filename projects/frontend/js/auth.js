@@ -150,26 +150,18 @@ function spGetCurrentUser() {
         return fetch('/api/users/me', { headers: headers });
       }).then(function (r) { return r && r.ok ? r.json() : null; })
         .then(function (data) {
-          var db = (data && data.ok && data.user) ? data.user : null;
+          if (!data || !data.ok || !data.user) return null;
+          var db = data.user;
           return {
             id: u.id,
             email: u.email,
-            name:   (db && db.name)   || meta.name   || u.email,
-            school: (db && db.school) || meta.school || '',
-            city:   (db && db.city)   || meta.city   || '',
-            plan:   (db && db.plan)   || meta.plan   || 'trial',
+            name:   db.name,
+            school: db.school || '',
+            city:   db.city   || '',
+            plan:   db.plan   || 'free',
           };
         })
-        .catch(function () {
-          return {
-            id: u.id,
-            email: u.email,
-            name:   meta.name   || u.email,
-            school: meta.school || '',
-            city:   meta.city   || '',
-            plan:   meta.plan   || 'trial',
-          };
-        });
+        .catch(function () { return null; });
     });
   });
 }
@@ -327,19 +319,31 @@ function spRequireGuest(callback) {
 }
 
 function spInitNav() {
+  var guestLinks = document.getElementById('navGuestLinks');
+  var userLink   = document.getElementById('navUserLink');
+
+  if (guestLinks) guestLinks.style.display = 'none';
+  if (userLink)   userLink.style.display   = 'none';
+
+  var loader = document.createElement('div');
+  loader.id = 'navLoader';
+  loader.style.cssText = 'width:18px;height:18px;border:2px solid rgba(255,255,255,.15);border-top-color:rgba(255,255,255,.55);border-radius:50%;animation:_navSpin .7s linear infinite;flex-shrink:0;';
+  var ks = document.createElement('style');
+  ks.textContent = '@keyframes _navSpin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(ks);
+  var navRight = guestLinks && guestLinks.parentNode;
+  if (navRight) navRight.appendChild(loader);
+
   spGetCurrentUser().then(function (user) {
-    var guestLinks = document.getElementById('navGuestLinks');
-    var userLink   = document.getElementById('navUserLink');
-    var navAvatar  = document.getElementById('navAvatar');
-    var navName    = document.getElementById('navUserName');
+    loader.remove();
+    var navAvatar = document.getElementById('navAvatar');
+    var navName   = document.getElementById('navUserName');
     if (user) {
-      if (guestLinks) guestLinks.style.display = 'none';
       if (userLink)   userLink.style.display   = '';
       if (navAvatar)  navAvatar.textContent     = (user.name || 'У').charAt(0).toUpperCase();
       if (navName)    navName.textContent       = user.name;
     } else {
       if (guestLinks) guestLinks.style.display = '';
-      if (userLink)   userLink.style.display   = 'none';
     }
   });
 }
