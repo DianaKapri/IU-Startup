@@ -1273,3 +1273,10 @@ body.acc-page .field__input:focus { border-color: var(--blue); }
   .acc-tabs { gap: 2px; }
   .acc-tab { font-size: .78rem; padding: 6px 12px; }
 }
+
+/* ─── Быстрый старт через Excel ─── */
+.acc-builder__xlsx { background: linear-gradient(160deg, rgba(0,113,227,.08), rgba(0,113,227,.02)); border: 1px solid rgba(0,113,227,.25); border-radius: 16px; padding: 20px 24px; margin-bottom: 28px; }
+.acc-builder__xlsx-title { font-size: 1rem; font-weight: 700; color: #f5f5f7; margin-bottom: 4px; }
+.acc-builder__xlsx-sub { font-size: .84rem; color: #86868b; line-height: 1.5; margin-bottom: 16px; }
+.acc-builder__xlsx-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.acc-builder__xlsx-or { font-size: .78rem; color: #6e6e73; text-align: center; margin: 16px 0 0; font-style: italic; }

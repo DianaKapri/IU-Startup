@@ -20,11 +20,22 @@
 'use strict';
 
 const express = require('express');
+const multer  = require('multer');
 const router  = express.Router();
 
 const runGenerator       = require('../../services/generator/index.js');
 const { calculateScore } = require('../services/audit/scoring.js');
 const requirePlan        = require('../middleware/requirePlan');
+const { parseTemplate }  = require('../services/template-parser.js');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 МБ
+  fileFilter: (_req, file, cb) => {
+    if (/\.xlsx?$/i.test(file.originalname)) cb(null, true);
+    else cb(new Error('Принимаются только файлы .xlsx / .xls'));
+  },
+});
 
 // ── POST /api/generate ──────────────────────────────────────
 // Paid-gated: только plan='paid' с неистёкшим plan_expires_at.
@@ -67,6 +78,62 @@ router.post('/generate', requirePlan(['paid']), (req, res) => {
     return res.status(500).json({
       ok: false,
       error: { code: 'SERVER_ERROR', message: 'Внутренняя ошибка генератора.' },
+    });
+  }
+});
+
+// ── POST /api/generate/from-xlsx ─────────────────────────────
+// Paid-gated. multipart/form-data: file = .xlsx template
+router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ ok: false, error: { code: 'NO_FILE', message: 'Файл не получен (поле "file" в multipart/form-data).' } });
+    }
+
+    const parsed = parseTemplate(req.file.buffer);
+
+    if (parsed.errors && parsed.errors.length) {
+      return res.status(400).json({
+        ok: false,
+        error: { code: 'PARSE_ERROR', message: 'Ошибки при чтении шаблона', details: parsed.errors },
+        warnings: parsed.warnings || [],
+      });
+    }
+
+    const weekDays = req.body && req.body.weekDays === '6' ? 6 : 5;
+
+    const result = runGenerator({
+      classes:    parsed.classes,
+      curriculum: parsed.curriculum,
+      weekDays,
+    });
+    const audit = calculateScore(result.schedule, { weekDays });
+
+    return res.status(result.ok ? 200 : 207).json({
+      ok:       result.ok,
+      schedule: result.schedule,
+      audit: {
+        score:      audit.score,
+        grade:      audit.grade,
+        hardCount:  audit.hardCount,
+        softCount:  audit.softCount,
+        violations: audit.violations,
+      },
+      summary: result.summary,
+      warnings: [].concat(parsed.warnings || [], result.warnings || []),
+      meta: {
+        classes:       parsed.classes,
+        teachersCount: parsed.teachers.length,
+        roomsCount:    parsed.rooms.length,
+        studentCounts: parsed.studentCounts,
+        constraints:   parsed.constraints,
+      },
+    });
+  } catch (err) {
+    console.error('[POST /api/generate/from-xlsx]', err);
+    return res.status(500).json({
+      ok: false,
+      error: { code: 'SERVER_ERROR', message: err.message || 'Внутренняя ошибка парсера.' },
     });
   }
 });

@@ -88,6 +88,19 @@
       <p class="acc-builder__sub">Заполните параметры школы, и мы сгенерируем рабочую сетку с проверкой по СанПиН.</p>
     </div>
 
+    <div class="acc-builder__xlsx" id="builderXlsxBox">
+      <div class="acc-builder__xlsx-text">
+        <p class="acc-builder__xlsx-title">Быстрый старт через Excel</p>
+        <p class="acc-builder__xlsx-sub">Скачайте шаблон, заполните в Excel или Numbers и загрузите обратно — расписание построится одним кликом.</p>
+      </div>
+      <div class="acc-builder__xlsx-actions">
+        <a href="/assets/generator-template.xlsx" class="btn btn--ghost btn--sm" download>📥 Скачать шаблон</a>
+        <input type="file" id="builderXlsxInput" accept=".xlsx,.xls" style="display:none"/>
+        <button type="button" class="btn btn--primary btn--sm" id="builderXlsxBtn">📤 Загрузить заполненный</button>
+      </div>
+      <p class="acc-builder__xlsx-or">— или заполните вручную ниже —</p>
+    </div>
+
     <div class="acc-builder__steps">
       <span class="acc-builder-step acc-builder-step--active" data-step-dot="1">1. Школа</span>
       <span class="acc-builder-step" data-step-dot="2">2. Классы</span>

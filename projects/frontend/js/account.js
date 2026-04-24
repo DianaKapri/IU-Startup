@@ -549,6 +549,70 @@ spRequireAuth(function () {
     });
   }
 
+  /* ═══ Быстрый старт через Excel-шаблон ═══ */
+  var builderXlsxBtn   = document.getElementById('builderXlsxBtn');
+  var builderXlsxInput = document.getElementById('builderXlsxInput');
+
+  if (builderXlsxBtn && builderXlsxInput) {
+    builderXlsxBtn.addEventListener('click', function () { builderXlsxInput.click(); });
+
+    builderXlsxInput.addEventListener('change', function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      if (typeof cooldown === 'function' && !cooldown('generateXlsx')) return;
+
+      showBuilderError('');
+      var origXlsxLabel = builderXlsxBtn.textContent;
+      builderXlsxBtn.disabled = true;
+      builderXlsxBtn.textContent = 'Обрабатывается…';
+
+      var fd = new FormData();
+      fd.append('file', file);
+      var daysEl = document.getElementById('builderDays');
+      var days   = daysEl ? Number(daysEl.value) : 5;
+      fd.append('weekDays', days === 6 ? '6' : '5');
+
+      fetch('/api/generate/from-xlsx', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (resp) {
+          if (!resp || !resp.ok) {
+            var err = resp && resp.error;
+            if (err && Array.isArray(err.details)) {
+              var msgs = err.details.slice(0, 5).map(function (d) {
+                return (d.sheet ? 'Лист «' + d.sheet + '»' + (d.row ? ', стр. ' + d.row : '') + ': ' : '') + d.message;
+              });
+              throw new Error(msgs.join(' | '));
+            }
+            throw new Error((err && err.message) || 'Не удалось обработать шаблон');
+          }
+          var sch = {};
+          Object.keys(resp.schedule).forEach(function (cls) {
+            sch[cls] = resp.schedule[cls].map(function (day) {
+              return day.map(function (subj) { return normSubj(subj) || subj; });
+            });
+          });
+          var cg = {};
+          Object.keys(sch).forEach(function (cls) {
+            var m = cls.match(/^(\d+)/);
+            cg[cls] = m ? parseInt(m[1], 10) : 7;
+          });
+          showResults(sch, cg);
+          switchTab('optimized');
+          if (resp.warnings && resp.warnings.length) {
+            console.info('[xlsx warnings]', resp.warnings);
+          }
+        })
+        .catch(function (e) {
+          showBuilderError(e.message || 'Ошибка загрузки шаблона');
+        })
+        .then(function () {
+          builderXlsxBtn.disabled = false;
+          builderXlsxBtn.textContent = origXlsxLabel;
+          builderXlsxInput.value = '';
+        });
+    });
+  }
+
   function showError(msg) {
     if (errEl) { errEl.textContent = msg; errEl.style.display = msg ? 'block' : 'none'; }
   }
