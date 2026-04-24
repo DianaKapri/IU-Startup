@@ -504,6 +504,14 @@ function softPenalty(days, grade) {
 }
 
 function optimize(schedules, allEv, classIds, numD) {
+  // Метрики swap-проходов (Эпик 1.1.1)
+  const metrics = { passesDone: 0, swapsApplied: 0, penaltyBefore: 0, penaltyAfter: 0 };
+
+  // Начальная penalty — суммарная по всем классам
+  for (const cls of classIds) {
+    metrics.penaltyBefore += softPenalty(schedules[cls] || [], parseGrade(cls));
+  }
+
   // Карта: (cls, d, s_0based) → {tid}
   const slotTid = {};
   for (const ev of allEv) {
@@ -556,6 +564,7 @@ function optimize(schedules, allEv, classIds, numD) {
 
             if (softPenalty(days, grade) < before) {
               improved = true;
+              metrics.swapsApplied++;
             } else {
               [days[d][s1], days[d][s2]] = [days[d][s2], days[d][s1]];
               [slotTid[`${cls}:${d}:${s1}`], slotTid[`${cls}:${d}:${s2}`]] =
@@ -571,12 +580,18 @@ function optimize(schedules, allEv, classIds, numD) {
       // D-01 day-difficulty balancing is achieved by the optimalDayOrder final pass instead.
     }
 
+    metrics.passesDone = pass + 1;
     if (!improved) break;
   }
 
   // Final sort pass removed: optimalDayOrder caused subject duplication due to
   // stale slotTid after intra-day swaps and padding-slot index mismatches.
   // Intra-day swaps above already improve E-01/E-03 safely within each day.
+
+  for (const cls of classIds) {
+    metrics.penaltyAfter += softPenalty(schedules[cls] || [], parseGrade(cls));
+  }
+  return metrics;
 }
 
 // ─── Публичный API ───────────────────────────────────────────
@@ -650,7 +665,7 @@ function runGenerator(data) {
     warnings.push(`Не размещено ${total - placed} уроков из ${total}.`);
   }
 
-  optimize(schedules, allEv, classes, numD);
+  const optMetrics = optimize(schedules, allEv, classes, numD);
 
   let totalPenalty = 0;
   for (const cls of classes) {
@@ -666,6 +681,11 @@ function runGenerator(data) {
       unplacedLessons: total - placed,
       btCalls:         calls,
       softPenalty:     Math.round(totalPenalty),
+      // Эпик 1.1.1 — метрики оптимизатора
+      optimizerPasses: optMetrics.passesDone,
+      swapsApplied:    optMetrics.swapsApplied,
+      penaltyBefore:   Math.round(optMetrics.penaltyBefore),
+      penaltyAfter:    Math.round(optMetrics.penaltyAfter),
     },
     warnings,
   };
