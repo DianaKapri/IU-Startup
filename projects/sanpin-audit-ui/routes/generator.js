@@ -125,11 +125,14 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
       warnings: [].concat(parsed.warnings || [], result.warnings || []),
       meta: {
         classes:       parsed.classes,
+        teachers:      parsed.teachers,
         teachersCount: parsed.teachers.length,
+        rooms:         parsed.rooms,
         roomsCount:    parsed.rooms.length,
         studentCounts: parsed.studentCounts,
         constraints:   parsed.constraints,
         shifts:        parsed.shifts,
+        curriculum:    parsed.curriculum,
       },
     });
   } catch (err) {
@@ -138,6 +141,121 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
       ok: false,
       error: { code: 'SERVER_ERROR', message: err.message || 'Внутренняя ошибка парсера.' },
     });
+  }
+});
+
+// ── POST /api/generate/substitute ────────────────────────────
+// Эпик 3.3: подбор экстренной замены.
+// Body: { schedule, curriculum, shifts?, absentTeacherId, absentDay }
+// absentDay — индекс дня (0..5) или название ('Пн', 'Вт', ...).
+router.post('/substitute', requirePlan(['paid']), (req, res) => {
+  try {
+    const { schedule, curriculum, shifts, absentTeacherId, absentDay } = req.body || {};
+
+    if (!schedule || typeof schedule !== 'object') {
+      return res.status(400).json({ ok: false, error: { code: 'BAD_REQUEST', message: 'Поле schedule обязательно' } });
+    }
+    if (!Array.isArray(curriculum) || !curriculum.length) {
+      return res.status(400).json({ ok: false, error: { code: 'BAD_REQUEST', message: 'Поле curriculum обязательно' } });
+    }
+    if (!absentTeacherId) {
+      return res.status(400).json({ ok: false, error: { code: 'BAD_REQUEST', message: 'Укажите absentTeacherId' } });
+    }
+
+    const DAY_MAP = { 'пн':0,'вт':1,'ср':2,'чт':3,'пт':4,'сб':5 };
+    let dayIdx = typeof absentDay === 'number' ? absentDay : null;
+    if (dayIdx == null && absentDay) {
+      const k = String(absentDay).toLowerCase().replace(/ё/g,'е').trim();
+      if (DAY_MAP[k] != null) dayIdx = DAY_MAP[k];
+    }
+    if (dayIdx == null || dayIdx < 0 || dayIdx > 5) {
+      return res.status(400).json({ ok: false, error: { code: 'BAD_REQUEST', message: 'Некорректный absentDay (ожидается 0..5 или Пн..Сб)' } });
+    }
+
+    const absentTid = String(absentTeacherId);
+    const classShift = cls => (shifts && shifts[cls] === 2) ? 2 : 1;
+
+    // Какие (class, subject) пары ведёт отсутствующий учитель
+    const absentSubjByClass = {};
+    for (const c of curriculum) {
+      if (String(c.teacherId) === absentTid) {
+        if (!absentSubjByClass[c.classId]) absentSubjByClass[c.classId] = new Set();
+        absentSubjByClass[c.classId].add(c.subject);
+      }
+    }
+
+    // Найти поражённые уроки в расписании
+    const affected = [];
+    for (const [cls, daysArr] of Object.entries(schedule)) {
+      const subjs = absentSubjByClass[cls];
+      if (!subjs) continue;
+      const day = daysArr[dayIdx];
+      if (!day) continue;
+      for (let s = 0; s < day.length; s++) {
+        const subj = day[s];
+        if (subj && subjs.has(subj)) {
+          affected.push({ class: cls, dayIdx, slot: s + 1, subject: subj });
+        }
+      }
+    }
+
+    // Кто ещё ведёт нужные предметы (не отсутствующий)
+    const subjTeachers = {};
+    for (const c of curriculum) {
+      if (String(c.teacherId) === absentTid) continue;
+      if (!c.subject || !c.teacherId) continue;
+      if (!subjTeachers[c.subject]) subjTeachers[c.subject] = new Set();
+      subjTeachers[c.subject].add(String(c.teacherId));
+    }
+
+    // Кто занят в каких (d, slot, shift)
+    const teacherBusy = {};
+    for (const [cls, daysArr] of Object.entries(schedule)) {
+      const sh = classShift(cls);
+      for (let d = 0; d < daysArr.length; d++) {
+        for (let s = 0; s < daysArr[d].length; s++) {
+          const subj = daysArr[d][s];
+          if (!subj) continue;
+          const cur = curriculum.find(c => c.classId === cls && c.subject === subj);
+          if (cur && cur.teacherId) {
+            teacherBusy[`${cur.teacherId}:${d}:${s + 1}:${sh}`] = true;
+          }
+        }
+      }
+    }
+
+    // Подобрать замены
+    const suggestions = affected.map(a => {
+      const sh = classShift(a.class);
+      const pool = subjTeachers[a.subject] ? Array.from(subjTeachers[a.subject]) : [];
+      const freeTeachers = pool.filter(tid => !teacherBusy[`${tid}:${a.dayIdx}:${a.slot}:${sh}`]);
+
+      if (freeTeachers.length) {
+        return {
+          ...a,
+          action: 'substitute',
+          substitutes: freeTeachers,
+          message: `Заменить: ${freeTeachers.join(', ')}`,
+        };
+      }
+      return {
+        ...a,
+        action: 'none',
+        message: `Нет свободного учителя предмета «${a.subject}» в ${['Пн','Вт','Ср','Чт','Пт','Сб'][a.dayIdx]} на уроке ${a.slot}. Рекомендуем отменить или перенести.`,
+      };
+    });
+
+    return res.json({
+      ok: true,
+      absentTeacherId: absentTid,
+      dayIdx,
+      affectedCount: affected.length,
+      affected,
+      suggestions,
+    });
+  } catch (err) {
+    console.error('[POST /api/generate/substitute]', err);
+    return res.status(500).json({ ok: false, error: { code: 'SERVER_ERROR', message: err.message || 'Внутренняя ошибка' } });
   }
 });
 

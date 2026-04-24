@@ -41,6 +41,21 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .sch-shift-tab{background:transparent;border:none;color:#86868b;font-family:var(--font);font-size:.82rem;font-weight:500;padding:8px 18px;border-radius:8px;cursor:pointer;transition:all .15s;}
 .sch-shift-tab:hover{color:#f5f5f7;}
 .sch-shift-tab--active{background:rgba(0,113,227,.18);color:#4da3ff;}
+/* Emergency substitution modal */
+.sub-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000;}
+.sub-overlay--open{display:flex;}
+.sub-modal{background:#1c1c1e;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px;max-width:560px;width:92%;max-height:85vh;overflow-y:auto;}
+.sub-modal__title{font-size:1.2rem;font-weight:700;margin-bottom:16px;color:#f5f5f7;}
+.sub-modal__row{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.sub-modal__label{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:#86868b;font-weight:600;}
+.sub-modal__sel{background:#2c2c2e;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;color:#f5f5f7;font-family:var(--font);font-size:.9rem;}
+.sub-modal__sel:focus{border-color:#0071e3;outline:none;}
+.sub-modal__actions{display:flex;gap:10px;margin-top:12px;}
+.sub-modal__result{margin-top:18px;padding:14px;background:rgba(255,255,255,.04);border-radius:10px;font-size:.85rem;line-height:1.6;max-height:300px;overflow-y:auto;}
+.sub-item{padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,.04);border-radius:8px;border-left:3px solid #30d158;}
+.sub-item--none{border-left-color:#ff9f0a;}
+.sub-item__head{font-weight:600;color:#f5f5f7;}
+.sub-item__msg{font-size:.82rem;color:#86868b;margin-top:2px;}
 </style>
 </head>
 <body>
@@ -75,8 +90,35 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 2v9m0 0L4 7.5m3.5 3.5L11 7.5M2 12.5h11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Скачать .xlsx
     </button>
+    <button class="sch-btn sch-btn--primary" id="schSubBtn" style="display:none">🚨 Учитель заболел</button>
     <button class="sch-btn sch-btn--ghost" onclick="window.print()">Распечатать</button>
     <a href="./login.html?tab=register" class="sch-btn sch-btn--ghost">Сохранить и войти</a>
+  </div>
+</div>
+
+<!-- Эпик 3.3: модалка экстренных замен -->
+<div class="sub-overlay" id="subOverlay">
+  <div class="sub-modal">
+    <h2 class="sub-modal__title">🚨 Экстренная замена учителя</h2>
+    <div class="sub-modal__row">
+      <label class="sub-modal__label">Отсутствующий учитель</label>
+      <select class="sub-modal__sel" id="subTeacher"></select>
+    </div>
+    <div class="sub-modal__row">
+      <label class="sub-modal__label">День недели</label>
+      <select class="sub-modal__sel" id="subDay">
+        <option value="0">Понедельник</option>
+        <option value="1">Вторник</option>
+        <option value="2">Среда</option>
+        <option value="3">Четверг</option>
+        <option value="4">Пятница</option>
+      </select>
+    </div>
+    <div class="sub-modal__actions">
+      <button class="sch-btn sch-btn--primary" id="subRunBtn">Подобрать замены</button>
+      <button class="sch-btn sch-btn--ghost" id="subCloseBtn">Отмена</button>
+    </div>
+    <div class="sub-modal__result" id="subResult" style="display:none"></div>
   </div>
 </div>
 
@@ -233,6 +275,93 @@ function downloadExcel(){
   var filename=(school?school.replace(/[\/\\?*\[\]:]/g,''):'Расписание')+'.xlsx';
   XLSX.writeFile(wb,filename);
 }
+
+/* ═══ Эпик 3.3: экстренные замены ═══ */
+(function initSubstituteModal(){
+  var btn = document.getElementById('schSubBtn');
+  var overlay = document.getElementById('subOverlay');
+  var closeBtn = document.getElementById('subCloseBtn');
+  var runBtn = document.getElementById('subRunBtn');
+  var teacherSel = document.getElementById('subTeacher');
+  var daySel = document.getElementById('subDay');
+  var resultEl = document.getElementById('subResult');
+
+  // Показать кнопку только если есть curriculum (без неё не подобрать замены)
+  if (!_schData || !_schData.curriculum || !_schData.curriculum.length || !btn) return;
+  btn.style.display = '';
+
+  // Заполнить селект учителей — уникальные по teacherId
+  var teacherMap = {};
+  _schData.curriculum.forEach(function(c){
+    if (c.teacherId && c.teacherName) teacherMap[c.teacherId] = c.teacherName;
+  });
+  var options = Object.keys(teacherMap).sort(function(a,b){ return teacherMap[a].localeCompare(teacherMap[b],'ru'); });
+  teacherSel.innerHTML = options.map(function(id){ return '<option value="'+id+'">'+teacherMap[id]+'</option>'; }).join('');
+
+  function close(){ overlay.classList.remove('sub-overlay--open'); resultEl.style.display='none'; resultEl.innerHTML=''; }
+  btn.addEventListener('click', function(){ overlay.classList.add('sub-overlay--open'); });
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
+
+  runBtn.addEventListener('click', function(){
+    var absentTeacherId = teacherSel.value;
+    var absentDay = Number(daySel.value);
+    runBtn.disabled = true;
+    runBtn.textContent = 'Ищем…';
+    resultEl.style.display='block';
+    resultEl.innerHTML = '<div style="color:#86868b">Подбираем замены…</div>';
+
+    // Auth header
+    function getHeaders(){
+      if (typeof spAuthHeaders === 'function') return spAuthHeaders();
+      return Promise.resolve({});
+    }
+    getHeaders().then(function(authH){
+      var headers = Object.assign({'Content-Type':'application/json'}, authH);
+      return fetch('/api/generate/substitute', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          schedule: _schData.sch,
+          curriculum: _schData.curriculum,
+          shifts: _schData.shifts || {},
+          absentTeacherId: absentTeacherId,
+          absentDay: absentDay,
+        }),
+      });
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(resp){
+      if (!resp || !resp.ok) {
+        var msg = (resp && resp.error && (resp.error.message || resp.error)) || 'Ошибка';
+        throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      }
+      if (!resp.affectedCount) {
+        resultEl.innerHTML = '<div style="color:#30d158">✓ У этого учителя нет уроков в выбранный день — замена не нужна.</div>';
+        return;
+      }
+      var html = '<p style="margin-bottom:10px;color:#f5f5f7;font-weight:600">Найдено '+resp.affectedCount+' урок(а) для замены:</p>';
+      resp.suggestions.forEach(function(s){
+        var teacherNames = (s.substitutes || []).map(function(tid){ return teacherMap[tid] || tid; }).join(', ');
+        var msg = s.action === 'substitute'
+          ? 'Заменить: <strong>' + (teacherNames || s.substitutes.join(', ')) + '</strong>'
+          : s.message;
+        html += '<div class="sub-item'+(s.action==='substitute'?'':' sub-item--none')+'">'
+          + '<div class="sub-item__head">'+s.class+' · Урок '+s.slot+' · '+s.subject+'</div>'
+          + '<div class="sub-item__msg">'+msg+'</div>'
+          + '</div>';
+      });
+      resultEl.innerHTML = html;
+    })
+    .catch(function(err){
+      resultEl.innerHTML = '<div style="color:#ff453a">Ошибка: '+(err.message||err)+'</div>';
+    })
+    .then(function(){
+      runBtn.disabled = false;
+      runBtn.textContent = 'Подобрать замены';
+    });
+  });
+})();
 </script>
 </body>
 </html>

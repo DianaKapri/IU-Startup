@@ -815,7 +815,12 @@ function wizXlsxUpload(file){
         cg[cls]=m?parseInt(m[1],10):7;
       });
       var shifts=(resp.meta&&resp.meta.shifts)||{};
-      var built={sch:sch,cg:cg,school:wizData.schoolName||'',shifts:shifts};
+      var built={
+        sch:sch,cg:cg,school:wizData.schoolName||'',
+        shifts:shifts,
+        curriculum:(resp.meta&&resp.meta.curriculum)||[],
+        teachers:(resp.meta&&resp.meta.teachers)||[],
+      };
       saveWizardRun('schedule','Расписание (Excel): '+(built.school||'Без названия'),built);
       localStorage.setItem(WIZARD_SOURCE_KEY,CURRENT_WIZARD_CONTEXT==='account'?'account':'index');
       try{sessionStorage.setItem('wizSchedule',JSON.stringify(built));}catch(e){}
