@@ -160,6 +160,7 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
     </button>
     <button class="sch-btn sch-btn--primary" id="schSubBtn" style="display:none">🚨 Учитель заболел</button>
     <button class="sch-btn sch-btn--ghost" id="schRegenBtn" style="display:none">🔄 Другой вариант</button>
+    <button class="sch-btn sch-btn--ghost" id="schShareBtn" style="display:none">📤 Поделиться</button>
     <button class="sch-btn sch-btn--ghost" onclick="downloadPDF()">📄 Скачать PDF</button>
     <a href="./login.html?tab=register" class="sch-btn sch-btn--ghost">Сохранить и войти</a>
   </div>
@@ -204,6 +205,28 @@ var _schData=null;
   var backLink = document.getElementById('schBack');
   if (backLink && src === 'account') backLink.href = './account.html';
 
+  // Эпик share: если в URL есть ?share=<id> — грузим payload из Supabase
+  var shareId = new URLSearchParams(location.search).get('share');
+  if (shareId) {
+    if (typeof _initSupabase !== 'function') {
+      document.getElementById('schTitle').textContent='Ошибка загрузки';
+      document.getElementById('schSub').textContent='Библиотека Supabase не подключена';
+      return;
+    }
+    _initSupabase().then(function(sb){
+      return sb.from('schedules_generated').select('*').eq('id', shareId).single();
+    }).then(function(res){
+      if (res.error || !res.data) throw new Error(res.error && res.error.message || 'Расписание не найдено');
+      if (!res.data.is_public) throw new Error('Расписание приватное. Попросите владельца сделать его публичным.');
+      try { sessionStorage.setItem('wizSchedule', JSON.stringify(res.data.payload || {})); } catch(_){}
+      window.location.replace('./schedule.html'); // перезагружаемся уже без ?share=
+    }).catch(function(err){
+      document.getElementById('schTitle').textContent='Ошибка';
+      document.getElementById('schSub').textContent='Не удалось загрузить: ' + (err.message || err);
+    });
+    return;
+  }
+
   var openId = localStorage.getItem('shkolaplan_wizard_open_item');
   if (openId && !sessionStorage.getItem('wizSchedule')) {
     try {
@@ -222,6 +245,16 @@ var _schData=null;
     return;
   }
   var data=JSON.parse(raw);
+  // id открытого run'a (для share)
+  var currentRunId = openId || null;
+  if (!currentRunId) {
+    // Попробовать найти по содержимому
+    try {
+      var rs = JSON.parse(localStorage.getItem('shkolaplan_wizard_runs') || '[]');
+      var found = rs.find(function(r){ return r.payload && JSON.stringify(r.payload) === raw; });
+      if (found) currentRunId = found.id;
+    } catch(_){}
+  }
   _schData=data;
   var sch=data.sch,cg=data.cg,school=data.school||'';
 
