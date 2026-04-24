@@ -9,7 +9,7 @@
   'use strict';
 
   var SUBSCRIPTION_URL = '/subscription.html';
-  var PLAN_PRICE_LABEL = '14 400 ₽/год';
+  var PLAN_PRICE_LABEL = '12 000 ₽/год';
   var TITLE = 'Функция доступна на тарифе «Школа»';
   var DEFAULT_TEXT = 'Оформите подписку, чтобы получить доступ к составлению расписания и другим премиум-возможностям.';
 
@@ -40,7 +40,7 @@
       '<div class="paywall-modal__body">' +
         '<p class="paywall-modal__text" id="paywallText"></p>' +
         '<div class="paywall-modal__price">' +
-          '<span class="paywall-modal__price-value">14 400 ₽</span>' +
+          '<span class="paywall-modal__price-value">12 000 ₽</span>' +
           '<span class="paywall-modal__price-period">/год</span>' +
         '</div>' +
       '</div>' +

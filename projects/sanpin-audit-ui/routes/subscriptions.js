@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
     const result = await db.query(
       `INSERT INTO subscription_requests
          (organization_name, inn, email, plan, price, status, user_id, user_name, user_school, created_at)
-       VALUES ($1, $2, $3, 'school', 14400, 'pending', $4, $5, $6, NOW())
+       VALUES ($1, $2, $3, 'school', 12000, 'pending', $4, $5, $6, NOW())
        RETURNING id`,
       [organization_name, inn, email, user_id || null, user_name || null, user_school || null]
     );
@@ -69,7 +69,7 @@ router.post('/', async (req, res) => {
           <table style="border-collapse:collapse;width:100%;margin:16px 0">
             <tr><td style="padding:8px 0;color:#555">Организация</td><td style="padding:8px 0"><strong>${safeOrgName}</strong></td></tr>
             <tr><td style="padding:8px 0;color:#555">ИНН</td><td style="padding:8px 0"><strong>${safeInn}</strong></td></tr>
-            <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>14 400 ₽/год</strong></td></tr>
+            <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>12 000 ₽/год</strong></td></tr>
           </table>
           <p>Счёт будет выставлен в течение <strong>1 рабочего дня</strong> на адрес <strong>${safeEmail}</strong>.</p>
           <p style="color:#888;font-size:13px">Если у вас есть вопросы — ответьте на это письмо.</p>
