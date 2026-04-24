@@ -80,6 +80,37 @@ function doAudit(sch,cg){
     if(gaps>0)ch.push({id:'X-01',nm:'Окна в расписании',st:'v',ds:cls+': '+gaps+' окон'+(gapInfo.length?' ('+gapInfo.join(', ')+')':''),sg:'Уроки должны идти подряд'});
     cr[cls]={ch:ch,dd:dd,wt:wt,dt:dt};
   }
+  /* D-02: баланс трудности между классами одной параллели.
+     Для каждого дня считаем максимум и минимум трудности по классам
+     параллели; если разница > 6 баллов — soft violation для всех
+     классов этой параллели в этот день. */
+  var byGrade={};
+  for(var cL in cr){
+    if(!cr.hasOwnProperty(cL)) continue;
+    var gL=cg[cL]||5;
+    if(!byGrade[gL]) byGrade[gL]=[];
+    byGrade[gL].push(cL);
+  }
+  Object.keys(byGrade).forEach(function(grK){
+    var cls=byGrade[grK];
+    if(cls.length<2) return;
+    for(var di=0;di<5;di++){
+      var diffs=cls.map(function(c){return cr[c].dd[di]||0;});
+      var mx=Math.max.apply(null,diffs), mn=Math.min.apply(null,diffs);
+      if(mx-mn>6){
+        var extremes=cls.filter(function(c,i){return diffs[i]===mx||diffs[i]===mn;});
+        extremes.forEach(function(cL2){
+          cr[cL2].ch.push({
+            id:'D-02', nm:'Дисбаланс параллели',
+            st:'w',
+            ds:cL2+' ('+grK+'-й кл.) '+DN[di]+': '+cr[cL2].dd[di]+' б., в параллели '+mn+'…'+mx,
+            sg:'Выровняйте нагрузку между '+cls.join(', ')+' в '+DN[di],
+          });
+        });
+      }
+    }
+  });
+
   var all=[],vi=[],wa=[];
   for(var c in cr){if(!cr.hasOwnProperty(c))continue;cr[c].ch.forEach(function(x){var o={id:x.id,nm:x.nm,st:x.st,ds:x.ds,sg:x.sg,cls:c};all.push(o);if(x.st==='v')vi.push(o);else wa.push(o);});}
   var byR={};all.forEach(function(c){if(!byR[c.id])byR[c.id]={id:c.id,nm:c.nm,st:c.st,ds:c.ds,sg:c.sg,classes:[]};byR[c.id].classes.push(c.cls);});
