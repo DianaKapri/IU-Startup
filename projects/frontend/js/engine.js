@@ -473,8 +473,9 @@ function _sortClasses(classes,cg,au){
   return sorted;
 }
 
-function renderGrid(sch,cg,au,tbl,clean,forceMl){
+function renderGrid(sch,cg,au,tbl,clean,forceMl,rooms){
   var classes=Object.keys(sch),ml=forceMl||6;
+  // rooms — { "clsId:subject" → "204" } (опционально, для отображения кабинетов)
   if(!forceMl) classes.forEach(function(c){sch[c].forEach(function(d){var n=0;for(var i=0;i<d.length;i++){if(d[i])n++;}if(n>ml)ml=n;});});
 
   var sorted=_sortClasses(classes,cg,au);
@@ -538,7 +539,13 @@ function renderGrid(sch,cg,au,tbl,clean,forceMl){
             });}
             if(tipLines.length)tipAttr=' data-grid-tip="'+_esc((SF[s]||s)+' — '+df+' б.\n'+tipLines.join('\n'))+'"';
           }
-          h+='<td class="tbl-subj-cell"><div class="demo__cell '+bdrCls+'" style="background:'+bg+'cc"'+tipAttr+'><span>'+s+'</span><span class="demo__cell-score">'+df+'</span></div></td>';
+          var roomHtml='';
+          if(rooms){
+            var fullSubj=SF[s]||s;
+            var roomId=rooms[cl+':'+fullSubj]||rooms[cl+':'+s];
+            if(roomId) roomHtml='<span class="demo__cell-room">'+_esc(roomId)+'</span>';
+          }
+          h+='<td class="tbl-subj-cell"><div class="demo__cell '+bdrCls+'" style="background:'+bg+'cc"'+tipAttr+'><span>'+s+'</span>'+roomHtml+'<span class="demo__cell-score">'+df+'</span></div></td>';
         }
       });
       h+='</tr>';

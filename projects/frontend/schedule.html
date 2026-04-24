@@ -81,6 +81,9 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .teacher-grid__cell--empty{color:#3a3a3c;}
 .teacher-grid__class{font-weight:600;font-size:.78rem;}
 .teacher-grid__subj{font-size:.7rem;color:#86868b;margin-top:1px;}
+.teacher-grid__room{font-size:.68rem;color:#4da3ff;margin-top:1px;}
+/* Кабинет в ячейке расписания по классам (engine.js renderGrid) */
+.demo__cell-room{font-size:.6rem;font-weight:500;color:rgba(255,255,255,.85);background:rgba(0,0,0,.3);padding:0 4px;border-radius:3px;line-height:1.3;margin-top:1px;}
 
 /* ═══ PDF/Print вёрстка — Эпик 2.3.2 ═══ */
 @media print {
@@ -248,10 +251,20 @@ var _schData=null;
     return filt;
   }
 
+  // Карта кабинетов: ключ "ClassId:Subject" → room (если curriculum есть)
+  var roomsMap = {};
+  if (data.curriculum && data.curriculum.length) {
+    data.curriculum.forEach(function(c){
+      if (c.classId && c.subject && c.roomId) {
+        roomsMap[c.classId + ':' + c.subject] = c.roomId;
+      }
+    });
+  }
+
   function render(target) {
     var filt = filterByShift(target);
     var tbl = document.getElementById('schGridTbl');
-    renderGrid(filt, cg, doAudit(filt, cg), tbl);
+    renderGrid(filt, cg, doAudit(filt, cg), tbl, false, undefined, roomsMap);
   }
   render('all');
 
@@ -363,9 +376,12 @@ var _schData=null;
         for (var di2 = 0; di2 < numD; di2++) {
           var cell = (t.days[di2] || [])[si];
           if (cell) {
+            var roomId = (_schData.curriculum||[]).find(function(c){return c.classId===cell.class && c.subject===cell.subject;});
+            var roomStr = roomId && roomId.roomId ? roomId.roomId : '';
             html += '<td class="teacher-grid__cell">'
                   + '<div class="teacher-grid__class">' + escH(cell.class) + '</div>'
                   + '<div class="teacher-grid__subj">' + escH(cell.subject) + '</div>'
+                  + (roomStr ? '<div class="teacher-grid__room">каб. ' + escH(roomStr) + '</div>' : '')
                   + '</td>';
           } else {
             html += '<td class="teacher-grid__cell teacher-grid__cell--empty">—</td>';
