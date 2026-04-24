@@ -202,8 +202,33 @@ spRequireAuth(function () {
   var profileClose   = document.getElementById('profileClose');
   var profileForm    = document.getElementById('profileForm');
   var navProfileBtn  = document.getElementById('navProfileBtn');
+  var profileMenu    = document.getElementById('profileMenu');
+  var profileWrap    = navProfileBtn ? navProfileBtn.parentNode : null;
+
+  /* ─── Profile dropdown menu ─── */
+  function setMenuOpen(open) {
+    if (!profileWrap || !navProfileBtn) return;
+    profileWrap.classList.toggle('is-open', !!open);
+    navProfileBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (profileMenu) profileMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+  function toggleMenu() {
+    setMenuOpen(!(profileWrap && profileWrap.classList.contains('is-open')));
+  }
+
+  if (navProfileBtn) {
+    navProfileBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleMenu();
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (!profileWrap) return;
+    if (!profileWrap.contains(e.target)) setMenuOpen(false);
+  });
 
   function openProfile() {
+    setMenuOpen(false);
     if (!profileModal) return;
     spGetCurrentUser().then(function (u) {
       if (!u) return;
@@ -229,12 +254,116 @@ spRequireAuth(function () {
   function closeProfile() {
     if (profileModal)   profileModal.classList.remove('profile-modal--open');
     if (profileOverlay) profileOverlay.classList.remove('profile-overlay--open');
+    closePassword();
   }
 
-  if (navProfileBtn)  navProfileBtn.addEventListener('click', openProfile);
+  /* ─── Change-password dialog ─── */
+  var passwordModal = document.getElementById('passwordModal');
+  var passwordForm  = document.getElementById('passwordForm');
+  var passwordClose = document.getElementById('passwordClose');
+
+  function clearPasswordErrors() {
+    ['currentPasswordErr','newPasswordErr','newPasswordConfirmErr'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.textContent = '';
+    });
+    var globalErr = document.getElementById('passwordGlobalErr');
+    if (globalErr) globalErr.textContent = '';
+  }
+  function passwordErr(id, msg) {
+    var el = document.getElementById(id); if (el) el.textContent = msg;
+  }
+
+  function openPassword() {
+    setMenuOpen(false);
+    if (!passwordModal) return;
+    ['currentPassword','newPassword','newPasswordConfirm'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.value = '';
+    });
+    var successEl = document.getElementById('passwordSuccess');
+    if (successEl) successEl.style.display = 'none';
+    clearPasswordErrors();
+    passwordModal.classList.add('profile-modal--open');
+    if (profileOverlay) profileOverlay.classList.add('profile-overlay--open');
+    var firstInput = document.getElementById('currentPassword');
+    if (firstInput) firstInput.focus();
+  }
+
+  function closePassword() {
+    if (passwordModal)  passwordModal.classList.remove('profile-modal--open');
+    if (profileOverlay && profileModal && !profileModal.classList.contains('profile-modal--open')) {
+      profileOverlay.classList.remove('profile-overlay--open');
+    }
+  }
+
+  if (passwordClose) passwordClose.addEventListener('click', closePassword);
+
+  if (passwordForm) {
+    passwordForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (typeof cooldown === 'function' && !cooldown('changePassword')) return;
+      clearPasswordErrors();
+
+      var current = (document.getElementById('currentPassword')    || {}).value || '';
+      var next    = (document.getElementById('newPassword')        || {}).value || '';
+      var confirm = (document.getElementById('newPasswordConfirm') || {}).value || '';
+
+      var valid = true;
+      if (!current) { passwordErr('currentPasswordErr', 'Введите текущий пароль'); valid = false; }
+      if (!next || next.length < 6) {
+        passwordErr('newPasswordErr', 'Не менее 6 символов'); valid = false;
+      }
+      if (next !== confirm) {
+        passwordErr('newPasswordConfirmErr', 'Пароли не совпадают'); valid = false;
+      }
+      if (!valid) return;
+
+      var globalErr = document.getElementById('passwordGlobalErr');
+      var submitBtn = passwordForm.querySelector('button[type="submit"]');
+      var origLabel = submitBtn ? submitBtn.textContent : '';
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Сохраняем…'; }
+
+      spChangePassword(current, next).then(function (res) {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origLabel; }
+        if (!res.ok) {
+          if (globalErr) globalErr.textContent = res.error || 'Не удалось изменить пароль';
+          return;
+        }
+        var successEl = document.getElementById('passwordSuccess');
+        if (successEl) successEl.style.display = 'block';
+        ['currentPassword','newPassword','newPasswordConfirm'].forEach(function (id) {
+          var el = document.getElementById(id); if (el) el.value = '';
+        });
+        setTimeout(closePassword, 1600);
+      }).catch(function (err) {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origLabel; }
+        if (globalErr) globalErr.textContent = (err && err.message) || 'Не удалось изменить пароль';
+      });
+    });
+  }
+
+  /* ─── Menu item handlers ─── */
+  var menuOpenProfile    = document.getElementById('menuOpenProfile');
+  var menuChangePassword = document.getElementById('menuChangePassword');
+  var menuLogout         = document.getElementById('menuLogout');
+
+  if (menuOpenProfile)    menuOpenProfile.addEventListener('click', openProfile);
+  if (menuChangePassword) menuChangePassword.addEventListener('click', openPassword);
+  if (menuLogout) {
+    menuLogout.addEventListener('click', function () {
+      if (typeof cooldown === 'function' && !cooldown('logout')) return;
+      setMenuOpen(false);
+      spLogout().then(function () { window.location.href = '/'; });
+    });
+  }
+
   if (profileOverlay) profileOverlay.addEventListener('click', closeProfile);
   if (profileClose)   profileClose.addEventListener('click', closeProfile);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeProfile(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      setMenuOpen(false);
+      closeProfile();
+    }
+  });
 
   function clearProfileErrors() {
     ['profileNameErr','profileSchoolErr','profileEmailErr','profilePasswordErr'].forEach(function (id) {
