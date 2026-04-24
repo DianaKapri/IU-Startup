@@ -458,10 +458,68 @@ function downloadExcel(){
   }
 
   var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Расписание');
+  XLSX.utils.book_append_sheet(wb, ws, 'По классам');
+
+  // Второй лист «По учителям» — если есть curriculum и originalSch
+  var origSch = _schData.originalSch;
+  var curr = _schData.curriculum || [];
+  if (origSch && curr.length) {
+    var tsh = buildTeacherScheduleData(origSch, curr);
+    var trows = [['Учитель','День','Урок','Класс','Предмет','Кабинет']];
+    var dayShort = ['Пн','Вт','Ср','Чт','Пт','Сб'];
+    var teacherIds = Object.keys(tsh).sort(function(a,b){
+      return tsh[a].name.localeCompare(tsh[b].name, 'ru');
+    });
+    teacherIds.forEach(function(tid){
+      var t = tsh[tid];
+      if (!t.lessonCount) return;
+      for (var di = 0; di < t.days.length; di++) {
+        for (var si = 0; si < t.days[di].length; si++) {
+          var cell = t.days[di][si];
+          if (!cell) continue;
+          trows.push([t.name, dayShort[di], si+1, cell.class, cell.subject, cell.room || '']);
+        }
+      }
+      trows.push([]); // пустая строка между учителями
+    });
+    var tws = XLSX.utils.aoa_to_sheet(trows);
+    tws['!cols'] = [{wch:30},{wch:6},{wch:6},{wch:8},{wch:20},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, tws, 'По учителям');
+  }
 
   var filename=(school?school.replace(/[\/\\?*\[\]:]/g,''):'Расписание')+'.xlsx';
   XLSX.writeFile(wb,filename);
+}
+
+// Общая функция: строит map teacherId → {name, days[][], lessonCount, classes}
+function buildTeacherScheduleData(origSch, curriculum){
+  var teachers = {};
+  curriculum.forEach(function(c){
+    if (!c.teacherId || !c.teacherName) return;
+    if (!teachers[c.teacherId]) {
+      teachers[c.teacherId] = {
+        name: c.teacherName,
+        days: [[],[],[],[],[],[]],
+        lessonCount: 0,
+        classes: {},
+      };
+    }
+  });
+  Object.keys(origSch).forEach(function(cls){
+    origSch[cls].forEach(function(day, di){
+      day.forEach(function(subj, si){
+        if (!subj) return;
+        var entry = curriculum.find(function(c){ return c.classId === cls && c.subject === subj; });
+        if (!entry || !teachers[entry.teacherId]) return;
+        var t = teachers[entry.teacherId];
+        while (t.days[di].length < si + 1) t.days[di].push(null);
+        t.days[di][si] = { class: cls, subject: subj, room: entry.roomId || '' };
+        t.lessonCount++;
+        t.classes[cls] = true;
+      });
+    });
+  });
+  return teachers;
 }
 
 /* ═══ Эпик 2.3.2: PDF через html2pdf.js ═══ */
@@ -514,12 +572,69 @@ function downloadPDF(){
         var dayArr=sch[cls][d]||[];
         var code=dayArr[s]||'';
         var text=SF[code]||code||'';
-        html+='<td style="border:1px solid #888;padding:5px">'+escH(text)+'</td>';
+        var roomId='';
+        if(_schData.curriculum){
+          var fullSubj=SF[code]||code;
+          var entry=_schData.curriculum.find(function(c){return c.classId===cls && c.subject===fullSubj;});
+          if(entry&&entry.roomId) roomId=entry.roomId;
+        }
+        html+='<td style="border:1px solid #888;padding:5px">'+escH(text)
+            +(roomId?'<div style="font-size:6pt;color:#555;margin-top:1px">каб. '+escH(roomId)+'</div>':'')
+            +'</td>';
       });
       html+='</tr>';
     }
   }
-  html+='</tbody></table></div>';
+  html+='</tbody></table>';
+
+  // Вторая секция: по учителям (каждый на новой странице)
+  var origSch=_schData.originalSch;
+  var curr=_schData.curriculum||[];
+  if (origSch && curr.length) {
+    var teachers = buildTeacherScheduleData(origSch, curr);
+    var tids = Object.keys(teachers).sort(function(a,b){
+      return teachers[a].name.localeCompare(teachers[b].name, 'ru');
+    });
+    var dayShort = ['Пн','Вт','Ср','Чт','Пт','Сб'];
+    tids.forEach(function(tid){
+      var t = teachers[tid];
+      if (!t.lessonCount) return;
+      var maxSlots = 0;
+      t.days.forEach(function(day){ if (day.length > maxSlots) maxSlots = day.length; });
+
+      html += '<div style="page-break-before:always;padding-top:20px;">';
+      html += '<h2 style="margin:0 0 4px;font-size:14pt">'+escH(t.name)+'</h2>';
+      html += '<p style="margin:0 0 12px;font-size:9pt;color:#555">'+t.lessonCount+' уроков/нед · Классы: '
+            + Object.keys(t.classes).sort(function(a,b){
+                var na=parseInt(a)||0, nb=parseInt(b)||0;
+                return na!==nb?na-nb:a.localeCompare(b,'ru');
+              }).join(', ')+'</p>';
+      html += '<table style="width:100%;border-collapse:collapse;font-size:9pt">';
+      html += '<thead><tr style="background:#e5e7eb;font-weight:700">'
+            + '<th style="border:1px solid #888;padding:5px;width:50px">Урок</th>';
+      for (var d2 = 0; d2 < numD; d2++) html += '<th style="border:1px solid #888;padding:5px">'+dayShort[d2]+'</th>';
+      html += '</tr></thead><tbody>';
+      for (var s2 = 0; s2 < maxSlots; s2++) {
+        html += '<tr><td style="border:1px solid #888;padding:5px;text-align:center;font-weight:600">'+(s2+1)+'</td>';
+        for (var d3 = 0; d3 < numD; d3++) {
+          var cell = (t.days[d3] || [])[s2];
+          if (cell) {
+            html += '<td style="border:1px solid #888;padding:5px;text-align:center">'
+                  + '<div style="font-weight:600">'+escH(cell.class)+'</div>'
+                  + '<div style="font-size:8pt;color:#555">'+escH(cell.subject)+'</div>'
+                  + (cell.room?'<div style="font-size:7pt;color:#0071e3">каб. '+escH(cell.room)+'</div>':'')
+                  + '</td>';
+          } else {
+            html += '<td style="border:1px solid #888;padding:5px;text-align:center;color:#ccc">—</td>';
+          }
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+    });
+  }
+
+  html+='</div>';
 
   function escH(s){ return String(s||'').replace(/[<>&"']/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c];}); }
 
