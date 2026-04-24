@@ -82,6 +82,16 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .teacher-grid__class{font-weight:600;font-size:.78rem;}
 .teacher-grid__subj{font-size:.7rem;color:#86868b;margin-top:1px;}
 .teacher-grid__room{font-size:.68rem;color:#4da3ff;margin-top:1px;}
+/* Сводка нарушений */
+.sch-audit{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding:12px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;align-items:center;}
+.sch-audit__label{font-size:.74rem;color:#86868b;font-weight:500;margin-right:4px;text-transform:uppercase;letter-spacing:.04em;}
+.sch-audit__pill{display:inline-flex;gap:5px;align-items:center;padding:5px 10px;border-radius:20px;font-size:.78rem;font-weight:500;cursor:help;transition:transform .15s;}
+.sch-audit__pill:hover{transform:translateY(-1px);}
+.sch-audit__pill--hard{background:rgba(255,69,58,.15);color:#ff453a;border:1px solid rgba(255,69,58,.3);}
+.sch-audit__pill--soft{background:rgba(255,159,10,.15);color:#ff9f0a;border:1px solid rgba(255,159,10,.3);}
+.sch-audit__pill--ok{background:rgba(48,209,88,.15);color:#30d158;border:1px solid rgba(48,209,88,.3);}
+.sch-audit__pill-id{font-weight:700;font-size:.72rem;opacity:.85;}
+.sch-audit__pill-cnt{font-size:.72rem;opacity:.85;}
 /* Кабинет в ячейке расписания по классам (engine.js renderGrid) */
 .demo__cell-room{font-size:.6rem;font-weight:500;color:rgba(255,255,255,.85);background:rgba(0,0,0,.3);padding:0 4px;border-radius:3px;line-height:1.3;margin-top:1px;}
 
@@ -123,6 +133,8 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
   </div>
 
   <div class="sch-stat-row" id="schStats"></div>
+
+  <div class="sch-audit" id="schAuditBar" style="display:none"></div>
 
   <div class="sch-shift-tabs" id="schShiftTabs" style="display:none;margin-bottom:16px;">
     <button class="sch-shift-tab sch-shift-tab--active" data-shift="all">Все классы</button>
@@ -261,10 +273,47 @@ var _schData=null;
     });
   }
 
+  function renderAuditBar(au) {
+    var bar = document.getElementById('schAuditBar');
+    if (!bar) return;
+    var vi = au.vi || [], wa = au.wa || [];
+    if (!vi.length && !wa.length) {
+      bar.style.display='flex';
+      bar.innerHTML = '<span class="sch-audit__pill sch-audit__pill--ok">✓ Нарушений нет</span>';
+      return;
+    }
+    // Группируем по ruleId
+    var byId = {};
+    vi.concat(wa).forEach(function(v){
+      var k = v.id || '?';
+      if (!byId[k]) byId[k] = { id: v.id, nm: v.nm, st: v.st, count: 0, examples: [] };
+      byId[k].count++;
+      if (byId[k].examples.length < 5) byId[k].examples.push(v.ds || '');
+    });
+    var pills = Object.values(byId).sort(function(a,b){
+      if (a.st !== b.st) return a.st === 'v' ? -1 : 1;
+      return b.count - a.count;
+    });
+    var html = '<span class="sch-audit__label">Аудит:</span>';
+    pills.forEach(function(p){
+      var cls = p.st === 'v' ? 'sch-audit__pill--hard' : 'sch-audit__pill--soft';
+      var tooltip = p.nm + (p.examples.length ? '\n— ' + p.examples.join('\n— ') : '');
+      html += '<span class="sch-audit__pill ' + cls + '" title="' + (p.nm + ': ' + p.examples.join(' · ')).replace(/"/g,'&quot;') + '">'
+            + '<span class="sch-audit__pill-id">' + p.id + '</span>'
+            + '<span>' + p.nm + '</span>'
+            + '<span class="sch-audit__pill-cnt">×' + p.count + '</span>'
+            + '</span>';
+    });
+    bar.style.display='flex';
+    bar.innerHTML = html;
+  }
+
   function render(target) {
     var filt = filterByShift(target);
     var tbl = document.getElementById('schGridTbl');
-    renderGrid(filt, cg, doAudit(filt, cg), tbl, false, undefined, roomsMap);
+    var au = doAudit(filt, cg);
+    renderGrid(filt, cg, au, tbl, false, undefined, roomsMap);
+    renderAuditBar(au);
   }
   render('all');
 
