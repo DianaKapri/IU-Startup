@@ -171,10 +171,39 @@ function saveWizardRun(type, title, data) {
 }
 
 function deleteWizardRun(id) {
-  var next = getSavedWizardRuns().filter(function (item) { return item.id !== id; });
+  var item = getSavedWizardRuns().find(function(x){ return x.id === id; });
+  var confirmMsg = item
+    ? 'Удалить запись «' + (item.title || 'без названия') + '»? Отменить будет нельзя.'
+    : 'Удалить запись? Отменить будет нельзя.';
+  if (!confirm(confirmMsg)) return;
+  var next = getSavedWizardRuns().filter(function (x) { return x.id !== id; });
   setSavedWizardRuns(next);
   renderSavedWizardRuns();
   spDeleteRunFromSupabase(id);
+}
+
+// Эпик 2.2.3: переименование записи
+function renameWizardRun(id, newTitle) {
+  newTitle = String(newTitle || '').trim();
+  if (!newTitle) return false;
+  var items = getSavedWizardRuns();
+  var idx = items.findIndex(function(x){ return x.id === id; });
+  if (idx === -1) return false;
+  if (items[idx].title === newTitle) return false;  // ничего не поменялось
+  items[idx].title = newTitle;
+  setSavedWizardRuns(items);
+  renderSavedWizardRuns();
+  spUpdateRunInSupabase(id, { title: newTitle });
+  return true;
+}
+
+function spUpdateRunInSupabase(id, updates) {
+  if (typeof _initSupabase !== 'function' || !id) return;
+  _initSupabase().then(function (sb) {
+    return sb.from('schedules_generated').update(updates).eq('id', id);
+  }).then(function (res) {
+    if (res && res.error) console.warn('[sync→supabase] update:', res.error.message);
+  }).catch(function (e) { console.warn('[sync→supabase] error:', e && e.message); });
 }
 
 // ─── 2.2.2 sync с Supabase (таблица schedules_generated) ──────
@@ -251,15 +280,36 @@ function renderSavedWizardRuns() {
   }
   host.innerHTML = items.map(function (item) {
     var dt = new Date(item.createdAt).toLocaleString('ru-RU');
-    return '<div class="profile-wizard-history__item">'
-      + '<div><span class="profile-wizard-history__name">' + escH(item.title) + '</span>'
-      + '<span class="profile-wizard-history__date">' + dt + '</span></div>'
+    return '<div class="profile-wizard-history__item" data-run-id="' + item.id + '">'
+      + '<div>'
+      +   '<span class="profile-wizard-history__name" contenteditable="true" spellcheck="false"'
+      +     ' data-run-id="' + item.id + '" title="Нажмите, чтобы переименовать">'
+      +     escH(item.title)
+      +   '</span>'
+      +   '<span class="profile-wizard-history__date">' + dt + '</span>'
+      + '</div>'
       + '<div style="display:flex;gap:8px">'
-      + '<button class="profile-wizard-history__open" onclick="openWizardRun(\'' + item.id + '\')">Открыть</button>'
-      + '<button class="profile-wizard-history__delete" onclick="deleteWizardRun(\'' + item.id + '\')">Удалить</button>'
+      +   '<button class="profile-wizard-history__open" onclick="openWizardRun(\'' + item.id + '\')">Открыть</button>'
+      +   '<button class="profile-wizard-history__delete" onclick="deleteWizardRun(\'' + item.id + '\')">Удалить</button>'
       + '</div>'
       + '</div>';
   }).join('');
+
+  // Подключаем inline-rename на contenteditable
+  host.querySelectorAll('[contenteditable][data-run-id]').forEach(function(el){
+    var origTitle = el.textContent;
+    el.addEventListener('focus', function(){ origTitle = el.textContent; });
+    el.addEventListener('keydown', function(e){
+      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      if (e.key === 'Escape') { el.textContent = origTitle; el.blur(); }
+    });
+    el.addEventListener('blur', function(){
+      var newTitle = el.textContent.trim();
+      if (!newTitle) { el.textContent = origTitle; return; }
+      if (newTitle === origTitle) return;
+      renameWizardRun(el.getAttribute('data-run-id'), newTitle);
+    });
+  });
 }
 
 function openWizardRun(id) {
