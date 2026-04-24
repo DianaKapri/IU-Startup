@@ -748,6 +748,33 @@ function wizBuildSchedule(){
   return{sch:sch,cg:classGrades};
 }
 
+// Возвращает Authorization-заголовок с Supabase Bearer-токеном
+// (если пользователь залогинен). Используется для paid-gated эндпоинтов.
+function spAuthHeaders(){
+  if(typeof _initSupabase!=='function')return Promise.resolve({});
+  return _initSupabase().then(function(sb){
+    return sb.auth.getSession().then(function(res){
+      var token=res.data&&res.data.session&&res.data.session.access_token;
+      return token?{Authorization:'Bearer '+token}:{};
+    });
+  }).catch(function(){return{};});
+}
+
+// Извлекает читаемое сообщение об ошибке из любого формата ответа бэкенда.
+function spExtractError(resp,fallback){
+  if(!resp)return fallback||'Неизвестная ошибка';
+  var err=resp.error;
+  if(typeof err==='string')return err;
+  if(err&&Array.isArray(err.details)){
+    return err.details.slice(0,3).map(function(d){
+      return (d.sheet?'[Лист «'+d.sheet+'»'+(d.row?', стр.'+d.row:'')+'] ':'')+d.message;
+    }).join(' | ');
+  }
+  if(err&&err.message)return err.message;
+  if(resp.code)return resp.code;
+  return fallback||'Неизвестная ошибка';
+}
+
 // Эпик 1.4: загрузка Excel-шаблона из визарда
 function wizXlsxUpload(file){
   if(!file)return;
@@ -766,18 +793,13 @@ function wizXlsxUpload(file){
   fd.append('file',file);
   fd.append('weekDays',String(wizData.days||5));
 
-  fetch('/api/generate/from-xlsx',{method:'POST',body:fd})
+  spAuthHeaders().then(function(headers){
+    return fetch('/api/generate/from-xlsx',{method:'POST',headers:headers,body:fd});
+  })
     .then(function(r){return r.json();})
     .then(function(resp){
       if(!resp||!resp.ok){
-        var err=resp&&resp.error;
-        if(err&&Array.isArray(err.details)){
-          var msgs=err.details.slice(0,3).map(function(d){
-            return (d.sheet?'[Лист «'+d.sheet+'»'+(d.row?', стр.'+d.row:'')+'] ':'')+d.message;
-          });
-          throw new Error(msgs.join(' | '));
-        }
-        throw new Error((err&&err.message)||'Не удалось обработать шаблон');
+        throw new Error(spExtractError(resp,'Не удалось обработать шаблон'));
       }
       var sch={};
       Object.keys(resp.schedule).forEach(function(cls){
@@ -826,16 +848,18 @@ function wizOpenSchedule(){
 
   var days=wizData.days||5;
 
-  fetch('/api/generate',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({classes:classes,curriculum:curriculum,weekDays:days===6?6:5}),
+  spAuthHeaders().then(function(authH){
+    var headers=Object.assign({'Content-Type':'application/json'},authH);
+    return fetch('/api/generate',{
+      method:'POST',
+      headers:headers,
+      body:JSON.stringify({classes:classes,curriculum:curriculum,weekDays:days===6?6:5}),
+    });
   })
     .then(function(r){return r.json();})
     .then(function(resp){
       if(!resp||!resp.ok){
-        var msg=(resp&&resp.error&&resp.error.message)||'Не удалось сгенерировать расписание';
-        throw new Error(msg);
+        throw new Error(spExtractError(resp,'Не удалось сгенерировать расписание'));
       }
       var sch={};
       Object.keys(resp.schedule).forEach(function(cls){
