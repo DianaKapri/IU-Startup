@@ -173,17 +173,29 @@
   </div>
 
   <h1 class="admin-login__title">Вход в Админ-панель</h1>
-  <p class="admin-login__sub">Введите токен для доступа к панели управления</p>
+  <p class="admin-login__sub">Введите данные администратора</p>
 
   <form class="admin-login__form" id="loginForm">
     <div class="admin-login__field">
-      <label class="admin-login__label" for="adminToken">Токен администратора</label>
+      <label class="admin-login__label" for="adminEmail">Email</label>
       <input
         class="admin-login__input"
-        id="adminToken"
+        id="adminEmail"
+        type="email"
+        placeholder="admin@shkolaplan.ru"
+        autocomplete="username"
+        required
+      />
+    </div>
+
+    <div class="admin-login__field">
+      <label class="admin-login__label" for="adminPassword">Пароль</label>
+      <input
+        class="admin-login__input"
+        id="adminPassword"
         type="password"
-        placeholder="Введите токен администратора"
-        autocomplete="off"
+        placeholder="Введите пароль"
+        autocomplete="current-password"
         required
       />
     </div>
@@ -199,10 +211,9 @@
 </div>
 
 <script>
-// Токен хранится в sessionStorage (не localStorage) и отправляется на сервер
-// в заголовке X-Admin-Token. Проверка токена происходит на бэкенде (middleware requireAdmin).
-// sessionStorage очищается при закрытии вкладки/браузера и не доступен другим вкладкам,
-// что сокращает окно компрометации при XSS.
+// TODO: вернуться к аутентификации через токен (X-Admin-Token),
+// когда ADMIN_API_TOKEN будет корректно прописан в GitHub Secrets и .env на проде.
+// Текущий flow: email+пароль → POST /api/auth/admin/login → получаем token → sessionStorage.
 
 function showError(message) {
   const errorEl = document.getElementById('loginError');
@@ -211,7 +222,6 @@ function showError(message) {
 }
 
 function clearLegacyCredentials() {
-  // Очищаем устаревшие ключи из localStorage (старые форматы хранения).
   localStorage.removeItem('adminEmail');
   localStorage.removeItem('adminPassword');
   localStorage.removeItem('adminToken');
@@ -220,44 +230,57 @@ function clearLegacyCredentials() {
 function handleLogin(event) {
   event.preventDefault();
 
-  const tokenInput = document.getElementById('adminToken');
-  const token = tokenInput.value.trim();
+  const email = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value;
   const errorEl = document.getElementById('loginError');
   const loginBtn = document.getElementById('loginBtn');
 
   errorEl.style.display = 'none';
   errorEl.textContent = '';
 
-  if (!token) {
-    showError('Введите токен администратора');
+  if (!email || !password) {
+    showError('Введите email и пароль');
     return;
   }
 
   loginBtn.disabled = true;
   loginBtn.textContent = 'Вход...';
 
-  // Очищаем старые ключи из localStorage и сохраняем токен в sessionStorage.
-  clearLegacyCredentials();
-  sessionStorage.setItem('adminToken', token);
-
-  // Валидация токена произойдёт при первом запросе в admin.html;
-  // при 401 будет редирект обратно сюда.
-  window.location.href = '/admin.html';
+  fetch('/api/auth/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+    .then(function (r) { return r.json().then(function (data) { return { status: r.status, data: data }; }); })
+    .then(function (res) {
+      if (!res.data.success) {
+        showError(res.data.error || 'Неверный логин или пароль');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Войти';
+        return;
+      }
+      clearLegacyCredentials();
+      sessionStorage.setItem('adminToken', res.data.token);
+      window.location.href = '/admin.html';
+    })
+    .catch(function () {
+      showError('Ошибка сети. Попробуйте ещё раз.');
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Войти';
+    });
 }
 
 document.getElementById('loginForm').addEventListener('submit', handleLogin);
 
 document.addEventListener('DOMContentLoaded', function () {
-  // На всякий случай чистим устаревшие креды из localStorage при открытии страницы входа.
   clearLegacyCredentials();
 
-  // Если токен уже сохранён в sessionStorage — сразу в админку; admin.html сам проверит валидность.
   if (sessionStorage.getItem('adminToken')) {
     window.location.href = '/admin.html';
     return;
   }
 
-  document.getElementById('adminToken').focus();
+  document.getElementById('adminEmail').focus();
 });
 </script>
 </body>

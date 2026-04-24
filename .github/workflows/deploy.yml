@@ -15,7 +15,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: SUPABASE_URL,SUPABASE_KEY,DATABASE_URL,RESEND_API_KEY,RESEND_FROM_EMAIL,ADMIN_API_TOKEN,FRONTEND_URL
+          envs: SUPABASE_URL,SUPABASE_KEY,DATABASE_URL,RESEND_API_KEY,RESEND_FROM_EMAIL,ADMIN_API_TOKEN,ADMIN_EMAIL,ADMIN_PASSWORD,FRONTEND_URL
           script: |
             set -e
             cd /opt/shkolaplan
@@ -30,6 +30,8 @@ jobs:
             RESEND_API_KEY=$RESEND_API_KEY
             RESEND_FROM_EMAIL=$RESEND_FROM_EMAIL
             ADMIN_API_TOKEN=$ADMIN_API_TOKEN
+            ADMIN_EMAIL=$ADMIN_EMAIL
+            ADMIN_PASSWORD=$ADMIN_PASSWORD
             EOF
 
             git checkout -- .
@@ -44,4 +46,6 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
           ADMIN_API_TOKEN: ${{ secrets.ADMIN_API_TOKEN }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
