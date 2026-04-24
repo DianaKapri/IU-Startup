@@ -61,15 +61,22 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .sch-view-tab{background:transparent;border:none;color:#86868b;font-family:var(--font);font-size:.86rem;font-weight:500;padding:8px 18px;border-radius:8px;cursor:pointer;transition:all .15s;}
 .sch-view-tab:hover{color:#f5f5f7;}
 .sch-view-tab--active{background:rgba(0,113,227,.18);color:#4da3ff;}
-/* Сетки учителей */
-.sch-teacher-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:16px;}
-.teacher-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;}
-.teacher-card__name{font-size:.95rem;font-weight:600;color:#f5f5f7;margin:0 0 12px;}
-.teacher-card__meta{font-size:.75rem;color:#86868b;margin-left:8px;font-weight:400;}
+/* Список учителей — раскрывающиеся <details> */
+.sch-teacher-wrap{display:flex;flex-direction:column;gap:8px;}
+.teacher-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;overflow:hidden;}
+.teacher-item[open]{background:rgba(255,255,255,.05);border-color:rgba(0,113,227,.25);}
+.teacher-item__head{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:12px;user-select:none;transition:background .15s;}
+.teacher-item__head::-webkit-details-marker{display:none;}
+.teacher-item__head:hover{background:rgba(255,255,255,.04);}
+.teacher-item__arrow{width:12px;height:12px;flex-shrink:0;transition:transform .2s;color:#86868b;}
+.teacher-item[open] .teacher-item__arrow{transform:rotate(90deg);color:#4da3ff;}
+.teacher-item__name{font-size:.92rem;font-weight:600;color:#f5f5f7;flex:1;}
+.teacher-item__meta{font-size:.76rem;color:#86868b;font-weight:400;}
+.teacher-item__body{padding:0 16px 16px;}
 .teacher-grid{width:100%;border-collapse:collapse;font-size:.82rem;}
-.teacher-grid th,.teacher-grid td{border:1px solid rgba(255,255,255,.07);padding:4px 6px;text-align:center;vertical-align:middle;}
+.teacher-grid th,.teacher-grid td{border:1px solid rgba(255,255,255,.07);padding:5px 8px;text-align:center;vertical-align:middle;}
 .teacher-grid th{color:#86868b;font-size:.72rem;font-weight:500;background:rgba(255,255,255,.02);}
-.teacher-grid__num{color:#555;font-weight:500;width:32px;}
+.teacher-grid__num{color:#555;font-weight:500;width:40px;}
 .teacher-grid__cell{color:#f5f5f7;}
 .teacher-grid__cell--empty{color:#3a3a3c;}
 .teacher-grid__class{font-weight:600;font-size:.78rem;}
@@ -272,7 +279,7 @@ var _schData=null;
       if (v === 'teachers') {
         document.getElementById('schClassView').style.display = 'none';
         document.getElementById('schShiftTabs').style.display = 'none';
-        document.getElementById('schTeacherView').style.display = 'grid';
+        document.getElementById('schTeacherView').style.display = 'flex';
         renderTeacherView();
       } else {
         document.getElementById('schClassView').style.display = '';
@@ -327,6 +334,7 @@ var _schData=null;
     });
 
     var dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб'];
+    var ARROW_SVG = '<svg class="teacher-item__arrow" viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     var html = '';
     Object.keys(teachers).sort(function(a,b){
       return teachers[a].name.localeCompare(teachers[b].name, 'ru');
@@ -336,14 +344,17 @@ var _schData=null;
       var maxSlots = 0;
       t.days.forEach(function(day){ if (day.length > maxSlots) maxSlots = day.length; });
 
-      html += '<div class="teacher-card">';
-      html += '<h3 class="teacher-card__name">' + escH(t.name)
-            + '<span class="teacher-card__meta">· ' + t.lessonCount + ' ур./нед · '
-            + Object.keys(t.classes).sort(function(a,b){
-                var na=parseInt(a)||0, nb=parseInt(b)||0;
-                return na!==nb?na-nb:a.localeCompare(b,'ru');
-              }).join(', ')
-            + '</span></h3>';
+      var classList = Object.keys(t.classes).sort(function(a,b){
+        var na=parseInt(a)||0, nb=parseInt(b)||0;
+        return na!==nb?na-nb:a.localeCompare(b,'ru');
+      }).join(', ');
+
+      html += '<details class="teacher-item">';
+      html += '<summary class="teacher-item__head">' + ARROW_SVG
+            + '<span class="teacher-item__name">' + escH(t.name) + '</span>'
+            + '<span class="teacher-item__meta">' + t.lessonCount + ' ур./нед · ' + classList + '</span>'
+            + '</summary>';
+      html += '<div class="teacher-item__body">';
       html += '<table class="teacher-grid"><thead><tr><th>Урок</th>';
       for (var di = 0; di < numD; di++) html += '<th>' + dayNames[di] + '</th>';
       html += '</tr></thead><tbody>';
@@ -362,7 +373,7 @@ var _schData=null;
         }
         html += '</tr>';
       }
-      html += '</tbody></table></div>';
+      html += '</tbody></table></div></details>';
     });
 
     container.innerHTML = html || '<p style="color:#86868b">Нет данных по учителям.</p>';
