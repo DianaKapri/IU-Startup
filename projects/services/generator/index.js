@@ -45,6 +45,49 @@ const { normalizeSubject } = require('../../sanpin-audit-ui/services/parser/norm
 const MAX_SLOTS    = 7;          // максимальное число уроков в день в сетке
 const MAX_BT_CALLS = 5_000_000;  // лимит рекурсий backtracking
 
+// День недели → индекс (0-based). Используется для ограничений учителей (T-02).
+const DAY_NAME_TO_IDX = {
+  'пн': 0, 'пон': 0, 'понедельник': 0,
+  'вт': 1, 'вто': 1, 'вторник': 1,
+  'ср': 2, 'сре': 2, 'среда': 2,
+  'чт': 3, 'чет': 3, 'четверг': 3,
+  'пт': 4, 'пят': 4, 'пятница': 4,
+  'сб': 5, 'суб': 5, 'суббота': 5,
+};
+
+function parseDayIdx(raw) {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number') return raw >= 0 && raw < 6 ? raw : null;
+  const k = String(raw).toLowerCase().replace(/ё/g, 'е').trim();
+  return DAY_NAME_TO_IDX[k] != null ? DAY_NAME_TO_IDX[k] : null;
+}
+
+function parseDayList(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(parseDayIdx).filter(v => v != null);
+  return String(raw).split(/[,;\s]+/).map(parseDayIdx).filter(v => v != null);
+}
+
+// Нормализует constraints в форму { tid → { forbiddenDays: Set<int>, maxPerDay: int|null, teacherName } }
+function normalizeConstraints(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [tid, c] of Object.entries(raw)) {
+    if (!c || typeof c !== 'object') continue;
+    const forbidden = new Set();
+    const md = parseDayIdx(c.methodDay);
+    if (md != null) forbidden.add(md);
+    for (const d of parseDayList(c.unavailableDays)) forbidden.add(d);
+    const m = Number(c.maxLessonsPerDay);
+    out[tid] = {
+      forbiddenDays: forbidden,
+      maxPerDay:    Number.isFinite(m) && m > 0 ? m : null,
+      teacherName:  c.teacherName || tid,
+    };
+  }
+  return out;
+}
+
 // ─── Вспомогательные функции ─────────────────────────────────
 
 function parseGrade(cls) {
@@ -161,8 +204,34 @@ function buildEvents(curriculum, classIds, numD) {
 
 // ─── CSP backtracking ────────────────────────────────────────
 
-function placeAllClasses(allEv, classIds, numD) {
+function placeAllClasses(allEv, classIds, numD, tConstraints) {
   const N = allEv.length;
+  tConstraints = tConstraints || {};
+
+  // T-02: предвычисляем счётчики уроков учителя по дням для maxPerDay
+  const teacherDayCnt = {}; // tid → [6]int
+  function tDayGet(tid, d) {
+    if (!tid || !teacherDayCnt[tid]) return 0;
+    return teacherDayCnt[tid][d] || 0;
+  }
+  function tDayInc(tid, d) {
+    if (!tid) return;
+    if (!teacherDayCnt[tid]) teacherDayCnt[tid] = Array(numD).fill(0);
+    teacherDayCnt[tid][d]++;
+  }
+  function tDayDec(tid, d) {
+    if (!tid || !teacherDayCnt[tid]) return;
+    teacherDayCnt[tid][d]--;
+  }
+
+  // Проверяет, что учитель доступен в день d и не превысит maxPerDay.
+  function teacherAvailable(tid, d) {
+    const tc = tConstraints[tid];
+    if (!tc) return true;
+    if (tc.forbiddenDays.has(d)) return false;
+    if (tc.maxPerDay && tDayGet(tid, d) >= tc.maxPerDay) return false;
+    return true;
+  }
 
   const clsTotal     = {};
   const clsHardTotal = {};  // total hard lessons per class (for E-03 balance)
@@ -227,14 +296,12 @@ function placeAllClasses(allEv, classIds, numD) {
       const pLim = pdLimForDay(d);
       if (clsDayCnt[cls][d] >= pLim)                              continue;
       if (!c03ok(cls, d, clsDayCnt, clsTotal, numD, pLim))         continue;
-      // Hard-balance: limit hard subjects per day to avoid clustering (E-03)
-      // Allow at most ceil(totalHard/numD)+1 hard subjects per day
       if (isHard) {
         const maxHardPerDay = Math.ceil((clsHardTotal[cls] || 0) / numD) + 1;
         if (clsHardCnt[cls][d] >= maxHardPerDay) continue;
       }
-      // Max 1 same subject per day (prevents E-03 same-subj streaks)
       if (subjPerDay[d] >= 1)                                      continue;
+      if (!teacherAvailable(tid, d))                                continue;
       const s = clsDayCnt[cls][d] + 1;
       if (s > MAX_SLOTS)                                           continue;
       if (tid && tidDs.has(`${tid}:${d}:${s}`))                   continue;
@@ -248,6 +315,7 @@ function placeAllClasses(allEv, classIds, numD) {
         if (clsDayCnt[cls][d] >= pLim)                            continue;
         if (!c03ok(cls, d, clsDayCnt, clsTotal, numD, pLim))       continue;
         if (subjPerDay[d] >= 1)                                    continue;  // 1-per-subj kept
+        if (!teacherAvailable(tid, d))                              continue;  // T-02 кеpt (hard)
         const s = clsDayCnt[cls][d] + 1;
         if (s > MAX_SLOTS)                                         continue;
         if (tid && tidDs.has(`${tid}:${d}:${s}`))                 continue;
@@ -262,6 +330,11 @@ function placeAllClasses(allEv, classIds, numD) {
       for (const d of dayOrder) {
         const pLim = pdLimForDay(d);
         if (clsDayCnt[cls][d] >= pLim)                            continue;
+        // В Fallback 2 T-02 РЕЛАКСИРУЕТСЯ — иначе при плотной
+        // загрузке учителя (все уроки класса у одного педагога)
+        // backtracking упирается в комбинацию X-01 + T-02 и не
+        // может собрать расписание. Нарушения T-02 будут
+        // обнаружены в post-check и попадут в warnings.
         const s = clsDayCnt[cls][d] + 1;
         if (s > MAX_SLOTS)                                         continue;
         if (tid && tidDs.has(`${tid}:${d}:${s}`))                 continue;
@@ -276,7 +349,7 @@ function placeAllClasses(allEv, classIds, numD) {
     const { cls, tid, rid, diff, grade } = allEv[i];
     clsDayCnt[cls][d]++;
     if (diff >= getHardThreshold(grade)) clsHardCnt[cls][d]++;
-    if (tid) tidDs.add(`${tid}:${d}:${s}`);
+    if (tid) { tidDs.add(`${tid}:${d}:${s}`); tDayInc(tid, d); }
     if (rid) ridDs.add(`${rid}:${d}:${s}`);
     asgn[i] = { d, s };
   }
@@ -286,7 +359,7 @@ function placeAllClasses(allEv, classIds, numD) {
     const { cls, tid, rid, diff, grade } = allEv[i];
     clsDayCnt[cls][d]--;
     if (diff >= getHardThreshold(grade)) clsHardCnt[cls][d]--;
-    if (tid) tidDs.delete(`${tid}:${d}:${s}`);
+    if (tid) { tidDs.delete(`${tid}:${d}:${s}`); tDayDec(tid, d); }
     if (rid) ridDs.delete(`${rid}:${d}:${s}`);
     asgn[i] = undefined;
   }
@@ -304,6 +377,19 @@ function placeAllClasses(allEv, classIds, numD) {
   }
 
   const ok = bt(0);
+
+  // Post-check T-02: найти уроки, поставленные вопреки constraint учителя.
+  const t02Violations = [];
+  for (let i = 0; i < N; i++) {
+    if (!asgn[i]) continue;
+    const { tid } = allEv[i];
+    const tc = tConstraints[tid];
+    if (!tc) continue;
+    const d = asgn[i].d;
+    if (tc.forbiddenDays.has(d)) {
+      t02Violations.push({ tid, teacherName: tc.teacherName, day: d, class: allEv[i].cls, subject: allEv[i].subj });
+    }
+  }
 
   const schedules = {};
   for (const cls of classIds) {
@@ -323,7 +409,7 @@ function placeAllClasses(allEv, classIds, numD) {
     }
   }
 
-  return { schedules, ok, calls, placed: asgn.filter(Boolean).length, total: N };
+  return { schedules, ok, calls, placed: asgn.filter(Boolean).length, total: N, t02Violations };
 }
 
 // ─── Swap-оптимизатор ────────────────────────────────────────
@@ -629,6 +715,36 @@ function runGenerator(data) {
 
   const numD = weekDays;
 
+  // T-02: нормализуем ограничения учителей
+  const tConstraints = normalizeConstraints(data.constraints);
+
+  // Preflight: сверяем часы учителя с его доступной ёмкостью
+  // (availableDays × maxPerDay). Если больше — расписание не соберётся полностью.
+  const teacherHours = {};
+  const teacherClasses = {};
+  for (const c of curriculum) {
+    const tid = c.teacherId || null;
+    if (!tid) continue;
+    teacherHours[tid] = (teacherHours[tid] || 0) + (Number(c.weeklyHours) || 0);
+  }
+  for (const [tid, hrs] of Object.entries(teacherHours)) {
+    const tc = tConstraints[tid];
+    if (!tc) continue;
+    const availDays = numD - tc.forbiddenDays.size;
+    if (availDays <= 0) {
+      warnings.push(`${tc.teacherName}: нет доступных дней (все помечены как методические/недоступные).`);
+      continue;
+    }
+    const cap = tc.maxPerDay ? availDays * tc.maxPerDay : availDays * MAX_SLOTS;
+    if (hrs > cap) {
+      warnings.push(
+        `${tc.teacherName}: ${hrs} ч/нед при максимуме ${cap} ч ` +
+        `(${availDays} дн × ${tc.maxPerDay || MAX_SLOTS}/день). ` +
+        `Часть уроков не разместится — ослабьте ограничения или уменьшите нагрузку.`
+      );
+    }
+  }
+
   // C-02: предупреждаем о превышении нормы, а также о физическом лимите (pdLim × numD)
   for (const cls of classes) {
     const grade   = parseGrade(cls);
@@ -653,7 +769,25 @@ function runGenerator(data) {
   }
 
   const allEv = buildEvents(curriculum, classes, numD);
-  const { schedules, ok, calls, placed, total } = placeAllClasses(allEv, classes, numD);
+  const { schedules, ok, calls, placed, total, t02Violations } = placeAllClasses(allEv, classes, numD, tConstraints);
+
+  // Если constraint учителя был релаксирован в Fallback 2 — сообщаем пользователю
+  const DAY_LBL = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+  if (t02Violations && t02Violations.length) {
+    const byTeacher = {};
+    for (const v of t02Violations) {
+      const k = v.teacherName;
+      if (!byTeacher[k]) byTeacher[k] = { count: 0, days: new Set() };
+      byTeacher[k].count++;
+      byTeacher[k].days.add(DAY_LBL[v.day] || ('д' + v.day));
+    }
+    for (const [name, info] of Object.entries(byTeacher)) {
+      warnings.push(
+        `T-02: ${name} — ${info.count} урок(а) попало в "выходные" дни ` +
+        `(${Array.from(info.days).join(', ')}). Расписание не собиралось при строгом соблюдении constraint'а.`
+      );
+    }
+  }
 
   if (!ok) {
     warnings.push(

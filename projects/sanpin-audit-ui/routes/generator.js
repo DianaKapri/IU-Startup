@@ -103,9 +103,10 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
     const weekDays = req.body && req.body.weekDays === '6' ? 6 : 5;
 
     const result = runGenerator({
-      classes:    parsed.classes,
-      curriculum: parsed.curriculum,
+      classes:     parsed.classes,
+      curriculum:  parsed.curriculum,
       weekDays,
+      constraints: parsed.constraints,
     });
     const audit = calculateScore(result.schedule, { weekDays });
 
