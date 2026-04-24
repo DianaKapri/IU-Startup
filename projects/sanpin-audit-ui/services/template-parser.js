@@ -11,6 +11,27 @@ const XLSX = require('xlsx');
 
 const REQUIRED_SHEETS = ['Учебный план', 'Учителя', 'Распределение', 'Ограничения', 'Кабинеты', 'Классы'];
 
+// Эпик 1.3.4: предметы, для которых нужен специальный тип кабинета.
+// Ключ — нормализованный (lowercase) предмет; значение — допустимые типы кабинетов.
+const SUBJECT_ROOM_EXPECTATIONS = {
+  'химия':               ['химия', 'лаборатория'],
+  'физика':              ['физика', 'лаборатория'],
+  'биология':            ['биология'],
+  'информатика':         ['информатика'],
+  'физическая культура': ['спортзал'],
+  'физкультура':         ['спортзал'],
+  'музыка':              ['музыка'],
+  'изо':                 ['изо', 'мастерская'],
+  'технология':          ['мастерская', 'технология'],
+  'иностранный язык':    ['иностранный язык'],
+  'английский язык':     ['иностранный язык'],
+};
+
+function expectedRoomTypes(subject) {
+  const key = String(subject || '').toLowerCase().replace(/ё/g, 'е').trim();
+  return SUBJECT_ROOM_EXPECTATIONS[key] || null;
+}
+
 // ─── Утилиты ──────────────────────────────────────────────────
 
 function trimStr(v) {
@@ -180,6 +201,32 @@ function parseTemplate(buffer) {
         studentCounts[classId] = 25;
       }
 
+      // Эпик 1.3.3: R-01 — вместимость кабинета ≥ числу учеников класса
+      if (roomId && roomsMap[roomId] && roomsMap[roomId].capacity) {
+        const cap = roomsMap[roomId].capacity;
+        const need = studentCounts[classId] || 25;
+        if (cap < need) {
+          warnings.push({
+            sheet: 'Распределение', row: r + 1,
+            message: `R-01: кабинет «${roomId}» (${cap} мест) не вмещает класс «${classId}» (${need} учеников). Рекомендуется подобрать другой кабинет.`,
+          });
+        }
+      }
+
+      // Эпик 1.3.4: ожидание типа кабинета по предмету
+      if (roomId && roomsMap[roomId] && roomsMap[roomId].type) {
+        const expected = expectedRoomTypes(subject);
+        if (expected) {
+          const actualType = String(roomsMap[roomId].type).toLowerCase().replace(/ё/g, 'е').trim();
+          if (!expected.some(t => actualType.includes(t))) {
+            warnings.push({
+              sheet: 'Распределение', row: r + 1,
+              message: `R-02: предмет «${subject}» обычно требует кабинет типа «${expected[0]}», а назначен «${roomsMap[roomId].type}». Проверьте.`,
+            });
+          }
+        }
+      }
+
       curriculum.push({
         classId,
         subject,
@@ -225,13 +272,14 @@ function parseTemplate(buffer) {
     errors.push({ message: 'Не найдено ни одной строки в листе «Распределение»' });
   }
 
-  // Проверка вместимости: для каждого класса есть ли хоть один кабинет ≥ studentCount
+  // R-01 на уровне класса: есть ли вообще в школе кабинет, вмещающий этот класс?
   for (const cls of classes) {
     const need = studentCounts[cls] || 25;
     const anyFits = rooms.length === 0 || rooms.some(r => !r.capacity || r.capacity >= need);
     if (!anyFits) {
-      warnings.push({
-        message: `Для класса «${cls}» (${need} учеников) нет ни одного кабинета с вместимостью ≥ ${need}. Добавьте подходящий кабинет или уменьшите число учеников.`,
+      // Это уже error, а не warning — класс в принципе не может быть размещён
+      errors.push({
+        message: `R-01: для класса «${cls}» (${need} учеников) нет ни одного кабинета с вместимостью ≥ ${need}. Добавьте подходящий кабинет в лист «Кабинеты» или уменьшите число учеников.`,
       });
     }
   }
