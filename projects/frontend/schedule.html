@@ -213,66 +213,67 @@ var _schData=null;
 
 function downloadExcel(){
   if(!_schData){return;}
-  var sch=_schData.sch,school=_schData.school||'Расписание';
-  var days=['Понедельник','Вторник','Среда','Четверг','Пятница'];
-  var wb=XLSX.utils.book_new();
+  var sch=_schData.sch, school=_schData.school||'Расписание';
+  var dayNames=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
 
-  /* One sheet per class */
+  // Классы — отсортированы по номеру параллели, потом алфавит
   var classes=Object.keys(sch).sort(function(a,b){
-    var na=parseInt(a)||0,nb=parseInt(b)||0;
+    var na=parseInt(a)||0, nb=parseInt(b)||0;
     return na!==nb?na-nb:a.localeCompare(b,'ru');
   });
+  if(!classes.length){return;}
 
+  // Сколько дней в неделе (по максимуму в расписании)
+  var numD=0;
+  classes.forEach(function(cls){ if(sch[cls].length>numD) numD=sch[cls].length; });
+  if(numD<5) numD=5;
+
+  // Сколько уроков в день (макс по всем классам и дням)
+  var maxLessons=0;
   classes.forEach(function(cls){
-    var dayArrays=sch[cls];
-    var maxLessons=0;
-    dayArrays.forEach(function(d){if(d.length>maxLessons)maxLessons=d.length;});
-    if(maxLessons<1)maxLessons=7;
+    sch[cls].forEach(function(d){ if(d.length>maxLessons) maxLessons=d.length; });
+  });
+  if(maxLessons<1) maxLessons=7;
 
-    /* Header row */
-    var rows=[['Урок'].concat(days.slice(0,dayArrays.length))];
-    for(var i=0;i<maxLessons;i++){
-      var row=[i+1];
-      dayArrays.forEach(function(d){
-        var code=d[i]||'';
+  // Формат: одна сетка — строки = (День × Урок), колонки = классы.
+  //   День | Урок | 5А | 5Б | 6А | ... | 10А
+  //   Пн    1    Мат   Рус   Мат         ...
+  //   Пн    2    ...
+  //   ...
+  //   Вт    1    ...
+  var rows=[];
+  // Заголовок
+  rows.push(['День','Урок'].concat(classes));
+
+  for(var d=0; d<numD; d++){
+    for(var s=0; s<maxLessons; s++){
+      var row=[s===0?dayNames[d]:'', s+1];
+      classes.forEach(function(cls){
+        var dayArr=sch[cls][d]||[];
+        var code=dayArr[s]||'';
         row.push(SF[code]||code||'');
       });
       rows.push(row);
     }
+    // Пустая строка-разделитель между днями (кроме последнего)
+    if(d<numD-1) rows.push([]);
+  }
 
-    var ws=XLSX.utils.aoa_to_sheet(rows);
+  var ws=XLSX.utils.aoa_to_sheet(rows);
 
-    /* Column widths */
-    ws['!cols']=[{wch:6}].concat(days.slice(0,dayArrays.length).map(function(){return{wch:22};}));
+  // Ширины колонок: День 14, Урок 6, каждый класс 14
+  ws['!cols']=[{wch:14},{wch:6}].concat(classes.map(function(){return{wch:14};}));
 
-    /* Style header row bold */
-    var range=XLSX.utils.decode_range(ws['!ref']);
-    for(var C=range.s.c;C<=range.e.c;C++){
-      var addr=XLSX.utils.encode_cell({r:0,c:C});
-      if(ws[addr]&&!ws[addr].s)ws[addr].s={font:{bold:true},fill:{fgColor:{rgb:'1A1A2E'}}};
-    }
+  // Слияние ячеек «День» по вертикали для каждого дня
+  ws['!merges']=ws['!merges']||[];
+  var curRow=1; // после header
+  for(var d2=0; d2<numD; d2++){
+    ws['!merges'].push({ s:{r:curRow,c:0}, e:{r:curRow+maxLessons-1,c:0} });
+    curRow += maxLessons + 1; // +1 за разделитель
+  }
 
-    var safeName=cls.replace(/[\/\\?*\[\]]/g,'');
-    XLSX.utils.book_append_sheet(wb,ws,safeName);
-  });
-
-  /* Summary sheet with all classes */
-  var sumRows=[['Класс'].concat(days)];
-  classes.forEach(function(cls){
-    var dayArrays=sch[cls];
-    var maxLessons=0;
-    dayArrays.forEach(function(d){if(d.length>maxLessons)maxLessons=d.length;});
-    sumRows.push([cls]);
-    for(var i=0;i<maxLessons;i++){
-      var row=['  Урок '+(i+1)];
-      dayArrays.forEach(function(d){row.push(SF[d[i]||'']||d[i]||'');});
-      sumRows.push(row);
-    }
-    sumRows.push([]);
-  });
-  var wsSummary=XLSX.utils.aoa_to_sheet(sumRows);
-  wsSummary['!cols']=[{wch:14}].concat(days.map(function(){return{wch:22};}));
-  XLSX.utils.book_append_sheet(wb,wsSummary,'Все классы');
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Расписание');
 
   var filename=(school?school.replace(/[\/\\?*\[\]:]/g,''):'Расписание')+'.xlsx';
   XLSX.writeFile(wb,filename);
