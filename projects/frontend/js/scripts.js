@@ -682,11 +682,57 @@ function wizBuildSchedule(){
 
 function wizOpenSchedule(){
   if(!cooldown('wizSchedule'))return;
-  var built=wizBuildSchedule();
-  if(!built){alert('Добавьте учителей с классами на шаге 2');return;}
-  built.school=wizData.schoolName||'';
-  saveWizardRun('schedule','Расписание: ' + (built.school || 'Без названия'),built);
-  localStorage.setItem(WIZARD_SOURCE_KEY, CURRENT_WIZARD_CONTEXT === 'account' ? 'account' : 'index');
-  try{sessionStorage.setItem('wizSchedule',JSON.stringify(built));}catch(e){}
-  window.location.href='./schedule.html';
+
+  var classes=[],curriculum=[];
+  wizData.teachers.forEach(function(t,idx){
+    if(!t.subject||!t.classes)return;
+    var teacherId='T'+(idx+1);
+    var tCls=String(t.classes).split(/[,;]+/).map(function(c){return c.trim();}).filter(Boolean);
+    tCls.forEach(function(cls){
+      if(classes.indexOf(cls)===-1)classes.push(cls);
+      curriculum.push({
+        classId:cls,subject:t.subject,
+        weeklyHours:parseInt(t.hoursPerWeek||t.hours)||2,
+        teacherId:teacherId,roomId:t.room||'к.1',
+      });
+    });
+  });
+
+  if(!classes.length){alert('Добавьте учителей с классами на шаге 2');return;}
+
+  var days=wizData.days||5;
+
+  fetch('/api/generate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({classes:classes,curriculum:curriculum,weekDays:days===6?6:5}),
+  })
+    .then(function(r){return r.json();})
+    .then(function(resp){
+      if(!resp||!resp.ok){
+        var msg=(resp&&resp.error&&resp.error.message)||'Не удалось сгенерировать расписание';
+        throw new Error(msg);
+      }
+      var sch={};
+      Object.keys(resp.schedule).forEach(function(cls){
+        sch[cls]=resp.schedule[cls].map(function(day){
+          return day.map(function(subj){
+            return (typeof normSubj==='function'?normSubj(subj):subj)||subj;
+          });
+        });
+      });
+      var cg={};
+      classes.forEach(function(cls){
+        var m=cls.match(/^(\d+)/);
+        cg[cls]=m?parseInt(m[1],10):7;
+      });
+      var built={sch:sch,cg:cg,school:wizData.schoolName||''};
+      saveWizardRun('schedule','Расписание: '+(built.school||'Без названия'),built);
+      localStorage.setItem(WIZARD_SOURCE_KEY,CURRENT_WIZARD_CONTEXT==='account'?'account':'index');
+      try{sessionStorage.setItem('wizSchedule',JSON.stringify(built));}catch(e){}
+      window.location.href='./schedule.html';
+    })
+    .catch(function(err){
+      alert('Ошибка генерации: '+(err.message||err));
+    });
 }

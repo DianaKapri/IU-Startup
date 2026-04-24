@@ -27,7 +27,7 @@ const { calculateScore } = require('../services/audit/scoring.js');
 // const { authenticate } = require('../middleware/auth');  // включить после EP-03
 
 // ── POST /api/generate ──────────────────────────────────────
-router.post('/generate', /* authenticate, */ (req, res) => {
+router.post('/', /* authenticate, */ (req, res) => {
   try {
     const { classes, curriculum, weekDays } = req.body;
 
@@ -71,7 +71,7 @@ router.post('/generate', /* authenticate, */ (req, res) => {
 });
 
 // ── GET /api/generate/health ────────────────────────────────
-router.get('/generate/health', (_req, res) => {
+router.get('/health', (_req, res) => {
   const probe = runGenerator({
     classes: ['1А'],
     curriculum: [

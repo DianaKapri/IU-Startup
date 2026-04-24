@@ -401,14 +401,65 @@ spRequireAuth(function () {
   if (builderGenerateBtn) {
     builderGenerateBtn.addEventListener('click', function () {
       if (typeof cooldown === 'function' && !cooldown('generate')) return;
+      showBuilderError('');
+
+      var classes, teachers, days;
       try {
-        showBuilderError('');
-        var built = buildScheduleFromBuilder();
-        showResults(built.sch, built.cg);
-        switchTab('optimized');
-      } catch (err) {
-        showBuilderError(err.message || 'Ошибка генерации расписания');
-      }
+        classes  = parseClasses((document.getElementById('builderClasses')  || {}).value);
+        teachers = parseTeachers((document.getElementById('builderTeachers') || {}).value);
+        days     = Number((document.getElementById('builderDays') || {}).value) || 5;
+        if (!classes.length)  throw new Error('Добавьте хотя бы один класс в шаге 2');
+        if (!teachers.length) throw new Error('Добавьте корректные строки учителей в шаге 3');
+      } catch (err) { showBuilderError(err.message); return; }
+
+      var curriculum = [];
+      teachers.forEach(function (t, idx) {
+        var teacherId = 'T' + (idx + 1);
+        t.classes.forEach(function (cls) {
+          if (classes.indexOf(cls) === -1) return;
+          curriculum.push({
+            classId: cls, subject: t.subject, weeklyHours: t.hours,
+            teacherId: teacherId, roomId: 'к.1',
+          });
+        });
+      });
+
+      var origLabel = builderGenerateBtn.textContent;
+      builderGenerateBtn.disabled = true;
+      builderGenerateBtn.textContent = 'Генерируется…';
+
+      fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classes: classes, curriculum: curriculum, weekDays: days === 6 ? 6 : 5 }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (resp) {
+          if (!resp || !resp.ok) {
+            var msg = (resp && resp.error && resp.error.message) || 'Не удалось сгенерировать расписание';
+            throw new Error(msg);
+          }
+          var sch = {};
+          Object.keys(resp.schedule).forEach(function (cls) {
+            sch[cls] = resp.schedule[cls].map(function (day) {
+              return day.map(function (subj) { return normSubj(subj) || subj; });
+            });
+          });
+          var cg = {};
+          classes.forEach(function (cls) {
+            var m = cls.match(/^(\d+)/);
+            cg[cls] = m ? parseInt(m[1], 10) : 7;
+          });
+          showResults(sch, cg);
+          switchTab('optimized');
+        })
+        .catch(function (err) {
+          showBuilderError(err.message || 'Ошибка генерации расписания');
+        })
+        .then(function () {
+          builderGenerateBtn.disabled = false;
+          builderGenerateBtn.textContent = origLabel;
+        });
     });
   }
 

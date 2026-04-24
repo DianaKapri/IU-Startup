@@ -57,7 +57,7 @@ app.use('/users', usersRouter);
 
 // ─── Генератор расписания (EP-06) ─────────────────────────────
 const generatorRouter = require('./routes/generator');
-app.use('/api/generate', generatorRouter);
+app.use('/generate', generatorRouter);
 
 // const teachersRouter = require('./routes/teachers');      // EP-06 (TODO)
 // app.use('/api/teachers', teachersRouter);
