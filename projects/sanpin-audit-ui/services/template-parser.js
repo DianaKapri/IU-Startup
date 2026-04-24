@@ -139,6 +139,7 @@ function parseTemplate(buffer) {
 
   // ─── 3. Классы ─────────────────────────────────────────────
   const studentCounts = {}; // className → count
+  const shifts = {};        // className → 1 | 2
   {
     const rows = sheetToRows(wb.Sheets['Классы']);
     for (let r = 1; r < rows.length; r++) {
@@ -151,6 +152,9 @@ function parseTemplate(buffer) {
       } else {
         studentCounts[cls] = count;
       }
+      // Эпик 3.1: смена (1 или 2). Если не задана — дефолт 1.
+      const shiftRaw = parseInt0(rows[r][2]);
+      shifts[cls] = shiftRaw === 2 ? 2 : 1;
     }
   }
 
@@ -291,6 +295,7 @@ function parseTemplate(buffer) {
     constraints,
     rooms,
     studentCounts,
+    shifts,
     teachers: Object.values(teachersMap),
     errors,
     warnings,

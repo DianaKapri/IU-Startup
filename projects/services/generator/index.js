@@ -145,11 +145,13 @@ function c03ok(cls, d, clsDayCnt, clsTotal, numD, pdLimDay) {
 
 // ─── Построение очереди событий ──────────────────────────────
 
-function buildEvents(curriculum, classIds, numD) {
+function buildEvents(curriculum, classIds, numD, shifts) {
   const byTeacher = {};
+  shifts = shifts || {};
 
   for (const cls of classIds) {
     const grade   = parseGrade(cls);
+    const shift   = shifts[cls] === 2 ? 2 : 1;
     const weekKey = numD === 6 ? 6 : 5;
     const wkMax   = getMaxWeeklyHours(grade, weekKey) || 34;
     const pdLim   = getMaxLessonsPerDay(grade, weekKey) || 7;
@@ -166,7 +168,7 @@ function buildEvents(curriculum, classIds, numD) {
         const rid  = String(c.roomId     || ('R_' + subj.replace(/\s/g, '').slice(0, 6)));
         const diff = getDifficulty(subj, grade);
         const h    = Math.max(0, Number(c.weeklyHours) || 0);
-        return Array.from({ length: h }, () => ({ cls, subj, tid, rid, diff, grade }));
+        return Array.from({ length: h }, () => ({ cls, subj, tid, rid, diff, grade, shift }));
       })
       .sort((a, b) => b.diff - a.diff);
 
@@ -204,9 +206,13 @@ function buildEvents(curriculum, classIds, numD) {
 
 // ─── CSP backtracking ────────────────────────────────────────
 
-function placeAllClasses(allEv, classIds, numD, tConstraints) {
+function placeAllClasses(allEv, classIds, numD, tConstraints, shifts) {
   const N = allEv.length;
   tConstraints = tConstraints || {};
+  shifts = shifts || {};
+
+  // Эпик 3.1: shift каждого класса для формирования ключей conflict-карт
+  function classShift(cls) { return shifts[cls] === 2 ? 2 : 1; }
 
   // T-02: предвычисляем счётчики уроков учителя по дням для maxPerDay
   const teacherDayCnt = {}; // tid → [6]int
@@ -255,7 +261,8 @@ function placeAllClasses(allEv, classIds, numD, tConstraints) {
   const asgn  = new Array(N);
 
   function candidates(ev) {
-    const { cls, subj, tid, rid, grade } = ev;
+    const { cls, subj, tid, rid, grade, shift } = ev;
+    const sh = shift || classShift(cls);
     const diff   = getDifficulty(subj, grade);
     const isHard = diff >= getHardThreshold(grade);
     const maxDay = getMaxLessonsPerDay(grade, numD === 6 ? 6 : 5) || 6;
@@ -304,8 +311,8 @@ function placeAllClasses(allEv, classIds, numD, tConstraints) {
       if (!teacherAvailable(tid, d))                                continue;
       const s = clsDayCnt[cls][d] + 1;
       if (s > MAX_SLOTS)                                           continue;
-      if (tid && tidDs.has(`${tid}:${d}:${s}`))                   continue;
-      if (rid && ridDs.has(`${rid}:${d}:${s}`))                   continue;
+      if (tid && tidDs.has(`${tid}:${d}:${s}:${sh}`))             continue;
+      if (rid && ridDs.has(`${rid}:${d}:${s}:${sh}`))             continue;
       cands.push({ d, s });
     }
     // Fallback 1: relax hard-balance if stuck (keep 1-per-subj and teacher/room constraints)
@@ -346,21 +353,23 @@ function placeAllClasses(allEv, classIds, numD, tConstraints) {
   }
 
   function place(i, d, s) {
-    const { cls, tid, rid, diff, grade } = allEv[i];
+    const { cls, tid, rid, diff, grade, shift } = allEv[i];
+    const sh = shift || classShift(cls);
     clsDayCnt[cls][d]++;
     if (diff >= getHardThreshold(grade)) clsHardCnt[cls][d]++;
-    if (tid) { tidDs.add(`${tid}:${d}:${s}`); tDayInc(tid, d); }
-    if (rid) ridDs.add(`${rid}:${d}:${s}`);
+    if (tid) { tidDs.add(`${tid}:${d}:${s}:${sh}`); tDayInc(tid, d); }
+    if (rid) ridDs.add(`${rid}:${d}:${s}:${sh}`);
     asgn[i] = { d, s };
   }
 
   function unplace(i) {
     const { d, s } = asgn[i];
-    const { cls, tid, rid, diff, grade } = allEv[i];
+    const { cls, tid, rid, diff, grade, shift } = allEv[i];
+    const sh = shift || classShift(cls);
     clsDayCnt[cls][d]--;
     if (diff >= getHardThreshold(grade)) clsHardCnt[cls][d]--;
-    if (tid) { tidDs.delete(`${tid}:${d}:${s}`); tDayDec(tid, d); }
-    if (rid) ridDs.delete(`${rid}:${d}:${s}`);
+    if (tid) { tidDs.delete(`${tid}:${d}:${s}:${sh}`); tDayDec(tid, d); }
+    if (rid) ridDs.delete(`${rid}:${d}:${s}:${sh}`);
     asgn[i] = undefined;
   }
 
@@ -768,8 +777,8 @@ function runGenerator(data) {
     }
   }
 
-  const allEv = buildEvents(curriculum, classes, numD);
-  const { schedules, ok, calls, placed, total, t02Violations } = placeAllClasses(allEv, classes, numD, tConstraints);
+  const allEv = buildEvents(curriculum, classes, numD, data.shifts);
+  const { schedules, ok, calls, placed, total, t02Violations } = placeAllClasses(allEv, classes, numD, tConstraints, data.shifts);
 
   // Если constraint учителя был релаксирован в Fallback 2 — сообщаем пользователю
   const DAY_LBL = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];

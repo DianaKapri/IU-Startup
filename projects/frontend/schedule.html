@@ -37,6 +37,10 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .sch-stat{flex:1;min-width:100px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;}
 .sch-stat__val{font-size:1.4rem;font-weight:700;color:#f5f5f7;line-height:1;}
 .sch-stat__lbl{font-size:.7rem;color:#555;margin-top:4px;}
+.sch-shift-tabs{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.04);border-radius:10px;width:fit-content;}
+.sch-shift-tab{background:transparent;border:none;color:#86868b;font-family:var(--font);font-size:.82rem;font-weight:500;padding:8px 18px;border-radius:8px;cursor:pointer;transition:all .15s;}
+.sch-shift-tab:hover{color:#f5f5f7;}
+.sch-shift-tab--active{background:rgba(0,113,227,.18);color:#4da3ff;}
 </style>
 </head>
 <body>
@@ -55,6 +59,12 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
   </div>
 
   <div class="sch-stat-row" id="schStats"></div>
+
+  <div class="sch-shift-tabs" id="schShiftTabs" style="display:none;margin-bottom:16px;">
+    <button class="sch-shift-tab sch-shift-tab--active" data-shift="all">Все классы</button>
+    <button class="sch-shift-tab" data-shift="1">1 смена</button>
+    <button class="sch-shift-tab" data-shift="2">2 смена</button>
+  </div>
 
   <div class="sch-panel">
     <div id="schGrid"><div class="sch-tbl-wrap"><table class="acc-grid-tbl" id="schGridTbl"></table></div></div>
@@ -122,8 +132,39 @@ var _schData=null;
     return '<div class="sch-stat"><div class="sch-stat__val">'+s.v+'</div><div class="sch-stat__lbl">'+s.l+'</div></div>';
   }).join('');
 
-  var tbl=document.getElementById('schGridTbl');
-  renderGrid(sch,cg,audit,tbl);
+  // Эпик 3.1: если в payload есть разделение на смены — показываем табы-фильтр
+  var shifts = data.shifts || {};
+  var shiftSet = {};
+  Object.keys(shifts).forEach(function(c){ shiftSet[shifts[c]] = true; });
+  var hasTwoShifts = shiftSet[1] && shiftSet[2];
+  if (hasTwoShifts) {
+    document.getElementById('schShiftTabs').style.display = 'flex';
+  }
+
+  function filterByShift(target) {
+    if (target === 'all') return sch;
+    var filt = {};
+    Object.keys(sch).forEach(function(cls){
+      if ((shifts[cls] || 1) === target) filt[cls] = sch[cls];
+    });
+    return filt;
+  }
+
+  function render(target) {
+    var filt = filterByShift(target);
+    var tbl = document.getElementById('schGridTbl');
+    renderGrid(filt, cg, doAudit(filt, cg), tbl);
+  }
+  render('all');
+
+  Array.prototype.forEach.call(document.querySelectorAll('.sch-shift-tab'), function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.sch-shift-tab').forEach(function(b){ b.classList.remove('sch-shift-tab--active'); });
+      btn.classList.add('sch-shift-tab--active');
+      var sh = btn.getAttribute('data-shift');
+      render(sh === 'all' ? 'all' : Number(sh));
+    });
+  });
 })();
 
 function downloadExcel(){

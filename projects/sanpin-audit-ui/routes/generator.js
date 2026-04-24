@@ -107,6 +107,7 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
       curriculum:  parsed.curriculum,
       weekDays,
       constraints: parsed.constraints,
+      shifts:      parsed.shifts,
     });
     const audit = calculateScore(result.schedule, { weekDays });
 
@@ -128,6 +129,7 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
         roomsCount:    parsed.rooms.length,
         studentCounts: parsed.studentCounts,
         constraints:   parsed.constraints,
+        shifts:        parsed.shifts,
       },
     });
   } catch (err) {
