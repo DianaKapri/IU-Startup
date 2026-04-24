@@ -1,32 +1,44 @@
 // Модуль: routes/adminSubscriptions
-// Задача: subscription-activation 2.1 + 2.2
-// Автор: —
+// Задача: payment-flow
 // Описание: Admin-API для управления заявками на подписку.
-//   - GET  /            — список всех заявок (опц. фильтр по ?status=)
-//   - PUT  /:id         — смена статуса pending → processed|rejected;
-//                         при processed + user_id != NULL активирует пользователя
-//                         в рамках одной транзакции (FOR UPDATE + UPDATE users).
+//   - GET  /     — список всех заявок (опц. фильтр ?status=)
+//   - PUT  /:id  — смена статуса:
+//       pending → awaiting_payment : создать платёж ЮKassa, выслать email пользователю
+//       pending → rejected         : отклонить
 //
-// Всё защищено `requireAdmin` (shared secret через X-Admin-Token).
+// Активация пользователя происходит в routes/payments.js при получении
+// webhook payment.succeeded от ЮKassa.
+//
+// Защита: requireAdmin (X-Admin-Token).
 
 'use strict';
 
 const express = require('express');
+const { Resend } = require('resend');
 const db = require('../config/database');
 const requireAdmin = require('../middleware/requireAdmin');
+const yokassa = require('../services/payment/yokassa');
 
 const router = express.Router();
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@shkolaplan.ru';
 
-// ─── Константы ──────────────────────────────────────────────
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const ALLOWED_NEW_STATUSES = new Set(['processed', 'rejected']);
-const ALLOWED_FILTER_STATUSES = new Set(['pending', 'processed', 'rejected']);
+const ALLOWED_NEW_STATUSES = new Set(['awaiting_payment', 'rejected']);
+const ALLOWED_FILTER_STATUSES = new Set(['pending', 'awaiting_payment', 'paid', 'rejected']);
 
-// Все роуты этого роутера требуют admin-токен.
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 router.use(requireAdmin);
 
 // ─── GET / ─────────────────────────────────────────────────
-// Список заявок. Опциональный фильтр по статусу.
 router.get('/', async (req, res) => {
   const statusFilter = typeof req.query.status === 'string' ? req.query.status : null;
 
@@ -35,7 +47,8 @@ router.get('/', async (req, res) => {
     if (statusFilter && ALLOWED_FILTER_STATUSES.has(statusFilter)) {
       result = await db.query(
         `SELECT id, organization_name, inn, email, plan, price, status,
-                user_id, user_name, user_school, created_at, processed_at
+                user_id, user_name, user_school, payment_id, payment_url,
+                created_at, processed_at, paid_at
            FROM subscription_requests
           WHERE status = $1
           ORDER BY created_at DESC`,
@@ -44,7 +57,8 @@ router.get('/', async (req, res) => {
     } else {
       result = await db.query(
         `SELECT id, organization_name, inn, email, plan, price, status,
-                user_id, user_name, user_school, created_at, processed_at
+                user_id, user_name, user_school, payment_id, payment_url,
+                created_at, processed_at, paid_at
            FROM subscription_requests
           ORDER BY created_at DESC`
       );
@@ -60,12 +74,10 @@ router.get('/', async (req, res) => {
 });
 
 // ─── PUT /:id ──────────────────────────────────────────────
-// Обновление статуса заявки. Транзакционно активирует пользователя при processed.
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body || {};
 
-  // Валидация id.
   if (typeof id !== 'string' || !UUID_RE.test(id)) {
     return res.status(400).json({
       success: false,
@@ -73,7 +85,6 @@ router.put('/:id', async (req, res) => {
     });
   }
 
-  // Валидация нового статуса.
   if (!ALLOWED_NEW_STATUSES.has(status)) {
     return res.status(400).json({
       success: false,
@@ -95,9 +106,8 @@ router.put('/:id', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1) Блокируем строку.
     const selectResult = await client.query(
-      `SELECT id, user_id, status
+      `SELECT id, user_id, email, organization_name, price, status
          FROM subscription_requests
         WHERE id = $1
         FOR UPDATE`,
@@ -121,57 +131,94 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // 2) Обновляем заявку.
+    if (status === 'awaiting_payment') {
+      // Создать платёж в ЮKassa
+      let paymentId, paymentUrl;
+      try {
+        const returnUrl = `${process.env.FRONTEND_URL || 'https://shkolaplan.ru'}/account.html`;
+        const payment = await yokassa.createPayment({
+          amount: row.price / 100,
+          description: `Подписка ШколаПлан — ${escapeHtml(row.organization_name)}`,
+          returnUrl,
+          metadata: { subscription_request_id: id },
+        });
+        paymentId = payment.id;
+        paymentUrl = payment.confirmationUrl;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('[adminSubscriptions PUT /:id] yokassa error:', err.message);
+        return res.status(502).json({
+          success: false,
+          error: { code: 'PAYMENT_ERROR', message: 'Не удалось создать платёж. Попробуйте позже.' },
+        });
+      }
+
+      await client.query(
+        `UPDATE subscription_requests
+            SET status = 'awaiting_payment',
+                processed_at = NOW(),
+                payment_id = $1,
+                payment_url = $2
+          WHERE id = $3`,
+        [paymentId, paymentUrl, id]
+      );
+
+      await client.query('COMMIT');
+
+      // Отправить email пользователю со ссылкой на оплату (вне транзакции)
+      if (row.email) {
+        const safeOrg = escapeHtml(row.organization_name || '');
+        const safeUrl = escapeHtml(paymentUrl);
+        resend.emails.send({
+          from: FROM_EMAIL,
+          to: row.email,
+          subject: 'Счёт на оплату — ШколаПлан',
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
+              <h2 style="margin-bottom:8px">Ваша заявка одобрена</h2>
+              <p>Организация: <strong>${safeOrg}</strong></p>
+              <p>Тариф: <strong>Школа</strong> &mdash; <strong>${(row.price / 100).toLocaleString('ru-RU')} ₽/год</strong></p>
+              <p style="margin:24px 0">
+                <a href="${safeUrl}"
+                   style="background:#0071e3;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">
+                  Оплатить →
+                </a>
+              </p>
+              <p style="color:#888;font-size:13px">Ссылка действительна 24 часа. Если возникнут вопросы — ответьте на это письмо.</p>
+              <p style="color:#888;font-size:13px">— Команда ШколаПлан</p>
+            </div>
+          `,
+        }).catch(err => {
+          console.error('[adminSubscriptions] resend error:', err.message);
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: { id, status: 'awaiting_payment', payment_id: paymentId, payment_url: paymentUrl },
+      });
+    }
+
+    // status === 'rejected'
     await client.query(
       `UPDATE subscription_requests
-          SET status = $1, processed_at = NOW()
-        WHERE id = $2`,
-      [status, id]
+          SET status = 'rejected', processed_at = NOW()
+        WHERE id = $1`,
+      [id]
     );
-
-    // 3) При processed + user_id — активируем пользователя.
-    let userActivated = false;
-    let planExpiresAt = null;
-
-    if (status === 'processed' && row.user_id) {
-      const userUpdate = await client.query(
-        `UPDATE users
-            SET plan = 'paid',
-                plan_expires_at = NOW() + INTERVAL '1 year'
-          WHERE id = $1
-          RETURNING plan_expires_at`,
-        [row.user_id]
-      );
-      if (userUpdate.rows.length > 0) {
-        userActivated = true;
-        planExpiresAt = userUpdate.rows[0].plan_expires_at;
-      }
-    }
 
     await client.query('COMMIT');
 
-    return res.json({
-      success: true,
-      data: {
-        id,
-        status,
-        user_activated: userActivated,
-        plan_expires_at: planExpiresAt,
-      },
-    });
+    return res.json({ success: true, data: { id, status: 'rejected' } });
   } catch (err) {
-    try {
-      await client.query('ROLLBACK');
-    } catch (rollbackErr) {
-      console.error('[adminSubscriptions PUT /:id] rollback failed:', rollbackErr.message);
-    }
+    try { await client.query('ROLLBACK'); } catch (_) {}
     console.error('[adminSubscriptions PUT /:id] tx error:', err.message);
     return res.status(500).json({
       success: false,
       error: { code: 'SERVER_ERROR', message: 'Внутренняя ошибка сервера.' },
     });
   } finally {
-    try { client.release(); } catch (_) { /* noop */ }
+    try { client.release(); } catch (_) {}
   }
 });
 
