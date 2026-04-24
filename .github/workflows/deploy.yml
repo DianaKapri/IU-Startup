@@ -18,6 +18,7 @@ jobs:
           script: |
             set -e
             cd /opt/shkolaplan
+            git checkout -- .
             git pull origin main
             docker compose up -d --build --remove-orphans
             docker image prune -f
