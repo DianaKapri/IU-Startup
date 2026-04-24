@@ -668,10 +668,12 @@ spInitNav();
   overlay.addEventListener('click', closePayModal);
 
   document.getElementById('trialBtn').addEventListener('click', function (e) {
+    e.preventDefault();
     spIsLoggedIn().then(function (loggedIn) {
       if (loggedIn) {
-        e.preventDefault();
         openPayModal();
+      } else {
+        window.location.href = './login.html?tab=register';
       }
     });
   });
