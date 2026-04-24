@@ -270,6 +270,8 @@ function spLoadRunsFromSupabase() {
   }).catch(function (e) { console.warn('[sync→supabase] load:', e && e.message); });
 }
 
+var _compareSelection = [];
+
 function renderSavedWizardRuns() {
   var host = document.getElementById('savedRunsList');
   if (!host) return;
@@ -278,15 +280,32 @@ function renderSavedWizardRuns() {
     host.innerHTML = '<div class="profile-wizard-history__empty">Пока нет сохранённых элементов.</div>';
     return;
   }
-  host.innerHTML = items.map(function (item) {
+
+  // Подсчитать сколько scheduele-типа — нужно ли показывать compare bar
+  var scheduleCount = items.filter(function(x){ return x.type === 'schedule'; }).length;
+
+  var barHtml = '';
+  if (scheduleCount >= 2) {
+    barHtml = '<div class="profile-wizard-history__compare-bar" id="comparBar">'
+            + '<span class="profile-wizard-history__compare-info" id="comparInfo">Выберите 2 расписания для сравнения</span>'
+            + '<button class="profile-wizard-history__compare-btn" id="comparBtn" disabled>Сравнить</button>'
+            + '</div>';
+  }
+
+  host.innerHTML = barHtml + items.map(function (item) {
     var dt = new Date(item.createdAt).toLocaleString('ru-RU');
+    var canCompare = item.type === 'schedule';
+    var checked = _compareSelection.indexOf(item.id) !== -1 ? ' checked' : '';
     return '<div class="profile-wizard-history__item" data-run-id="' + item.id + '">'
+      + '<div style="display:flex;align-items:center;gap:10px;flex:1">'
+      + (canCompare ? '<input type="checkbox" class="profile-wizard-history__compare-chk" data-run-id="' + item.id + '"' + checked + '/>' : '<span style="width:16px"></span>')
       + '<div>'
       +   '<span class="profile-wizard-history__name" contenteditable="true" spellcheck="false"'
       +     ' data-run-id="' + item.id + '" title="Нажмите, чтобы переименовать">'
       +     escH(item.title)
       +   '</span>'
       +   '<span class="profile-wizard-history__date">' + dt + '</span>'
+      + '</div>'
       + '</div>'
       + '<div style="display:flex;gap:8px">'
       +   '<button class="profile-wizard-history__open" onclick="openWizardRun(\'' + item.id + '\')">Открыть</button>'
@@ -310,6 +329,42 @@ function renderSavedWizardRuns() {
       renameWizardRun(el.getAttribute('data-run-id'), newTitle);
     });
   });
+
+  // Compare checkboxes
+  host.querySelectorAll('.profile-wizard-history__compare-chk').forEach(function(chk){
+    chk.addEventListener('change', function(){
+      var id = chk.getAttribute('data-run-id');
+      var idx = _compareSelection.indexOf(id);
+      if (chk.checked && idx === -1) _compareSelection.push(id);
+      if (!chk.checked && idx !== -1) _compareSelection.splice(idx, 1);
+
+      // Ограничить выбор до 2
+      if (_compareSelection.length > 2) {
+        var drop = _compareSelection.shift();
+        var oldChk = host.querySelector('.profile-wizard-history__compare-chk[data-run-id="' + drop + '"]');
+        if (oldChk) oldChk.checked = false;
+      }
+      updateComparBar();
+    });
+  });
+  updateComparBar();
+}
+
+function updateComparBar() {
+  var info = document.getElementById('comparInfo');
+  var btn = document.getElementById('comparBtn');
+  if (!info || !btn) return;
+  var n = _compareSelection.length;
+  if (n === 0) info.textContent = 'Выберите 2 расписания для сравнения';
+  else if (n === 1) info.textContent = 'Выбрано 1 из 2 — добавьте ещё одно';
+  else info.textContent = 'Выбрано 2 расписания';
+  btn.disabled = n !== 2;
+  btn.onclick = function(){
+    if (_compareSelection.length !== 2) return;
+    var url = './compare.html?a=' + encodeURIComponent(_compareSelection[0])
+            + '&b=' + encodeURIComponent(_compareSelection[1]);
+    window.location.href = url;
+  };
 }
 
 function openWizardRun(id) {

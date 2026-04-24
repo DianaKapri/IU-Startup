@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<link rel="icon" href="/assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/favicon-mob.png">
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Сравнение расписаний — ШколаПлан</title>
+<link rel="stylesheet" href="./css/styles.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+<style>
+body { background: #000; color: #f5f5f7; min-height: 100vh; }
+.cmp-page { max-width: 1400px; margin: 0 auto; padding: 100px 24px 60px; }
+.cmp-back { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: #86868b; text-decoration: none; margin-bottom: 28px; }
+.cmp-back:hover { color: #f5f5f7; }
+.cmp-title { font-size: 1.8rem; font-weight: 700; letter-spacing: -.04em; margin: 0 0 6px; }
+.cmp-sub { font-size: .9rem; color: #86868b; margin: 0 0 24px; }
+.cmp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.cmp-col { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 16px; }
+.cmp-col--a { border-left: 3px solid #0071e3; }
+.cmp-col--b { border-left: 3px solid #ff9f0a; }
+.cmp-col__name { font-size: .95rem; font-weight: 600; margin: 0 0 6px; color: #f5f5f7; }
+.cmp-col__date { font-size: .72rem; color: #86868b; margin: 0 0 10px; }
+.cmp-col__metrics { display: flex; gap: 14px; flex-wrap: wrap; font-size: .78rem; }
+.cmp-col__metric { display: flex; flex-direction: column; }
+.cmp-col__metric-val { font-size: 1.1rem; font-weight: 700; color: #f5f5f7; }
+.cmp-col__metric-lbl { font-size: .68rem; color: #86868b; margin-top: 2px; }
+.cmp-diff-bar { background: rgba(255,159,10,.1); border: 1px solid rgba(255,159,10,.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: .85rem; color: #ff9f0a; font-weight: 500; }
+.cmp-diff-bar--none { background: rgba(48,209,88,.1); border-color: rgba(48,209,88,.3); color: #30d158; }
+.cmp-grids { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .cmp-grids { grid-template-columns: 1fr; } .cmp-stats { grid-template-columns: 1fr; } }
+.cmp-side__label { font-size: .76rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; margin-bottom: 8px; }
+.cmp-side--a .cmp-side__label { color: #0071e3; }
+.cmp-side--b .cmp-side__label { color: #ff9f0a; }
+.cmp-side__panel { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.06); border-radius: 10px; padding: 10px; overflow: auto; }
+.cmp-tbl { width: 100%; border-collapse: collapse; font-size: .72rem; }
+.cmp-tbl th, .cmp-tbl td { border: 1px solid rgba(255,255,255,.07); padding: 4px 6px; text-align: center; }
+.cmp-tbl th { color: #86868b; font-weight: 500; background: rgba(255,255,255,.02); }
+.cmp-tbl__day { background: rgba(255,255,255,.03); font-weight: 600; color: #f5f5f7; vertical-align: middle; }
+.cmp-tbl__num { color: #555; font-weight: 500; width: 28px; }
+.cmp-cell { color: #f5f5f7; font-size: .7rem; }
+.cmp-cell--diff { background: rgba(255,159,10,.12); outline: 1px solid rgba(255,159,10,.5); position: relative; }
+.cmp-cell--diff-a { background: rgba(0,113,227,.12); outline: 1px solid rgba(0,113,227,.4); }
+.cmp-cell--diff-b { background: rgba(255,159,10,.15); outline: 1px solid rgba(255,159,10,.5); }
+.cmp-cell--empty { color: #3a3a3c; }
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="nav__inner">
+  <a href="./index.html" class="nav__logo"><svg class="nav__logo-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</a>
+</div></nav>
+
+<div class="cmp-page">
+  <a href="./account.html" class="cmp-back">← Назад в кабинет</a>
+  <h1 class="cmp-title">Сравнение расписаний</h1>
+  <p class="cmp-sub" id="cmpSub"></p>
+  <div class="cmp-diff-bar" id="cmpDiffBar" style="display:none"></div>
+  <div class="cmp-stats" id="cmpStats"></div>
+  <div class="cmp-grids" id="cmpGrids"></div>
+</div>
+
+<script src="./js/engine.js"></script>
+<script>
+(function(){
+  var DAY = ['Пн','Вт','Ср','Чт','Пт','Сб'];
+
+  function getParam(name){
+    var m = new RegExp('[?&]' + name + '=([^&]+)').exec(location.search);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  function getRuns(){
+    try { return JSON.parse(localStorage.getItem('shkolaplan_wizard_runs') || '[]'); }
+    catch(_){ return []; }
+  }
+  function esc(s){ return String(s||'').replace(/[<>&"']/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+  var aId = getParam('a'), bId = getParam('b');
+  var runs = getRuns();
+  var a = runs.find(function(r){ return r.id === aId; });
+  var b = runs.find(function(r){ return r.id === bId; });
+  if (!a || !b) {
+    document.getElementById('cmpSub').textContent = 'Не найдены записи для сравнения.';
+    return;
+  }
+  var pA = a.payload || {}, pB = b.payload || {};
+  var school = pA.school || pB.school || 'Школа';
+  document.getElementById('cmpSub').textContent = school + ' · сравнение двух вариантов расписания';
+
+  function computeAudit(p){
+    if (!p.sch || !p.cg) return null;
+    try { return doAudit(p.sch, p.cg); } catch(_){ return null; }
+  }
+
+  var auA = computeAudit(pA), auB = computeAudit(pB);
+
+  // Статс-блоки
+  var stats = document.getElementById('cmpStats');
+  [['a', a, pA, auA, 'Вариант А'], ['b', b, pB, auB, 'Вариант Б']].forEach(function(x){
+    var side = x[0], item = x[1], p = x[2], au = x[3], tag = x[4];
+    var score = au ? au.score : '—';
+    var vi = au ? (au.vi||[]).length : 0;
+    var wa = au ? (au.wa||[]).length : 0;
+    var clsCount = p.sch ? Object.keys(p.sch).length : 0;
+    var total = 0;
+    if (p.sch) Object.keys(p.sch).forEach(function(c){ p.sch[c].forEach(function(d){ d.forEach(function(l){ if(l) total++; }); }); });
+    stats.innerHTML += '<div class="cmp-col cmp-col--' + side + '">'
+      + '<p class="cmp-col__name">' + esc(item.title) + '</p>'
+      + '<p class="cmp-col__date">' + new Date(item.createdAt).toLocaleString('ru-RU') + '</p>'
+      + '<div class="cmp-col__metrics">'
+      +   '<div class="cmp-col__metric"><span class="cmp-col__metric-val">' + score + '</span><span class="cmp-col__metric-lbl">Score</span></div>'
+      +   '<div class="cmp-col__metric"><span class="cmp-col__metric-val">' + vi + '</span><span class="cmp-col__metric-lbl">Нарушений</span></div>'
+      +   '<div class="cmp-col__metric"><span class="cmp-col__metric-val">' + wa + '</span><span class="cmp-col__metric-lbl">Предупр.</span></div>'
+      +   '<div class="cmp-col__metric"><span class="cmp-col__metric-val">' + clsCount + '</span><span class="cmp-col__metric-lbl">Классов</span></div>'
+      +   '<div class="cmp-col__metric"><span class="cmp-col__metric-val">' + total + '</span><span class="cmp-col__metric-lbl">Уроков/нед</span></div>'
+      + '</div></div>';
+  });
+
+  // Посчитать различия
+  var schA = pA.sch || {}, schB = pB.sch || {};
+  var classes = Array.from(new Set(Object.keys(schA).concat(Object.keys(schB)))).sort(function(x,y){
+    var nx = parseInt(x)||0, ny = parseInt(y)||0;
+    return nx!==ny?nx-ny:x.localeCompare(y,'ru');
+  });
+  var numD = 5;
+  classes.forEach(function(c){
+    var la = (schA[c]||[]).length, lb = (schB[c]||[]).length;
+    if (la > numD) numD = la;
+    if (lb > numD) numD = lb;
+  });
+
+  var diffs = 0;
+  var diffMap = {}; // `${cls}:${d}:${s}` → true
+  classes.forEach(function(cls){
+    for (var d = 0; d < numD; d++) {
+      var dayA = (schA[cls]||[])[d] || [];
+      var dayB = (schB[cls]||[])[d] || [];
+      var maxS = Math.max(dayA.length, dayB.length);
+      for (var s = 0; s < maxS; s++) {
+        var va = dayA[s] || '', vb = dayB[s] || '';
+        if (va !== vb) {
+          diffs++;
+          diffMap[cls + ':' + d + ':' + s] = true;
+        }
+      }
+    }
+  });
+
+  var diffBar = document.getElementById('cmpDiffBar');
+  if (diffs === 0) {
+    diffBar.className = 'cmp-diff-bar cmp-diff-bar--none';
+    diffBar.textContent = '✓ Расписания идентичны';
+  } else {
+    diffBar.textContent = 'Различий в ячейках: ' + diffs
+      + ' · оранжевой подсветкой выделены ячейки, где варианты отличаются';
+  }
+  diffBar.style.display = '';
+
+  // Рендерим обе сетки
+  function renderSide(containerEl, sch, sideClass, tag){
+    var html = '<div class="cmp-side cmp-side--' + sideClass + '">'
+             + '<div class="cmp-side__label">' + tag + '</div>'
+             + '<div class="cmp-side__panel"><table class="cmp-tbl"><thead><tr>'
+             + '<th>День</th><th>№</th>';
+    classes.forEach(function(cls){ html += '<th>' + esc(cls) + '</th>'; });
+    html += '</tr></thead><tbody>';
+
+    var maxLessons = 0;
+    classes.forEach(function(cls){
+      (sch[cls]||[]).forEach(function(d){ if (d.length > maxLessons) maxLessons = d.length; });
+    });
+    if (maxLessons < 4) maxLessons = 4;
+
+    for (var d = 0; d < numD; d++) {
+      for (var s = 0; s < maxLessons; s++) {
+        html += '<tr>';
+        if (s === 0) html += '<td class="cmp-tbl__day" rowspan="' + maxLessons + '">' + DAY[d] + '</td>';
+        html += '<td class="cmp-tbl__num">' + (s+1) + '</td>';
+        classes.forEach(function(cls){
+          var dayArr = (sch[cls]||[])[d] || [];
+          var v = dayArr[s] || '';
+          var cls2 = 'cmp-cell';
+          if (diffMap[cls + ':' + d + ':' + s]) cls2 += ' cmp-cell--diff-' + sideClass;
+          if (!v) cls2 += ' cmp-cell--empty';
+          var label = v ? (SF[v] || v) : '—';
+          html += '<td class="' + cls2 + '">' + esc(label) + '</td>';
+        });
+        html += '</tr>';
+      }
+    }
+    html += '</tbody></table></div></div>';
+    containerEl.innerHTML += html;
+  }
+
+  var grids = document.getElementById('cmpGrids');
+  renderSide(grids, schA, 'a', 'Вариант А — ' + esc(a.title));
+  renderSide(grids, schB, 'b', 'Вариант Б — ' + esc(b.title));
+})();
+</script>
+</body>
+</html>
