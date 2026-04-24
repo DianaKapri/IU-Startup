@@ -299,6 +299,42 @@ function spLogout() {
   });
 }
 
+// Меняет пароль текущего пользователя в Supabase Auth.
+// Сначала повторно проверяем текущий пароль (re-auth) — если он неверный,
+// возвращаем понятную ошибку и НЕ обновляем пароль.
+// После успеха новый пароль сразу действует для последующих входов.
+function spChangePassword(currentPassword, newPassword) {
+  if (!currentPassword) {
+    return Promise.resolve({ ok: false, error: 'Введите текущий пароль' });
+  }
+  if (!newPassword || newPassword.length < 6) {
+    return Promise.resolve({ ok: false, error: 'Новый пароль должен быть не менее 6 символов' });
+  }
+  if (currentPassword === newPassword) {
+    return Promise.resolve({ ok: false, error: 'Новый пароль должен отличаться от текущего' });
+  }
+
+  return _initSupabase().then(function (sb) {
+    return sb.auth.getUser().then(function (res) {
+      if (res.error || !res.data.user || !res.data.user.email) {
+        return { ok: false, error: 'Сессия истекла. Войдите заново.' };
+      }
+      var email = res.data.user.email;
+
+      return sb.auth.signInWithPassword({ email: email, password: currentPassword })
+        .then(function (loginRes) {
+          if (loginRes.error) {
+            return { ok: false, error: 'Текущий пароль введён неверно' };
+          }
+          return sb.auth.updateUser({ password: newPassword }).then(function (upd) {
+            if (upd.error) return { ok: false, error: _translateError(upd.error.message) };
+            return { ok: true };
+          });
+        });
+    });
+  });
+}
+
 function spRequireAuth(callback) {
   spIsLoggedIn().then(function (loggedIn) {
     if (!loggedIn) {
@@ -346,8 +382,5 @@ function spInitNav() {
     } else {
       if (guestLinks) guestLinks.style.display = '';
     }
-  }).catch(function () {
-    loader.remove();
-    if (guestLinks) guestLinks.style.display = '';
   });
 }
