@@ -56,6 +56,24 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .sub-item--none{border-left-color:#ff9f0a;}
 .sub-item__head{font-weight:600;color:#f5f5f7;}
 .sub-item__msg{font-size:.82rem;color:#86868b;margin-top:2px;}
+/* View-switcher: по классам / по учителям */
+.sch-view-tabs{display:flex;gap:4px;padding:4px;background:rgba(255,255,255,.04);border-radius:10px;width:fit-content;margin-bottom:16px;}
+.sch-view-tab{background:transparent;border:none;color:#86868b;font-family:var(--font);font-size:.86rem;font-weight:500;padding:8px 18px;border-radius:8px;cursor:pointer;transition:all .15s;}
+.sch-view-tab:hover{color:#f5f5f7;}
+.sch-view-tab--active{background:rgba(0,113,227,.18);color:#4da3ff;}
+/* Сетки учителей */
+.sch-teacher-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:16px;}
+.teacher-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;}
+.teacher-card__name{font-size:.95rem;font-weight:600;color:#f5f5f7;margin:0 0 12px;}
+.teacher-card__meta{font-size:.75rem;color:#86868b;margin-left:8px;font-weight:400;}
+.teacher-grid{width:100%;border-collapse:collapse;font-size:.82rem;}
+.teacher-grid th,.teacher-grid td{border:1px solid rgba(255,255,255,.07);padding:4px 6px;text-align:center;vertical-align:middle;}
+.teacher-grid th{color:#86868b;font-size:.72rem;font-weight:500;background:rgba(255,255,255,.02);}
+.teacher-grid__num{color:#555;font-weight:500;width:32px;}
+.teacher-grid__cell{color:#f5f5f7;}
+.teacher-grid__cell--empty{color:#3a3a3c;}
+.teacher-grid__class{font-weight:600;font-size:.78rem;}
+.teacher-grid__subj{font-size:.7rem;color:#86868b;margin-top:1px;}
 
 /* ═══ PDF/Print вёрстка — Эпик 2.3.2 ═══ */
 @media print {
@@ -102,9 +120,16 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
     <button class="sch-shift-tab" data-shift="2">2 смена</button>
   </div>
 
-  <div class="sch-panel">
+  <div class="sch-view-tabs" id="schViewTabs">
+    <button class="sch-view-tab sch-view-tab--active" data-view="classes">По классам</button>
+    <button class="sch-view-tab" data-view="teachers" id="schViewTeacherBtn" style="display:none">По учителям</button>
+  </div>
+
+  <div class="sch-panel" id="schClassView">
     <div id="schGrid"><div class="sch-tbl-wrap"><table class="acc-grid-tbl" id="schGridTbl"></table></div></div>
   </div>
+
+  <div class="sch-teacher-wrap" id="schTeacherView" style="display:none"></div>
 
   <div class="sch-cta-bar">
     <button class="sch-btn sch-btn--green" onclick="downloadExcel()">
@@ -231,6 +256,117 @@ var _schData=null;
       render(sh === 'all' ? 'all' : Number(sh));
     });
   });
+
+  // ═══ View-switcher: По классам / По учителям ═══
+  var hasCurriculum = _schData.curriculum && _schData.curriculum.length;
+  var hasOriginalSch = _schData.originalSch;
+  if (hasCurriculum && hasOriginalSch) {
+    document.getElementById('schViewTeacherBtn').style.display = '';
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.sch-view-tab'), function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.sch-view-tab').forEach(function(b){ b.classList.remove('sch-view-tab--active'); });
+      btn.classList.add('sch-view-tab--active');
+      var v = btn.getAttribute('data-view');
+      if (v === 'teachers') {
+        document.getElementById('schClassView').style.display = 'none';
+        document.getElementById('schShiftTabs').style.display = 'none';
+        document.getElementById('schTeacherView').style.display = 'grid';
+        renderTeacherView();
+      } else {
+        document.getElementById('schClassView').style.display = '';
+        if (hasTwoShifts) document.getElementById('schShiftTabs').style.display = 'flex';
+        document.getElementById('schTeacherView').style.display = 'none';
+      }
+    });
+  });
+
+  function escH(s){ return String(s||'').replace(/[<>&"']/g, function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+  function renderTeacherView(){
+    var container = document.getElementById('schTeacherView');
+    var origSch = _schData.originalSch;
+    var curriculum = _schData.curriculum || [];
+    if (!origSch || !curriculum.length) {
+      container.innerHTML = '<p style="color:#86868b">Нет данных по учителям. Сгенерируйте расписание заново через Excel-шаблон.</p>';
+      return;
+    }
+
+    // Построить map: teacherId → { name, days[5 или 6][slots] }
+    var numD = 5;
+    Object.keys(origSch).forEach(function(cls){ if (origSch[cls].length > numD) numD = origSch[cls].length; });
+
+    var teachers = {};
+    curriculum.forEach(function(c){
+      if (!c.teacherId || !c.teacherName) return;
+      if (!teachers[c.teacherId]) {
+        teachers[c.teacherId] = {
+          name: c.teacherName,
+          days: Array.from({length: numD}, function(){ return []; }),
+          lessonCount: 0,
+          classes: {},
+        };
+      }
+    });
+
+    // Пройтись по расписанию — для каждого слота найти учителя по (cls, subject)
+    Object.keys(origSch).forEach(function(cls){
+      origSch[cls].forEach(function(day, di){
+        day.forEach(function(subj, si){
+          if (!subj) return;
+          var entry = curriculum.find(function(c){ return c.classId === cls && c.subject === subj; });
+          if (!entry || !teachers[entry.teacherId]) return;
+          var t = teachers[entry.teacherId];
+          while (t.days[di].length < si + 1) t.days[di].push(null);
+          t.days[di][si] = { class: cls, subject: subj };
+          t.lessonCount++;
+          t.classes[cls] = true;
+        });
+      });
+    });
+
+    var dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб'];
+    var html = '';
+    Object.keys(teachers).sort(function(a,b){
+      return teachers[a].name.localeCompare(teachers[b].name, 'ru');
+    }).forEach(function(tid){
+      var t = teachers[tid];
+      if (t.lessonCount === 0) return;
+      var maxSlots = 0;
+      t.days.forEach(function(day){ if (day.length > maxSlots) maxSlots = day.length; });
+
+      html += '<div class="teacher-card">';
+      html += '<h3 class="teacher-card__name">' + escH(t.name)
+            + '<span class="teacher-card__meta">· ' + t.lessonCount + ' ур./нед · '
+            + Object.keys(t.classes).sort(function(a,b){
+                var na=parseInt(a)||0, nb=parseInt(b)||0;
+                return na!==nb?na-nb:a.localeCompare(b,'ru');
+              }).join(', ')
+            + '</span></h3>';
+      html += '<table class="teacher-grid"><thead><tr><th>Урок</th>';
+      for (var di = 0; di < numD; di++) html += '<th>' + dayNames[di] + '</th>';
+      html += '</tr></thead><tbody>';
+      for (var si = 0; si < maxSlots; si++) {
+        html += '<tr><td class="teacher-grid__num">' + (si+1) + '</td>';
+        for (var di2 = 0; di2 < numD; di2++) {
+          var cell = (t.days[di2] || [])[si];
+          if (cell) {
+            html += '<td class="teacher-grid__cell">'
+                  + '<div class="teacher-grid__class">' + escH(cell.class) + '</div>'
+                  + '<div class="teacher-grid__subj">' + escH(cell.subject) + '</div>'
+                  + '</td>';
+          } else {
+            html += '<td class="teacher-grid__cell teacher-grid__cell--empty">—</td>';
+          }
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+    });
+
+    container.innerHTML = html || '<p style="color:#86868b">Нет данных по учителям.</p>';
+  }
 })();
 
 function downloadExcel(){
