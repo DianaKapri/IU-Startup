@@ -92,6 +92,18 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
 .sch-audit__pill--ok{background:rgba(48,209,88,.15);color:#30d158;border:1px solid rgba(48,209,88,.3);}
 .sch-audit__pill-id{font-weight:700;font-size:.72rem;opacity:.85;}
 .sch-audit__pill-cnt{font-size:.72rem;opacity:.85;}
+/* Tips panel — как улучшить score */
+.sch-tips{background:rgba(0,113,227,.08);border:1px solid rgba(0,113,227,.25);border-radius:12px;padding:16px 18px;margin-bottom:16px;}
+.sch-tips__head{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.sch-tips__head-title{font-size:.88rem;font-weight:600;color:#f5f5f7;}
+.sch-tips__head-target{font-size:.78rem;color:#86868b;margin-left:auto;}
+.sch-tips__item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.sch-tips__item:last-child{border-bottom:none;}
+.sch-tips__item-rule{font-size:.72rem;font-weight:700;color:#4da3ff;background:rgba(0,113,227,.15);padding:2px 8px;border-radius:6px;flex-shrink:0;align-self:flex-start;}
+.sch-tips__item-body{flex:1;}
+.sch-tips__item-nm{font-size:.84rem;font-weight:500;color:#f5f5f7;}
+.sch-tips__item-rec{font-size:.78rem;color:#86868b;margin-top:3px;line-height:1.4;}
+.sch-tips__item-impact{font-size:.72rem;color:#ff9f0a;font-weight:500;margin-left:8px;flex-shrink:0;align-self:flex-start;}
 /* Кабинет в ячейке расписания по классам (engine.js renderGrid) */
 .demo__cell-room{font-size:.6rem;font-weight:500;color:rgba(255,255,255,.85);background:rgba(0,0,0,.3);padding:0 4px;border-radius:3px;line-height:1.3;margin-top:1px;}
 
@@ -135,6 +147,7 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
   <div class="sch-stat-row" id="schStats"></div>
 
   <div class="sch-audit" id="schAuditBar" style="display:none"></div>
+  <div class="sch-tips" id="schTips" style="display:none"></div>
 
   <div class="sch-shift-tabs" id="schShiftTabs" style="display:none;margin-bottom:16px;">
     <button class="sch-shift-tab sch-shift-tab--active" data-shift="all">Все классы</button>
@@ -307,13 +320,34 @@ var _schData=null;
     });
   }
 
+  // Карта рекомендаций для каждого правила
+  var RULE_TIPS = {
+    'C-01': { rec: 'Уменьшите количество уроков в перегруженные дни — перенесите часть на менее загруженные', penalty: 100 },
+    'C-02': { rec: 'Недельная нагрузка превышает санитарную норму — уберите лишние часы', penalty: 100 },
+    'C-03': { rec: 'Выровняйте уроки между днями недели (разница — не более 1)', penalty: 100 },
+    'X-01': { rec: 'Устраните «окна» — уроки должны идти подряд без пустых слотов', penalty: 100 },
+    'D-01': { rec: 'Тяжёлые дни ставьте в середину недели (вт/ср/чт), облегчайте пн/пт', penalty: 3 },
+    'D-02': { rec: 'Выровняйте нагрузку между классами одной параллели — больше 6 баллов разницы ощущается как несправедливость', penalty: 2 },
+    'E-01': { rec: 'Ставьте сложные предметы на 2-4 уроки, когда работоспособность выше всего', penalty: 2 },
+    'E-02': { rec: 'Лёгкий день — в середине недели (ср/чт), а не на пн/пт', penalty: 3 },
+    'E-03': { rec: 'Чередуйте сложные и лёгкие предметы — не ставьте 2+ сложных подряд', penalty: 3 },
+    'E-04': { rec: 'Профильные предметы (физкультура, музыка, ИЗО, ОБЖ) не ставьте 1-м уроком', penalty: 2 },
+    'E-05': { rec: 'Один предмет не должен стоять подряд более одного раза в день', penalty: 3 },
+    'T-01': { rec: 'Старайтесь размещать смежные уроки класса на одном этаже — меньше беготни', penalty: 2 },
+    'R-01': { rec: 'Выделите кабинет побольше — текущий не вмещает всех учеников класса', penalty: 0 },
+    'R-02': { rec: 'Кабинет не соответствует типу предмета (например, физика не в лаборатории)', penalty: 0 },
+    'T-02': { rec: 'У учителя есть методический день или недоступные дни — пересмотрите назначения', penalty: 0 },
+  };
+
   function renderAuditBar(au) {
     var bar = document.getElementById('schAuditBar');
+    var tips = document.getElementById('schTips');
     if (!bar) return;
     var vi = au.vi || [], wa = au.wa || [];
     if (!vi.length && !wa.length) {
       bar.style.display='flex';
       bar.innerHTML = '<span class="sch-audit__pill sch-audit__pill--ok">✓ Нарушений нет</span>';
+      if (tips) tips.style.display='none';
       return;
     }
     // Группируем по ruleId
@@ -331,7 +365,6 @@ var _schData=null;
     var html = '<span class="sch-audit__label">Аудит:</span>';
     pills.forEach(function(p){
       var cls = p.st === 'v' ? 'sch-audit__pill--hard' : 'sch-audit__pill--soft';
-      var tooltip = p.nm + (p.examples.length ? '\n— ' + p.examples.join('\n— ') : '');
       html += '<span class="sch-audit__pill ' + cls + '" title="' + (p.nm + ': ' + p.examples.join(' · ')).replace(/"/g,'&quot;') + '">'
             + '<span class="sch-audit__pill-id">' + p.id + '</span>'
             + '<span>' + p.nm + '</span>'
@@ -340,6 +373,36 @@ var _schData=null;
     });
     bar.style.display='flex';
     bar.innerHTML = html;
+
+    // Подсказки: топ-3 правил по суммарному влиянию
+    if (tips && (vi.length || wa.length)) {
+      var withImpact = pills.map(function(p){
+        var rec = RULE_TIPS[p.id] || { rec: 'См. СанПиН', penalty: 1 };
+        return { id: p.id, nm: p.nm, st: p.st, count: p.count, rec: rec.rec, impact: p.count * rec.penalty };
+      }).sort(function(a,b){ return b.impact - a.impact; }).slice(0, 3);
+
+      var totalImpact = withImpact.reduce(function(s,x){ return s+x.impact; }, 0);
+      var score = au.score !== undefined ? au.score : '—';
+
+      var tipsHtml = '<div class="sch-tips__head">'
+                   + '<span class="sch-tips__head-title">💡 Как улучшить score (сейчас ' + score + ')</span>'
+                   + '<span class="sch-tips__head-target">Потенциал: +' + totalImpact + ' баллов</span>'
+                   + '</div>';
+      withImpact.forEach(function(t){
+        tipsHtml += '<div class="sch-tips__item">'
+                  + '<span class="sch-tips__item-rule">' + t.id + '</span>'
+                  + '<div class="sch-tips__item-body">'
+                  +   '<div class="sch-tips__item-nm">' + t.nm + ' <span style="color:#86868b;font-size:.74rem;font-weight:400">× ' + t.count + '</span></div>'
+                  +   '<div class="sch-tips__item-rec">' + t.rec + '</div>'
+                  + '</div>'
+                  + '<span class="sch-tips__item-impact">−' + t.impact + ' б.</span>'
+                  + '</div>';
+      });
+      tips.innerHTML = tipsHtml;
+      tips.style.display = 'block';
+    } else if (tips) {
+      tips.style.display = 'none';
+    }
   }
 
   // T-01: проверка переходов между этажами
