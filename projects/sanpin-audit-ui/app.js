@@ -66,7 +66,7 @@ app.use('/generate', generatorRouter);
 // app.use('/api/rooms', roomsRouter);
 
 const paymentsRouter = require('./routes/payments');
-app.use('/api/payments', paymentsRouter);
+app.use('/payments', paymentsRouter);
 
 const subscriptionsRouter = require('./routes/subscriptions');
 app.use('/subscription-request', subscriptionsRouter);
