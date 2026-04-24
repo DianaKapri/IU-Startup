@@ -21,4 +21,5 @@ jobs:
             git checkout -- .
             git pull origin main
             docker compose up -d --build --remove-orphans
+            docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile
             docker image prune -f
