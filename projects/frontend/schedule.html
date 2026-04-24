@@ -603,7 +603,11 @@ var _schData=null;
         }
         html += '</tr>';
       }
-      html += '</tbody></table></div></details>';
+      html += '</tbody></table>';
+      html += '<div style="margin-top:10px;text-align:right">'
+            + '<button class="sch-btn sch-btn--ghost" style="font-size:.78rem;padding:6px 14px" onclick="downloadTeacherICS(\'' + tid + '\')">📅 Экспорт в календарь</button>'
+            + '</div>';
+      html += '</div></details>';
     });
 
     container.innerHTML = html || '<p style="color:#86868b">Нет данных по учителям.</p>';
@@ -872,6 +876,100 @@ function downloadPDF(){
     .save()
     .then(function(){ document.body.removeChild(container); })
     .catch(function(err){ console.error('PDF error:',err); document.body.removeChild(container); alert('Ошибка генерации PDF: '+err.message); });
+}
+
+/* ═══ Эпик 2.3.3: экспорт расписания учителя в iCal ═══ */
+function downloadTeacherICS(tid){
+  if(!_schData||!_schData.originalSch||!_schData.curriculum||!_schData.curriculum.length){
+    alert('Для экспорта в календарь нужно сгенерировать расписание через Excel-шаблон заново');
+    return;
+  }
+  var origSch=_schData.originalSch;
+  var curr=_schData.curriculum;
+  var shifts=_schData.shifts||{};
+
+  // Найти учителя
+  var teacherName=null;
+  for(var i=0;i<curr.length;i++){ if(curr[i].teacherId===tid){ teacherName=curr[i].teacherName; break; } }
+  if(!teacherName){ alert('Учитель не найден'); return; }
+
+  // Время начала уроков для 1 и 2 смены (по СанПиНу)
+  var LESSON_TIMES_SHIFT1=[
+    [8,30],[9,25],[10,30],[11,35],[12,40],[13,45],[14,50]
+  ];
+  var LESSON_TIMES_SHIFT2=[
+    [14,0],[14,55],[15,50],[16,45],[17,40],[18,35],[19,30]
+  ];
+  var LESSON_DURATION=45; // минут
+
+  // Следующий понедельник как начало серии
+  var now=new Date();
+  var anchor=new Date(now);
+  var dow=(anchor.getDay()+6)%7; // 0=Пн, 6=Вс
+  anchor.setDate(anchor.getDate() - dow + 7); // next Monday
+  anchor.setHours(0,0,0,0);
+
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function toICSDate(d){
+    return d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())
+          +'T'+pad(d.getUTCHours())+pad(d.getUTCMinutes())+pad(d.getUTCSeconds())+'Z';
+  }
+
+  // Собираем уроки учителя
+  var events=[];
+  Object.keys(origSch).forEach(function(cls){
+    origSch[cls].forEach(function(day,di){
+      day.forEach(function(subj,si){
+        if(!subj)return;
+        var entry=curr.find(function(c){return c.classId===cls && c.subject===subj && c.teacherId===tid;});
+        if(!entry)return;
+        var sh=shifts[cls]===2?2:1;
+        var times=sh===2?LESSON_TIMES_SHIFT2:LESSON_TIMES_SHIFT1;
+        var start=times[si]||[8+si,0];
+        // Дата события
+        var evDate=new Date(anchor);
+        evDate.setDate(evDate.getDate()+di);
+        evDate.setHours(start[0],start[1],0,0);
+        var endDate=new Date(evDate.getTime()+LESSON_DURATION*60000);
+        events.push({
+          cls: cls, subj: subj, room: entry.roomId||'',
+          start: evDate, end: endDate, dayIdx: di, slot: si+1, shift: sh,
+        });
+      });
+    });
+  });
+
+  if(!events.length){ alert('У этого учителя нет уроков'); return; }
+
+  // Генерим .ics
+  var now2=new Date();
+  var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ШколаПлан//Schedule//RU','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  ics.push('X-WR-CALNAME:Расписание — '+teacherName);
+  ics.push('X-WR-TIMEZONE:Europe/Moscow');
+  events.forEach(function(ev,idx){
+    ics.push('BEGIN:VEVENT');
+    ics.push('UID:'+tid+'-'+idx+'-'+now2.getTime()+'@shkolaplan.ru');
+    ics.push('DTSTAMP:'+toICSDate(now2));
+    ics.push('DTSTART:'+toICSDate(ev.start));
+    ics.push('DTEND:'+toICSDate(ev.end));
+    // RRULE: повторять каждую неделю до конца учебного года (31 мая)
+    var yearEnd=new Date(anchor.getFullYear(), 4, 31, 23, 59, 59);
+    if(yearEnd<=anchor) yearEnd.setFullYear(yearEnd.getFullYear()+1);
+    ics.push('RRULE:FREQ=WEEKLY;UNTIL='+toICSDate(yearEnd));
+    ics.push('SUMMARY:'+ev.cls+' · '+ev.subj.replace(/\r?\n/g,' '));
+    if(ev.room) ics.push('LOCATION:каб. '+ev.room);
+    ics.push('DESCRIPTION:Урок '+ev.slot+(ev.shift===2?' (2 смена)':''));
+    ics.push('END:VEVENT');
+  });
+  ics.push('END:VCALENDAR');
+
+  var blob=new Blob([ics.join('\r\n')],{type:'text/calendar;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var safeName=teacherName.replace(/[\/\\?*\[\]:]/g,'');
+  var a=document.createElement('a');
+  a.href=url; a.download=safeName+'.ics';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },100);
 }
 
 /* ═══ Эпик 3.3: экстренные замены ═══ */
