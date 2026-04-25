@@ -553,68 +553,82 @@
   <div class="proof__stat"><span class="proof__num">23</span><span class="proof__label">автоматические проверки</span></div>
 </div></section>
 
-<section class="price price--light" id="price"><div class="price__inner fade-in">
+<section class="price price--dark" id="price"><div class="price__inner fade-in">
   <p class="price__eyebrow">Стоимость</p>
   <h2 class="price__title">Простые и честные тарифы</h2>
   <p class="price__subtitle">Начните бесплатно — без карты и обязательств</p>
   <div class="price__cards">
 
-    <div class="plan plan--light">
+    <div class="plan plan--dark">
       <div class="plan__top">
-        <div class="plan__head">
-          <div>
-            <h3 class="plan__name">Пробный</h3>
-            <p class="plan__desc">Аудит расписания</p>
-          </div>
-          <span class="plan__badge plan__badge--light">Без карты</span>
-        </div>
+        <h3 class="plan__name">Бесплатно</h3>
         <div class="plan__price-row">
-          <span class="plan__amount">0 ₽</span>
-          <span class="plan__period">/ бессрочно</span>
+          <span class="plan__amount">0 <span class="plan__currency">₽</span></span>
         </div>
-        <a href="./login.html?tab=register" class="plan__btn plan__btn--dark">
-          Начать бесплатно
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
+        <p class="plan__period-note">навсегда</p>
       </div>
       <div class="plan__features">
-        <div class="plan__feat"><span class="plan__check plan__check--dk"></span>Аудит по нормам СанПиН</div>
-        <div class="plan__feat"><span class="plan__check plan__check--dk"></span>1 школа</div>
-        <div class="plan__feat"><span class="plan__check plan__check--dk"></span>Анализ нарушений</div>
-        <div class="plan__feat"><span class="plan__check plan__check--dk"></span>Поддержка по email</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Загрузка расписания (.xlsx)</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Аудит СанПиН (7 проверок)</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Тепловая карта нагрузки</div>
+        <div class="plan__feat plan__feat--off"><span class="plan__dash-icon">–</span>Рекомендации по перестановке</div>
+        <div class="plan__feat plan__feat--off"><span class="plan__dash-icon">–</span>Составитель расписания</div>
+        <div class="plan__feat plan__feat--off"><span class="plan__dash-icon">–</span>Экстренные замены</div>
+        <div class="plan__feat plan__feat--off"><span class="plan__dash-icon">–</span>История и сравнение</div>
       </div>
+      <a href="./login.html?tab=register" class="plan__cta plan__cta--ghost">Начать бесплатно</a>
     </div>
 
-    <div class="plan plan--dark">
-      <div class="plan__top plan__top--dark">
-        <div class="plan__head">
-          <div>
-            <h3 class="plan__name plan__name--lt">Профессиональный</h3>
-            <p class="plan__desc plan__desc--lt">Полный доступ ко всем функциям</p>
-          </div>
-          <span class="plan__badge plan__badge--dark">Лучший выбор</span>
-        </div>
+    <div class="plan plan--dark plan--recommended">
+      <div class="plan__ribbon">Рекомендуется</div>
+      <div class="plan__top">
+        <h3 class="plan__name">Школа</h3>
         <div class="plan__price-row">
-          <span class="plan__amount plan__amount--lt">12 000 ₽</span>
-          <span class="plan__period plan__period--lt">/ год</span>
+          <span class="plan__amount">12 000 <span class="plan__currency">₽</span></span>
         </div>
-        <p class="plan__monthly">1 000 ₽/мес · ≈ 33 ₽ в день</p>
-        <a href="./login.html?tab=register" id="trialBtn" class="plan__btn plan__btn--light">
-          Попробовать 14 дней бесплатно
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-        <p class="plan__trial-note">После пробного периода — без автосписания. Оплата только по вашему решению.</p>
+        <p class="plan__period-note">в год · 1 000 ₽/месяц</p>
       </div>
-      <div class="plan__features plan__features--dark">
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Аудит по нормам СанПиН</div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>До 5 школ <span class="plan__feat-diff">(в пробном — 1)</span></div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Генерация расписания <span class="plan__feat-diff">(нет в пробном)</span></div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Экспорт в Excel <span class="plan__feat-diff">(нет в пробном)</span></div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Приоритетная поддержка</div>
+      <div class="plan__features">
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Всё из бесплатного тарифа</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Все 23 проверки СанПиН</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Рекомендации по перестановке</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Составитель расписания</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Экстренные замены за 5 сек</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>История загрузок и сравнение</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Приоритетная поддержка</div>
       </div>
+      <a href="./login.html?tab=register" id="trialBtn" class="plan__cta plan__cta--primary">Купить подписку</a>
     </div>
 
   </div>
+
+  <!-- FAQ -->
+  <div class="faq">
+    <h2 class="faq__title">Вопросы и ответы</h2>
+    <div class="faq__list">
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Нужен ли интернет во время аудита?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Да, аудит работает в браузере, но файл обрабатывается локально — данные не покидают ваш компьютер. Интернет нужен только для загрузки страницы.</p></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Какой формат файла поддерживается?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Файлы .xlsx и .xls — стандартные форматы Excel. Если расписание в другом формате, скачайте наш шаблон и заполните его.</p></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Можно ли попробовать перед покупкой?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Да, бесплатный тариф доступен навсегда. Вы можете загружать расписание и получать базовый аудит без регистрации и оплаты.</p></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Как оформить оплату?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Нажмите «Купить подписку» — мы выставим счёт на вашу организацию. Оплата по безналичному расчёту, без автосписания.</p></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Что произойдёт по окончании подписки?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Вы перейдёте на бесплатный тариф. Все загруженные расписания сохранятся, но генерация и расширенные проверки станут недоступны.</p></div>
+      </div>
+    </div>
+  </div>
+
 </div></section>
 
 <!-- ═══ WIZARD: shared component ═══ -->
