@@ -275,14 +275,67 @@ function placeAllClasses(allEv, classIds, numD, tConstraints, shifts) {
 
   const clsDayCnt  = {};
   const clsHardCnt = {};  // hard-subject count per (cls, day) for E-03 balance
+  const clsDaySubj = {};  // per (cls, d) → array of subjects at each slot (для E-03/E-05 scoring)
+  const clsDayDiff = {};  // per (cls, d) → суммарная diff дня (для D-02 cross-class)
   for (const cls of classIds) {
     clsDayCnt[cls]  = Array(numD).fill(0);
     clsHardCnt[cls] = Array(numD).fill(0);
+    clsDaySubj[cls] = Array.from({ length: numD }, () => []);
+    clsDayDiff[cls] = Array(numD).fill(0);
   }
 
   const tidDs = new Set();
   const ridDs = new Set();
   const asgn  = new Array(N);
+
+  // ─── Soft scoring (отключено в основной BT, оставлено как утилита) ─
+  // softScore + sortCandsBySoft реализуют value ordering heuristic:
+  // ранжирование кандидатов по сумме soft-предпочтений. Эксперимент
+  // 2026-04-25 показал что в нашем CSP это даёт *худший* результат
+  // (1286 btCalls вместо 105, penalty 407 вместо 190), потому что
+  // BT упирается в hard constraints на «оптимальных» вариантах и
+  // много откатывается. Оставлено для возможной будущей доработки
+  // с MIN-CONFLICTS или другими стратегиями.
+  function softScore(d, s, ev) {
+    const { cls, subj, grade } = ev;
+    const diff = getDifficulty(subj, grade);
+    const threshold = getHardThreshold(grade);
+    const isHard = diff >= threshold;
+    const isLight = LIGHT_SUBJ_CODES.has(subj);
+    const slotIdx = s - 1;
+    let score = 0;
+
+    // E-01: сложный предмет — слот 2-4 (idx 1..3)
+    if (isHard) {
+      if (slotIdx === 0)        score += 8;
+      else if (slotIdx > 3)     score += 4;
+    }
+
+    // E-04: лёгкий профильный — не 1-м уроком
+    if (isLight && slotIdx === 0) score += 6;
+
+    // E-03 / E-05: смотрим соседний (предыдущий) слот в этом дне
+    if (slotIdx > 0) {
+      const prevSubj = (clsDaySubj[cls][d] || [])[slotIdx - 1];
+      if (prevSubj) {
+        if (prevSubj === subj) score += 8;                        // E-05: одинаковые подряд
+        const prevDiff = getDifficulty(prevSubj, grade);
+        if (isHard && prevDiff >= threshold) score += 5;          // E-03: 2 hard подряд
+      }
+    }
+
+    return score;
+  }
+
+  function sortCandsBySoft(cands, ev) {
+    if (cands.length < 2) return cands;
+    // Стабильная сортировка: сохраняем оригинальный порядок (dayOrder)
+    // как tiebreaker. Сортируем только при наличии явной soft-разницы.
+    cands.forEach((c, i) => { c.__idx = i; c.__score = softScore(c.d, c.s, ev); });
+    cands.sort((a, b) => (a.__score - b.__score) || (a.__idx - b.__idx));
+    cands.forEach(c => { delete c.__idx; delete c.__score; });
+    return cands;
+  }
 
   function candidates(ev) {
     const { cls, subj, tid, rid, grade, shift } = ev;
@@ -339,6 +392,8 @@ function placeAllClasses(allEv, classIds, numD, tConstraints, shifts) {
       if (rid && ridDs.has(`${rid}:${d}:${s}:${sh}`))             continue;
       cands.push({ d, s });
     }
+    // Сортируем кандидатов по soft-score: лучший вариант BT попробует первым
+    if (cands.length > 1) sortCandsBySoft(cands, ev);
     // Fallback 1: relax hard-balance if stuck (keep 1-per-subj and teacher/room constraints)
     if (cands.length === 0) {
       for (const d of dayOrder) {
@@ -346,41 +401,44 @@ function placeAllClasses(allEv, classIds, numD, tConstraints, shifts) {
         if (clsDayCnt[cls][d] >= pLim)                            continue;
         if (!c03ok(cls, d, clsDayCnt, clsTotal, numD, pLim))       continue;
         if (subjPerDay[d] >= 1)                                    continue;  // 1-per-subj kept
-        if (!teacherAvailable(tid, d))                              continue;  // T-02 кеpt (hard)
+        if (!teacherAvailable(tid, d))                              continue;  // T-02 kept (hard)
         const s = clsDayCnt[cls][d] + 1;
         if (s > MAX_SLOTS)                                         continue;
-        if (tid && tidDs.has(`${tid}:${d}:${s}`))                 continue;
-        if (rid && ridDs.has(`${rid}:${d}:${s}`))                 continue;
+        if (tid && tidDs.has(`${tid}:${d}:${s}:${sh}`))           continue;
+        if (rid && ridDs.has(`${rid}:${d}:${s}:${sh}`))           continue;
         cands.push({ d, s });
       }
+      // sortCandsBySoft отключён: эксперимент показал что value-ordering
+      // в этом CSP ухудшает результат — оптимальные по soft варианты часто
+      // конфликтуют с hard constraints, что приводит к множественным backtrack'ам.
+      // Глобальная оптимизация делается в swap-фазе оптимизатора.
     }
-    // Fallback 2: relax C-03 hard-balance AND 1-per-subj, but keep teacher/room (hard constraints)
-    // This only fires when it is mathematically impossible to place the lesson otherwise
-    // (e.g. weekly hours > weekDays * max-per-day). A warning is emitted by the caller.
+    // Fallback 2: relax C-03, 1-per-subj и T-02. Last-resort placement.
     if (cands.length === 0) {
       for (const d of dayOrder) {
         const pLim = pdLimForDay(d);
         if (clsDayCnt[cls][d] >= pLim)                            continue;
-        // В Fallback 2 T-02 РЕЛАКСИРУЕТСЯ — иначе при плотной
-        // загрузке учителя (все уроки класса у одного педагога)
-        // backtracking упирается в комбинацию X-01 + T-02 и не
-        // может собрать расписание. Нарушения T-02 будут
-        // обнаружены в post-check и попадут в warnings.
         const s = clsDayCnt[cls][d] + 1;
         if (s > MAX_SLOTS)                                         continue;
-        if (tid && tidDs.has(`${tid}:${d}:${s}`))                 continue;
-        if (rid && ridDs.has(`${rid}:${d}:${s}`))                 continue;
+        if (tid && tidDs.has(`${tid}:${d}:${s}:${sh}`))           continue;
+        if (rid && ridDs.has(`${rid}:${d}:${s}:${sh}`))           continue;
         cands.push({ d, s });
       }
+      // sortCandsBySoft отключён: эксперимент показал что value-ordering
+      // в этом CSP ухудшает результат — оптимальные по soft варианты часто
+      // конфликтуют с hard constraints, что приводит к множественным backtrack'ам.
+      // Глобальная оптимизация делается в swap-фазе оптимизатора.
     }
     return cands;
   }
 
   function place(i, d, s) {
-    const { cls, tid, rid, diff, grade, shift } = allEv[i];
+    const { cls, subj, tid, rid, diff, grade, shift } = allEv[i];
     const sh = shift || classShift(cls);
     clsDayCnt[cls][d]++;
     if (diff >= getHardThreshold(grade)) clsHardCnt[cls][d]++;
+    clsDaySubj[cls][d][s - 1] = subj;
+    clsDayDiff[cls][d] += diff;
     if (tid) { tidDs.add(`${tid}:${d}:${s}:${sh}`); tDayInc(tid, d); }
     if (rid) ridDs.add(`${rid}:${d}:${s}:${sh}`);
     asgn[i] = { d, s };
@@ -392,6 +450,8 @@ function placeAllClasses(allEv, classIds, numD, tConstraints, shifts) {
     const sh = shift || classShift(cls);
     clsDayCnt[cls][d]--;
     if (diff >= getHardThreshold(grade)) clsHardCnt[cls][d]--;
+    clsDaySubj[cls][d][s - 1] = undefined;
+    clsDayDiff[cls][d] -= diff;
     if (tid) { tidDs.delete(`${tid}:${d}:${s}:${sh}`); tDayDec(tid, d); }
     if (rid) ridDs.delete(`${rid}:${d}:${s}:${sh}`);
     asgn[i] = undefined;
@@ -770,6 +830,40 @@ function optimize(schedules, allEv, classIds, numD) {
  * }}
  */
 function runGenerator(data) {
+  // Multi-start (Эпик 1.1.3): если attempts > 1, пробуем N разных seed
+  // и возвращаем лучший по softPenalty. Эксперимент показал, что разные
+  // seed могут давать радикально разные результаты — некоторые score 0,
+  // другие score 100.
+  const attempts = Math.max(1, Math.min(20, Number(data.attempts) || 1));
+  if (attempts > 1) {
+    const baseSeed = Number(data.seed) || 0;
+    let best = null;
+    const tried = [];
+    for (let i = 0; i < attempts; i++) {
+      const trySeed = baseSeed + i + 1;
+      const result = runOnce({ ...data, seed: trySeed, attempts: 1 });
+      tried.push({ seed: trySeed, ok: result.ok, penalty: result.summary && result.summary.softPenalty });
+      if (!result.ok) continue;
+      if (!best || result.summary.softPenalty < best.summary.softPenalty) {
+        best = result;
+        best.summary.bestSeed = trySeed;
+      }
+    }
+    if (!best) {
+      // Все попытки провалились — возвращаем последнюю как есть
+      const fb = runOnce({ ...data, seed: baseSeed, attempts: 1 });
+      fb.summary.attempts = attempts;
+      fb.summary.attemptsTried = tried;
+      return fb;
+    }
+    best.summary.attempts = attempts;
+    best.summary.attemptsTried = tried;
+    return best;
+  }
+  return runOnce(data);
+}
+
+function runOnce(data) {
   const classes    = Array.isArray(data.classes)    ? data.classes    : [];
   const curriculum = Array.isArray(data.curriculum) ? data.curriculum : [];
   const weekDays   = data.weekDays === 6 ? 6 : 5;
