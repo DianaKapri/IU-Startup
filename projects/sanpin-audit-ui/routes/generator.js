@@ -38,6 +38,20 @@ const upload = multer({
   },
 });
 
+// Строит понятное сообщение для ok:false — используется и фронтом и логами.
+function buildGenErrorMessage(result, warnings) {
+  const sum = result && result.summary ? result.summary : {};
+  const placed = Number(sum.placedLessons) || 0;
+  const unplaced = Number(sum.unplacedLessons) || 0;
+  const total = placed + unplaced;
+  const head = total
+    ? `Удалось разместить ${placed} из ${total} уроков.`
+    : `Не удалось построить расписание.`;
+  const w = (warnings || []).filter(Boolean).slice(0, 3).join(' ');
+  const tail = w ? ' ' + w : '';
+  return (head + tail).slice(0, 400);
+}
+
 // ── POST /api/generate ──────────────────────────────────────
 // Paid-gated: только plan='paid' с неистёкшим plan_expires_at.
 // mode: 'fast' (по умолчанию, наш JS-генератор) | 'optimal' (CP-SAT, до 30 мин)
@@ -111,6 +125,10 @@ router.post('/generate', requirePlan(['paid']), async (req, res) => {
     const attempts = Math.max(1, Math.min(20, Number(req.body.attempts) || 1));
     const result = runGenerator({ classes, curriculum, weekDays: days, seed, attempts });
     const audit  = calculateScore(result.schedule, { weekDays: days });
+    const errBody = result.ok ? undefined : {
+      code: 'GEN_INCOMPLETE',
+      message: buildGenErrorMessage(result, result.warnings || []),
+    };
 
     return res.status(result.ok ? 200 : 207).json({
       ok:       result.ok,
@@ -124,6 +142,7 @@ router.post('/generate', requirePlan(['paid']), async (req, res) => {
       },
       summary:  { ...result.summary, mode: 'fast' },
       warnings: result.warnings,
+      ...(errBody ? { error: errBody } : {}),
     });
   } catch (err) {
     console.error('[POST /api/generate]', err);
@@ -229,6 +248,11 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), async (r
       attempts,
     });
     const audit = calculateScore(result.schedule, { weekDays });
+    const allWarnings = [].concat(parsed.warnings || [], result.warnings || []);
+    const errBody = result.ok ? undefined : {
+      code: 'GEN_INCOMPLETE',
+      message: buildGenErrorMessage(result, allWarnings),
+    };
 
     return res.status(result.ok ? 200 : 207).json({
       ok:       result.ok,
@@ -241,8 +265,9 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), async (r
         violations: audit.violations,
       },
       summary: { ...result.summary, mode: 'fast' },
-      warnings: [].concat(parsed.warnings || [], result.warnings || []),
+      warnings: allWarnings,
       meta,
+      ...(errBody ? { error: errBody } : {}),
     });
   } catch (err) {
     console.error('[POST /api/generate/from-xlsx]', err);

@@ -900,6 +900,10 @@ function spExtractError(resp,fallback){
   }
   if(err&&err.message)return err.message;
   if(resp.code)return resp.code;
+  // Фолбэк: первые предупреждения из warnings (если бэкенд их вернул)
+  if(Array.isArray(resp.warnings)&&resp.warnings.length){
+    return resp.warnings.slice(0,2).filter(Boolean).join(' ');
+  }
   return fallback||'Неизвестная ошибка';
 }
 
