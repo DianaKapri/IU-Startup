@@ -292,18 +292,40 @@ function renderSavedWizardRuns() {
             + '</div>';
   }
 
+  // Считаем score для каждого schedule, чтобы показать бейдж
+  function computeScoreBadge(item) {
+    if (item.type !== 'schedule' || !item.payload || !item.payload.sch || !item.payload.cg) return '';
+    if (typeof doAudit !== 'function') return '';
+    try {
+      var au = doAudit(item.payload.sch, item.payload.cg);
+      if (au.score === undefined) return '';
+      var grade;
+      if (au.score >= 80) grade = 'A';
+      else if (au.score >= 65) grade = 'B';
+      else if (au.score >= 50) grade = 'C';
+      else if (au.score >= 40) grade = 'D';
+      else grade = 'F';
+      return '<span class="profile-wizard-history__score profile-wizard-history__score--' + grade + '">'
+           + grade
+           + '<span class="profile-wizard-history__score-num">' + au.score + '</span>'
+           + '</span>';
+    } catch (_) { return ''; }
+  }
+
   host.innerHTML = barHtml + items.map(function (item) {
     var dt = new Date(item.createdAt).toLocaleString('ru-RU');
     var canCompare = item.type === 'schedule';
     var checked = _compareSelection.indexOf(item.id) !== -1 ? ' checked' : '';
+    var badge = computeScoreBadge(item);
     return '<div class="profile-wizard-history__item" data-run-id="' + item.id + '">'
       + '<div style="display:flex;align-items:center;gap:10px;flex:1">'
       + (canCompare ? '<input type="checkbox" class="profile-wizard-history__compare-chk" data-run-id="' + item.id + '"' + checked + '/>' : '<span style="width:16px"></span>')
-      + '<div>'
+      + '<div style="flex:1">'
       +   '<span class="profile-wizard-history__name" contenteditable="true" spellcheck="false"'
       +     ' data-run-id="' + item.id + '" title="Нажмите, чтобы переименовать">'
       +     escH(item.title)
       +   '</span>'
+      +   badge
       +   '<span class="profile-wizard-history__date">' + dt + '</span>'
       + '</div>'
       + '</div>'
