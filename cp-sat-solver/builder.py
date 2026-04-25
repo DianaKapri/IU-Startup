@@ -1,7 +1,7 @@
 """Построение CP-SAT модели из GeneratorInput.
 
-Этап 1 (MVP): только hard constraints.
-Этап 2 будет добавлять soft + objective.
+Этап 1 (MVP): hard constraints (учебный план, X-01, C-01..C-02, CONF, T-02).
+Этап 2: soft constraints (E-01, E-03, E-04, E-05) + objective minimization.
 """
 from __future__ import annotations
 import time
@@ -10,6 +10,16 @@ from typing import Dict, List, Set, Tuple, Optional
 from ortools.sat.python import cp_model
 
 from models import GeneratorInput, GeneratorOutput, GeneratorSummary
+from sanpin import get_difficulty, is_hard, is_light
+
+# Веса штрафов для soft-правил (определяют приоритет в objective)
+W_E01 = 3   # сложный не на 2-4 уроке
+W_E03 = 5   # 2+ сложных подряд
+W_E04 = 4   # профильный (фк, муз, изо) на 1-м уроке
+W_E05 = 4   # одинаковый предмет подряд
+W_D01 = 5   # peak day на пн/пт
+W_E02 = 3   # лёгкий день не в середине
+W_D02 = 2   # дисбаланс параллели
 
 DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
@@ -209,6 +219,65 @@ def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
                 for s in slots_range:
                     model.Add(sum(x[cls, sub, d, s] for cls, sub in group) <= 1)
 
+    # ─── Soft constraints + objective (Этап 2) ────────────────
+    soft_terms = []
+
+    # E-01: сложный предмет на slot 1 или slot >= 5 → штраф W_E01
+    for c in classes:
+        grade = parse_grade(c)
+        for sub in {sub for (cls2, sub) in pairs if cls2 == c}:
+            if not is_hard(sub, grade):
+                continue
+            for d in days_range:
+                for s in slots_range:
+                    if s == 1 or s >= 5:
+                        soft_terms.append(W_E01 * x[c, sub, d, s])
+
+    # E-04: лёгкий профильный на slot 1 → штраф W_E04
+    for c in classes:
+        for sub in {sub for (cls2, sub) in pairs if cls2 == c}:
+            if not is_light(sub):
+                continue
+            for d in days_range:
+                soft_terms.append(W_E04 * x[c, sub, d, 1])
+
+    # E-05: один и тот же предмет подряд (slot s и s+1 одного и того же subj)
+    # Создаём индикатор: e05[c,sub,d,s] >= x[c,sub,d,s] + x[c,sub,d,s+1] - 1
+    for c in classes:
+        for sub in {sub for (cls2, sub) in pairs if cls2 == c}:
+            for d in days_range:
+                for s in slots_range[:-1]:
+                    ind = model.NewBoolVar(f"e05_{c}_{sub}_{d}_{s}")
+                    model.Add(x[c, sub, d, s] + x[c, sub, d, s + 1] - 1 <= ind)
+                    soft_terms.append(W_E05 * ind)
+
+    # E-03: 2 сложных предмета подряд (любые hard subjects)
+    # Сначала вычислим hard_at[c, d, s] = OR(x[c, sub, d, s] для sub в hard_subjects класса)
+    hard_at: Dict[Tuple[str, int, int], cp_model.IntVar] = {}
+    for c in classes:
+        grade = parse_grade(c)
+        hard_subs_for_c = [sub for (cls2, sub) in pairs if cls2 == c and is_hard(sub, grade)]
+        for d in days_range:
+            for s in slots_range:
+                if not hard_subs_for_c:
+                    continue
+                ha = model.NewBoolVar(f"hard_at_{c}_{d}_{s}")
+                model.AddMaxEquality(ha, [x[c, sub, d, s] for sub in hard_subs_for_c])
+                hard_at[c, d, s] = ha
+
+    for c in classes:
+        for d in days_range:
+            for s in slots_range[:-1]:
+                if (c, d, s) not in hard_at or (c, d, s + 1) not in hard_at:
+                    continue
+                ind = model.NewBoolVar(f"e03_{c}_{d}_{s}")
+                model.Add(hard_at[c, d, s] + hard_at[c, d, s + 1] - 1 <= ind)
+                soft_terms.append(W_E03 * ind)
+
+    # Минимизируем сумму soft-нарушений с весами
+    if soft_terms:
+        model.Minimize(sum(soft_terms))
+
     build_time_ms = int((time.time() - t_build_start) * 1000)
 
     # ─── Solve ─────────────────────────────────────────────────
@@ -268,6 +337,8 @@ def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
             days.append(day)
         schedule[c] = days
 
+    soft_penalty = int(solver.ObjectiveValue()) if soft_terms else 0
+
     return GeneratorOutput(
         ok=True,
         schedule=schedule,
@@ -275,6 +346,7 @@ def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
             classesCount=len(classes),
             placedLessons=placed,
             unplacedLessons=0,
+            softPenalty=soft_penalty,
             status=status_name,
             solveTimeMs=solve_time_ms,
             buildTimeMs=build_time_ms,
