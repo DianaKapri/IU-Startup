@@ -200,16 +200,81 @@ def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
         for d in days_range:
             model.Add(sum(x[cls, sub, d, s] for cls, sub in lessons for s in slots_range) <= constraint.maxLessonsPerDay)
 
+    # ─── Pre-solve diagnostics ──────────────────────────────────
+    diagnostics = []
+
+    # Check: total class hours vs weekly max
+    for c in classes:
+        grade = parse_grade(c)
+        wk_max = get_max_weekly_hours(grade, week_days)
+        total = sum(by_class_subj_hours.get((c, sub), 0) for (cls2, sub) in pairs if cls2 == c)
+        if total > wk_max:
+            diagnostics.append(f"C-02: {c} — {total} ч/нед, макс. {wk_max} для {grade} кл.")
+
+    # Check: total class hours vs daily capacity
+    for c in classes:
+        grade = parse_grade(c)
+        pd_lim = get_max_lessons_per_day(grade)
+        total = sum(by_class_subj_hours.get((c, sub), 0) for (cls2, sub) in pairs if cls2 == c)
+        if total > pd_lim * week_days:
+            diagnostics.append(f"C-01: {c} — {total} ч/нед не помещаются в {week_days} дн × {pd_lim} ур/дн = {pd_lim * week_days}")
+
+    # Check: teacher hours vs available slots (accounting for method days)
+    for tid, lessons in teacher_lessons.items():
+        total = sum(by_class_subj_hours.get((c, sub), 0) for c, sub in lessons)
+        forbidden = 0
+        if tid in inp.constraints:
+            con = inp.constraints[tid]
+            if con.methodDay and con.methodDay in DAY_NAMES[:week_days]:
+                forbidden += 1
+            for dn in con.unavailableDays:
+                if dn in DAY_NAMES[:week_days]:
+                    forbidden += 1
+        avail_days = week_days - forbidden
+        max_per_day = 7
+        if tid in inp.constraints and inp.constraints[tid].maxLessonsPerDay:
+            max_per_day = inp.constraints[tid].maxLessonsPerDay
+        capacity = avail_days * max_per_day
+        teacher_name = ""
+        for entry in inp.curriculum:
+            if entry.teacherId == tid:
+                teacher_name = entry.teacherName
+                break
+        if total > capacity:
+            diagnostics.append(f"T-02: {teacher_name} — {total} ч/нед, доступно {avail_days} дн × {max_per_day} ур = {capacity}")
+
+    # Check: room capacity
+    room_hours: Dict[str, int] = defaultdict(int)
+    for entry in inp.curriculum:
+        if entry.roomId:
+            room_hours[entry.roomId] += entry.weeklyHours
+    max_slots_per_room = week_days * max_slots
+    for rid, hrs in room_hours.items():
+        if hrs > max_slots_per_room:
+            diagnostics.append(f"R-00: каб. {rid} — {hrs} ч/нед, доступно {max_slots_per_room} слотов")
+
+    if diagnostics:
+        return GeneratorOutput(
+            ok=False,
+            summary=GeneratorSummary(
+                classesCount=len(classes),
+                placedLessons=0,
+                status="infeasible_pre",
+                solveTimeMs=0,
+                buildTimeMs=build_time_ms,
+                variablesCount=0,
+            ),
+            error="Невозможно составить расписание:\n" + "\n".join(diagnostics),
+        )
+
     # H9. CONF комнат: одна комната не в двух классах одновременно
+    # Made SOFT — high penalty instead of hard constraint
+    W_ROOM = 50
     room_lessons = defaultdict(list)
     for entry in inp.curriculum:
         if entry.roomId:
             room_lessons[entry.roomId].append((entry.classId, entry.subject))
     for rid, lessons in room_lessons.items():
-        # Учитываем смену: если оба урока в разных сменах — конфликта нет
-        if len(lessons) <= 1:
-            continue
-        # Группируем по shift — внутри одной смены нельзя оба
         by_shift = defaultdict(list)
         for cls, sub in lessons:
             sh = inp.shifts.get(cls, 1)
@@ -219,7 +284,11 @@ def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
                 continue
             for d in days_range:
                 for s in slots_range:
-                    model.Add(sum(x[cls, sub, d, s] for cls, sub in group) <= 1)
+                    vars_in_slot = [x[cls, sub, d, s] for cls, sub in group if (cls, sub) in x]
+                    if len(vars_in_slot) > 1:
+                        overflow = model.NewIntVar(0, len(vars_in_slot), f"room_{rid}_{d}_{s}")
+                        model.Add(overflow >= sum(vars_in_slot) - 1)
+                        soft_terms.append(W_ROOM * overflow)
 
     # ─── Soft constraints + objective (Этап 2) ────────────────
     soft_terms = []
@@ -367,6 +436,27 @@ def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
     }.get(status, "unknown")
 
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        # Build diagnostic hints
+        hints = []
+        # Check teacher conflicts
+        for tid, lessons in teacher_lessons.items():
+            total = sum(by_class_subj_hours.get((c, sub), 0) for c, sub in lessons)
+            teacher_name = ""
+            for entry in inp.curriculum:
+                if entry.teacherId == tid:
+                    teacher_name = entry.teacherName
+                    break
+            if total > 20:
+                hints.append(f"  • {teacher_name}: {total} ч/нед — попробуйте разделить нагрузку")
+        # Check if too many classes share slots
+        if len(classes) > 10:
+            hints.append(f"  • {len(classes)} классов — попробуйте генерировать по сменам")
+
+        hint_text = ""
+        if hints:
+            hint_text = "\n\nВозможные причины:\n" + "\n".join(hints[:5])
+            hint_text += "\n\nРекомендация: уменьшите количество классов или добавьте учителей."
+
         return GeneratorOutput(
             ok=False,
             summary=GeneratorSummary(
@@ -377,7 +467,7 @@ def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
                 buildTimeMs=build_time_ms,
                 variablesCount=len(x) + len(y),
             ),
-            error=f"Solver status: {status_name}. Возможно, ограничения противоречивы.",
+            error=f"Не удалось составить расписание: ограничения противоречивы.{hint_text}",
         )
 
     # ─── Извлекаем расписание ─────────────────────────────────
