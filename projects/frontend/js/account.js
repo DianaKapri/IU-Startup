@@ -652,15 +652,21 @@ spRequireAuth(function () {
       builderGenerateBtn.disabled = true;
       builderGenerateBtn.textContent = 'Генерируется…';
 
-      fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classes: classes, curriculum: curriculum, weekDays: days === 6 ? 6 : 5 }),
+      var authPromise = (typeof spAuthHeaders === 'function') ? spAuthHeaders() : Promise.resolve({});
+      authPromise.then(function (authH) {
+        var headers = Object.assign({ 'Content-Type': 'application/json' }, authH || {});
+        return fetch('/api/generate', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ classes: classes, curriculum: curriculum, weekDays: days === 6 ? 6 : 5 }),
+        });
       })
         .then(function (r) { return r.json(); })
         .then(function (resp) {
           if (!resp || !resp.ok) {
-            var msg = (resp && resp.error && resp.error.message) || 'Не удалось сгенерировать расписание';
+            var msg = (typeof spExtractError === 'function')
+              ? spExtractError(resp, 'Не удалось сгенерировать расписание')
+              : ((resp && resp.error && resp.error.message) || 'Не удалось сгенерировать расписание');
             throw new Error(msg);
           }
           var sch = {};
@@ -710,18 +716,17 @@ spRequireAuth(function () {
       var days   = daysEl ? Number(daysEl.value) : 5;
       fd.append('weekDays', days === 6 ? '6' : '5');
 
-      fetch('/api/generate/from-xlsx', { method: 'POST', body: fd })
+      var authPromiseXlsx = (typeof spAuthHeaders === 'function') ? spAuthHeaders() : Promise.resolve({});
+      authPromiseXlsx.then(function (authH) {
+        return fetch('/api/generate/from-xlsx', { method: 'POST', headers: authH || {}, body: fd });
+      })
         .then(function (r) { return r.json(); })
         .then(function (resp) {
           if (!resp || !resp.ok) {
-            var err = resp && resp.error;
-            if (err && Array.isArray(err.details)) {
-              var msgs = err.details.slice(0, 5).map(function (d) {
-                return (d.sheet ? 'Лист «' + d.sheet + '»' + (d.row ? ', стр. ' + d.row : '') + ': ' : '') + d.message;
-              });
-              throw new Error(msgs.join(' | '));
-            }
-            throw new Error((err && err.message) || 'Не удалось обработать шаблон');
+            var msg = (typeof spExtractError === 'function')
+              ? spExtractError(resp, 'Не удалось обработать шаблон')
+              : 'Не удалось обработать шаблон';
+            throw new Error(msg);
           }
           var sch = {};
           Object.keys(resp.schedule).forEach(function (cls) {
