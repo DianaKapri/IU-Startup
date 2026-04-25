@@ -869,7 +869,8 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .price--light { border-top: 1px solid rgba(0,0,0,.06); }
 
 /* ═══ Contacts footer-style ═══ */
-.ct-footer { background: #0a0a0a; padding: 64px 24px 48px; border-top: 1px solid rgba(255,255,255,.06); }
+.ct-footer { background: #0a0a0a; padding: 0 24px 48px; border-top: 1px solid rgba(255,255,255,.06); }
+.ct-footer__cta { text-align: center; padding: 80px 0 64px; border-bottom: 1px solid rgba(255,255,255,.06); margin-bottom: 48px; }
 .ct-footer__inner { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 40px; }
 .ct-footer__col--brand { display: flex; flex-direction: column; gap: 16px; }
 .ct-footer__logo { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 700; color: #f5f5f7; }
@@ -881,10 +882,8 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 @media(max-width:720px) { .ct-footer__inner { grid-template-columns: 1fr 1fr; gap: 32px; } }
 @media(max-width:480px) { .ct-footer__inner { grid-template-columns: 1fr; gap: 28px; } }
 
-/* ═══ CTA Join ═══ */
-.cta-join { background: #000; padding: 140px 24px; display: flex; align-items: center; justify-content: center; }
-.cta-join__inner { width: 100%; text-align: center; }
-.cta-join__title { font-size: clamp(1.6rem, 3.5vw, 2.8rem); font-weight: 700; letter-spacing: -.04em; color: #f5f5f7; white-space: nowrap; display: inline-block; }
+/* ═══ CTA text (inside footer) ═══ */
+.cta-join__title { font-size: clamp(1.6rem, 3.5vw, 2.8rem); font-weight: 700; letter-spacing: -.04em; color: #f5f5f7; white-space: nowrap; }
 @media(max-width:600px) { .cta-join__title { white-space: normal; } }
 .cta-join__highlight { color: #f5f5f7; animation: highlightPulse 3s ease-in-out infinite; }
 @keyframes highlightPulse { 0%,100% { color: #f5f5f7; } 50% { color: #ff5e3a; } }

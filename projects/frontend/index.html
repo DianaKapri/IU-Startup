@@ -601,30 +601,11 @@
 </div></section>
 
 <!-- ═══ CTA: motivation ═══ -->
-<section class="cta-join">
-  <div class="cta-join__inner">
+<!-- ═══ CTA + CONTACTS ═══ -->
+<section class="ct-footer" id="contacts">
+  <div class="ct-footer__cta">
     <h2 class="cta-join__title">Расписание быстро и без ошибок с <span class="cta-join__highlight">ШколаПлан.</span></h2>
   </div>
-</section>
-
-<!-- Payment Modal (for authenticated users) -->
-<div class="pay-overlay" id="indexPayOverlay"></div>
-<div class="pay-modal" id="indexPayModal">
-  <div class="pay-modal__header">
-    <h2 class="pay-modal__title">Оформить подписку</h2>
-    <button class="pay-modal__close" id="indexPayClose">✕</button>
-  </div>
-  <p class="pay-modal__plan">Тариф «Школа» — 12 000 ₽/год</p>
-  <div class="field"><label class="field__label" for="indexPayOrg">Название организации</label><input class="field__input" id="indexPayOrg" type="text" placeholder="МБОУ СОШ №42"/></div>
-  <div class="field"><label class="field__label" for="indexPayInn">ИНН</label><input class="field__input" id="indexPayInn" type="text" placeholder="1234567890"/></div>
-  <div class="field"><label class="field__label" for="indexPayEmail">Email для счёта</label><input class="field__input" id="indexPayEmail" type="email" placeholder="buh@school.ru"/></div>
-  <p class="pay-modal__err" id="indexPayErr"></p>
-  <p class="pay-modal__ok" id="indexPayOk"></p>
-  <button class="btn btn--primary btn--full" id="indexPaySubmit" type="button">Запросить счёт</button>
-</div>
-
-<!-- ═══ CONTACTS ═══ -->
-<section class="ct-footer" id="contacts">
   <div class="ct-footer__inner">
     <div class="ct-footer__col ct-footer__col--brand">
       <div class="ct-footer__logo"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</div>
@@ -648,6 +629,8 @@
     </div>
   </div>
 </section>
+
+<!-- Payment Modal (for authenticated users) -->
 
 <footer class="footer" style="display:none"><div class="footer__inner">
   <span class="footer__logo">ШколаПлан</span>
