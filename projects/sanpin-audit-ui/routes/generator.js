@@ -39,7 +39,8 @@ const upload = multer({
 });
 
 // Строит понятное сообщение для ok:false — используется и фронтом и логами.
-// warnings может быть смешанным: строки (генератор) + {sheet,row,message} (парсер).
+// warnings может быть смешанным: строки (генератор, реальная причина) +
+// {sheet,row,message} (парсер, обычно info). Сначала показываем строки.
 function buildGenErrorMessage(result, warnings) {
   const sum = result && result.summary ? result.summary : {};
   const placed = Number(sum.placedLessons) || 0;
@@ -48,20 +49,22 @@ function buildGenErrorMessage(result, warnings) {
   const head = total
     ? `Удалось разместить ${placed} из ${total} уроков.`
     : `Не удалось построить расписание.`;
-  const parts = (warnings || [])
-    .filter(Boolean)
-    .map((w) => {
-      if (typeof w === 'string') return w;
-      if (w && typeof w === 'object' && w.message) {
-        const where = w.sheet ? `[${w.sheet}${w.row ? ', стр. ' + w.row : ''}] ` : '';
-        return where + w.message;
-      }
-      return '';
-    })
-    .filter(Boolean)
-    .slice(0, 3);
+
+  // Жёсткие причины (от генератора) — строки. Парсерные (объекты) — info, в конец.
+  const hardReasons = [];
+  const parserNotes = [];
+  for (const w of warnings || []) {
+    if (!w) continue;
+    if (typeof w === 'string') {
+      hardReasons.push(w);
+    } else if (w.message) {
+      const where = w.sheet ? `[${w.sheet}${w.row ? ', стр. ' + w.row : ''}] ` : '';
+      parserNotes.push(where + w.message);
+    }
+  }
+  const parts = hardReasons.slice(0, 3).concat(parserNotes.slice(0, hardReasons.length ? 0 : 2));
   const tail = parts.length ? ' ' + parts.join(' | ') : '';
-  return (head + tail).slice(0, 600);
+  return (head + tail).slice(0, 800);
 }
 
 // ── POST /api/generate ──────────────────────────────────────
