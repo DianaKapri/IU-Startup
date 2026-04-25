@@ -53,6 +53,14 @@
       <input type="file" id="wizXlsxInput" accept=".xlsx,.xls" style="display:none" onchange="wizXlsxUpload(this.files[0])"/>
       <button type="button" class="wiz-btn wiz-btn--primary" onclick="document.getElementById('wizXlsxInput').click()">📤 Загрузить заполненный</button>
     </div>
+    <div class="wiz-field" style="margin-top:12px">
+      <label class="wiz-label">РЕЖИМ ГЕНЕРАЦИИ</label>
+      <div class="wiz-toggle" id="wizModeToggle">
+        <span class="wiz-toggle__opt wiz-toggle__opt--on" data-val="fast">⚡ Быстро</span>
+        <span class="wiz-toggle__opt" data-val="optimal">🎯 Оптимально</span>
+      </div>
+      <p id="wizModeHint" style="margin:6px 0 0;font-size:12px;color:#86868b">Быстро: до 1 секунды. Оптимально: CP-SAT solver, до 10 минут — глобально лучшее расписание по СанПиН.</p>
+    </div>
     <p class="wiz-xlsx__status" id="wizXlsxStatus" style="display:none"></p>
     <p class="wiz-xlsx__or">— или заполните поэтапно ниже —</p>
   </div>

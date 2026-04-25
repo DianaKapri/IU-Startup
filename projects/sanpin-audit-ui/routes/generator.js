@@ -27,6 +27,7 @@ const runGenerator       = require('../../services/generator/index.js');
 const { calculateScore } = require('../services/audit/scoring.js');
 const requirePlan        = require('../middleware/requirePlan');
 const { parseTemplate }  = require('../services/template-parser.js');
+const { runCpSatSolver, pingCpSat } = require('../services/cp-sat-service.js');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -39,7 +40,8 @@ const upload = multer({
 
 // ── POST /api/generate ──────────────────────────────────────
 // Paid-gated: только plan='paid' с неистёкшим plan_expires_at.
-router.post('/generate', requirePlan(['paid']), (req, res) => {
+// mode: 'fast' (по умолчанию, наш JS-генератор) | 'optimal' (CP-SAT, до 30 мин)
+router.post('/generate', requirePlan(['paid']), async (req, res) => {
   try {
     const { classes, curriculum, weekDays } = req.body;
 
@@ -58,6 +60,54 @@ router.post('/generate', requirePlan(['paid']), (req, res) => {
 
     const days = weekDays === 6 ? 6 : 5;
     const seed = Number(req.body.seed) || 0;
+    const mode = String(req.body.mode || 'fast').toLowerCase();
+
+    if (mode === 'optimal') {
+      const timeLimitSeconds = Math.max(10, Math.min(1800, Number(req.body.timeLimitSeconds) || 600));
+      try {
+        const cp = await runCpSatSolver({
+          classes,
+          curriculum,
+          weekDays: days,
+          constraints: req.body.constraints || {},
+          rooms: req.body.rooms || [],
+          studentCounts: req.body.studentCounts || {},
+          shifts: req.body.shifts || {},
+          seed,
+        }, { timeLimitSeconds });
+
+        if (!cp.ok) {
+          return res.status(207).json({
+            ok: false,
+            schedule: cp.schedule || {},
+            error: { code: 'OPTIMIZER_INFEASIBLE', message: cp.error || 'CP-SAT не нашёл решение в заданное время' },
+            summary: { ...(cp.summary || {}), mode: 'optimal' },
+            warnings: cp.warnings || [],
+          });
+        }
+        const auditCp = calculateScore(cp.schedule, { weekDays: days });
+        return res.status(200).json({
+          ok: true,
+          schedule: cp.schedule,
+          audit: {
+            score:      auditCp.score,
+            grade:      auditCp.grade,
+            hardCount:  auditCp.hardCount,
+            softCount:  auditCp.softCount,
+            violations: auditCp.violations,
+          },
+          summary:  { ...(cp.summary || {}), mode: 'optimal' },
+          warnings: cp.warnings || [],
+        });
+      } catch (err) {
+        console.error('[POST /api/generate optimal]', err.message);
+        return res.status(503).json({
+          ok: false,
+          error: { code: 'OPTIMIZER_UNAVAILABLE', message: 'Сервер оптимизации недоступен: ' + err.message },
+        });
+      }
+    }
+
     const attempts = Math.max(1, Math.min(20, Number(req.body.attempts) || 1));
     const result = runGenerator({ classes, curriculum, weekDays: days, seed, attempts });
     const audit  = calculateScore(result.schedule, { weekDays: days });
@@ -72,7 +122,7 @@ router.post('/generate', requirePlan(['paid']), (req, res) => {
         softCount:  audit.softCount,
         violations: audit.violations,
       },
-      summary:  result.summary,
+      summary:  { ...result.summary, mode: 'fast' },
       warnings: result.warnings,
     });
   } catch (err) {
@@ -86,7 +136,8 @@ router.post('/generate', requirePlan(['paid']), (req, res) => {
 
 // ── POST /api/generate/from-xlsx ─────────────────────────────
 // Paid-gated. multipart/form-data: file = .xlsx template
-router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, res) => {
+// mode: 'fast' (по умолчанию, JS-генератор) | 'optimal' (CP-SAT)
+router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ ok: false, error: { code: 'NO_FILE', message: 'Файл не получен (поле "file" в multipart/form-data).' } });
@@ -104,8 +155,70 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
 
     const weekDays = req.body && req.body.weekDays === '6' ? 6 : 5;
     const seed = Number(req.body && req.body.seed) || 0;
-    const attempts = Math.max(1, Math.min(20, Number(req.body && req.body.attempts) || 1));
+    const mode = String((req.body && req.body.mode) || 'fast').toLowerCase();
 
+    const meta = {
+      classes:       parsed.classes,
+      teachers:      parsed.teachers,
+      teachersCount: parsed.teachers.length,
+      rooms:         parsed.rooms,
+      roomsCount:    parsed.rooms.length,
+      studentCounts: parsed.studentCounts,
+      constraints:   parsed.constraints,
+      shifts:        parsed.shifts,
+      curriculum:    parsed.curriculum,
+    };
+
+    if (mode === 'optimal') {
+      const timeLimitSeconds = Math.max(10, Math.min(1800, Number(req.body && req.body.timeLimitSeconds) || 600));
+      try {
+        const cp = await runCpSatSolver({
+          classes:     parsed.classes,
+          curriculum:  parsed.curriculum,
+          weekDays,
+          constraints: parsed.constraints,
+          rooms:       parsed.rooms,
+          studentCounts: parsed.studentCounts,
+          shifts:      parsed.shifts,
+          seed,
+        }, { timeLimitSeconds });
+
+        if (!cp.ok) {
+          return res.status(207).json({
+            ok: false,
+            schedule: cp.schedule || {},
+            error: { code: 'OPTIMIZER_INFEASIBLE', message: cp.error || 'CP-SAT не нашёл решение в заданное время' },
+            summary: { ...(cp.summary || {}), mode: 'optimal' },
+            warnings: [].concat(parsed.warnings || [], cp.warnings || []),
+            meta,
+          });
+        }
+        const auditCp = calculateScore(cp.schedule, { weekDays });
+        return res.status(200).json({
+          ok: true,
+          schedule: cp.schedule,
+          audit: {
+            score:      auditCp.score,
+            grade:      auditCp.grade,
+            hardCount:  auditCp.hardCount,
+            softCount:  auditCp.softCount,
+            violations: auditCp.violations,
+          },
+          summary:  { ...(cp.summary || {}), mode: 'optimal' },
+          warnings: [].concat(parsed.warnings || [], cp.warnings || []),
+          meta,
+        });
+      } catch (err) {
+        console.error('[POST /api/generate/from-xlsx optimal]', err.message);
+        return res.status(503).json({
+          ok: false,
+          error: { code: 'OPTIMIZER_UNAVAILABLE', message: 'Сервер оптимизации недоступен: ' + err.message },
+          meta,
+        });
+      }
+    }
+
+    const attempts = Math.max(1, Math.min(20, Number(req.body && req.body.attempts) || 1));
     const result = runGenerator({
       classes:     parsed.classes,
       curriculum:  parsed.curriculum,
@@ -127,19 +240,9 @@ router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), (req, re
         softCount:  audit.softCount,
         violations: audit.violations,
       },
-      summary: result.summary,
+      summary: { ...result.summary, mode: 'fast' },
       warnings: [].concat(parsed.warnings || [], result.warnings || []),
-      meta: {
-        classes:       parsed.classes,
-        teachers:      parsed.teachers,
-        teachersCount: parsed.teachers.length,
-        rooms:         parsed.rooms,
-        roomsCount:    parsed.rooms.length,
-        studentCounts: parsed.studentCounts,
-        constraints:   parsed.constraints,
-        shifts:        parsed.shifts,
-        curriculum:    parsed.curriculum,
-      },
+      meta,
     });
   } catch (err) {
     console.error('[POST /api/generate/from-xlsx]', err);
@@ -262,6 +365,17 @@ router.post('/substitute', requirePlan(['paid']), (req, res) => {
   } catch (err) {
     console.error('[POST /api/generate/substitute]', err);
     return res.status(500).json({ ok: false, error: { code: 'SERVER_ERROR', message: err.message || 'Внутренняя ошибка' } });
+  }
+});
+
+// ── GET /api/generate/cp-sat/health ─────────────────────────
+// Проверка, что Python + ortools установлены и solver запускается.
+router.get('/cp-sat/health', async (_req, res) => {
+  const ping = await pingCpSat();
+  if (ping.ok) {
+    res.json({ ok: true, summary: ping.summary });
+  } else {
+    res.status(503).json({ ok: false, error: ping.error });
   }
 });
 
