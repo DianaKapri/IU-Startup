@@ -576,7 +576,16 @@ function optimalDayOrder(lessons, grade) {
 }
 
 
-function softPenalty(days, grade) {
+// Лёгкие/профильные предметы (нормализованные коды) — используются для E-04
+const LIGHT_SUBJ_CODES = new Set(['фк', 'муз', 'изо', 'обж', 'техн', 'мхк', 'орксэ', 'однк', 'окрмир']);
+
+/**
+ * @param {string[][]} days
+ * @param {number} grade
+ * @param {{cls?: string, allSchedules?: Object, classIds?: string[]}} [ctx]
+ *   — опциональный контекст для cross-class правил (D-02)
+ */
+function softPenalty(days, grade, ctx) {
   let penalty = 0;
   const threshold = getHardThreshold(grade);
   const dayScores = [];
@@ -585,24 +594,26 @@ function softPenalty(days, grade) {
     const active = lessons.filter(s => s);
     let dayScore = 0, streak = 0;
 
+    // E-04: первый урок дня не должен быть профильным (физ-ра, муз, изо, ОБЖ, технология, …)
+    if (active.length > 0 && LIGHT_SUBJ_CODES.has(active[0])) penalty += 4;
+
     for (let i = 0; i < active.length; i++) {
       const diff = getDifficulty(active[i], grade);
       dayScore += diff;
       if (diff >= threshold) {
-        // E-01: сложный предмет не на позициях 2-4 (1-based)
         if (!(i >= 1 && i <= 3)) penalty += 3;
-        // E-03: подряд сложные
         streak++;
         if (streak === 2) penalty += 2;
         if (streak >= 3)  penalty += 5;
       } else {
         streak = 0;
       }
+      // E-05: одинаковый предмет подряд (не считаем lab/double)
+      if (i > 0 && active[i] === active[i - 1]) penalty += 4;
     }
     dayScores.push(dayScore);
   }
 
-  // E-02: в середине недели (Ср/Чт) должно быть легче
   if (dayScores.length >= 4) {
     const midMin  = Math.min(dayScores[2] ?? Infinity, dayScores[3] ?? Infinity);
     const others  = dayScores.filter((_, i) => i !== 2 && i !== 3 && dayScores[i] > 0);
@@ -612,11 +623,29 @@ function softPenalty(days, grade) {
     }
   }
 
-  // D-01: пик не в начале/конце недели
   if (dayScores.length >= 3) {
     const peak = Math.max(...dayScores);
     if (dayScores[0] === peak) penalty += 5;
     if (dayScores[dayScores.length - 1] === peak) penalty += 5;
+  }
+
+  // D-02: дисбаланс параллели (cross-class). Только если передан ctx.
+  if (ctx && ctx.cls && ctx.allSchedules && ctx.classIds) {
+    const siblings = ctx.classIds.filter(c => c !== ctx.cls && parseGrade(c) === grade);
+    if (siblings.length > 0) {
+      for (let d = 0; d < dayScores.length; d++) {
+        const all = [dayScores[d]];
+        for (const sib of siblings) {
+          const sibDay = (ctx.allSchedules[sib] || [])[d] || [];
+          all.push(sibDay.reduce((s, sb) => s + getDifficulty(sb, grade, 0), 0));
+        }
+        const mx = Math.max(...all), mn = Math.min(...all);
+        if (mx - mn > 6) {
+          // Этот класс — экстремум? Тогда штраф
+          if (dayScores[d] === mx || dayScores[d] === mn) penalty += 3;
+        }
+      }
+    }
   }
 
   return penalty;
@@ -626,9 +655,10 @@ function optimize(schedules, allEv, classIds, numD) {
   // Метрики swap-проходов (Эпик 1.1.1)
   const metrics = { passesDone: 0, swapsApplied: 0, penaltyBefore: 0, penaltyAfter: 0 };
 
-  // Начальная penalty — суммарная по всем классам
+  // Начальная penalty — суммарная по всем классам, с учётом D-02
   for (const cls of classIds) {
-    metrics.penaltyBefore += softPenalty(schedules[cls] || [], parseGrade(cls));
+    metrics.penaltyBefore += softPenalty(schedules[cls] || [], parseGrade(cls),
+      { cls, allSchedules: schedules, classIds });
   }
 
   // Карта: (cls, d, s_0based) → {tid}
@@ -676,12 +706,13 @@ function optimize(schedules, allEv, classIds, numD) {
             if (tidConflict(t1, d, s2, cls)) continue;
             if (tidConflict(t2, d, s1, cls)) continue;
 
-            const before = softPenalty(days, grade);
+            const ctxOpt = { cls, allSchedules: schedules, classIds };
+            const before = softPenalty(days, grade, ctxOpt);
             [days[d][s1], days[d][s2]] = [days[d][s2], days[d][s1]];
             [slotTid[`${cls}:${d}:${s1}`], slotTid[`${cls}:${d}:${s2}`]] =
               [slotTid[`${cls}:${d}:${s2}`], slotTid[`${cls}:${d}:${s1}`]];
 
-            if (softPenalty(days, grade) < before) {
+            if (softPenalty(days, grade, ctxOpt) < before) {
               improved = true;
               metrics.swapsApplied++;
             } else {
@@ -708,7 +739,8 @@ function optimize(schedules, allEv, classIds, numD) {
   // Intra-day swaps above already improve E-01/E-03 safely within each day.
 
   for (const cls of classIds) {
-    metrics.penaltyAfter += softPenalty(schedules[cls] || [], parseGrade(cls));
+    metrics.penaltyAfter += softPenalty(schedules[cls] || [], parseGrade(cls),
+      { cls, allSchedules: schedules, classIds });
   }
   return metrics;
 }
