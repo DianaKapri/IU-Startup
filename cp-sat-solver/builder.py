@@ -1,7 +1,8 @@
 """Построение CP-SAT модели из GeneratorInput.
 
 Этап 1 (MVP): hard constraints (учебный план, X-01, C-01..C-02, CONF, T-02).
-Этап 2: soft constraints (E-01, E-03, E-04, E-05) + objective minimization.
+Этап 2: soft constraints (E-01, E-03, E-04, E-05, D-01, E-02, D-02) + objective.
+T-01 (этажи) — Этап 3, требует room-переменных.
 """
 from __future__ import annotations
 import time
@@ -17,9 +18,10 @@ W_E01 = 3   # сложный не на 2-4 уроке
 W_E03 = 5   # 2+ сложных подряд
 W_E04 = 4   # профильный (фк, муз, изо) на 1-м уроке
 W_E05 = 4   # одинаковый предмет подряд
-W_D01 = 5   # peak day на пн/пт
-W_E02 = 3   # лёгкий день не в середине
-W_D02 = 2   # дисбаланс параллели
+W_D01 = 1   # peak day на пн/пт (excess в очках difficulty, поэтому вес мал)
+W_D02 = 1   # дисбаланс параллели (spread в очках difficulty, вес мал)
+# E-02 (равномерность max-min) исключён — конфликтует с D-01 (peak в среду).
+# T-01 (этажи) — Этап 3, требует room-переменных.
 
 DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
 
@@ -273,6 +275,71 @@ def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
                 ind = model.NewBoolVar(f"e03_{c}_{d}_{s}")
                 model.Add(hard_at[c, d, s] + hard_at[c, d, s + 1] - 1 <= ind)
                 soft_terms.append(W_E03 * ind)
+
+    # day_diff[c, d] = суммарная трудность дня (нужна для D-01, D-02)
+    # Тугая граница: суммарная weekly-difficulty / week_days * 3 (peak ≤ 3× avg)
+    day_diff: Dict[Tuple[str, int], cp_model.IntVar] = {}
+    dd_bound_for: Dict[str, int] = {}
+    for c in classes:
+        grade = parse_grade(c)
+        total_diff = sum(
+            get_difficulty(sub, grade) * by_class_subj_hours[(cls2, sub)]
+            for (cls2, sub) in pairs if cls2 == c
+        )
+        # peak per day максимум = total (если все в один день, что блокирует C-01)
+        # реалистично: peak ≤ max_lessons_per_day * 13 (max diff)
+        bound = min(total_diff, get_max_lessons_per_day(grade) * 13)
+        dd_bound_for[c] = max(bound, 1)
+
+    for c in classes:
+        grade = parse_grade(c)
+        bound = dd_bound_for[c]
+        for d in days_range:
+            dd = model.NewIntVar(0, bound, f"dd_{c}_{d}")
+            terms = []
+            for (cls2, sub) in pairs:
+                if cls2 != c:
+                    continue
+                diff = get_difficulty(sub, grade)
+                if diff <= 0:
+                    continue
+                for s in slots_range:
+                    terms.append(diff * x[c, sub, d, s])
+            if terms:
+                model.Add(dd == sum(terms))
+            else:
+                model.Add(dd == 0)
+            day_diff[c, d] = dd
+
+    # D-01: «peak day» не должен быть на пн/пт. Штрафуем превышение Mon/Fri над Wed.
+    if week_days >= 5:
+        wed = 2  # среда — желаемый peak
+        edge_days = [0]  # понедельник
+        if week_days - 1 != wed:
+            edge_days.append(week_days - 1)  # пятница (или суббота)
+        for c in classes:
+            bound = dd_bound_for[c]
+            for ed in edge_days:
+                excess = model.NewIntVar(0, bound, f"d01_excess_{c}_{ed}")
+                model.Add(excess >= day_diff[c, ed] - day_diff[c, wed])
+                soft_terms.append(W_D01 * excess)
+
+    # D-02: баланс параллели — классы одной параллели должны иметь похожую нагрузку по дням.
+    parallel_groups: Dict[int, List[str]] = defaultdict(list)
+    for c in classes:
+        parallel_groups[parse_grade(c)].append(c)
+    for grade, cls_list in parallel_groups.items():
+        if len(cls_list) < 2:
+            continue
+        bound = max(dd_bound_for[c] for c in cls_list)
+        for d in days_range:
+            max_dd = model.NewIntVar(0, bound, f"d02_max_{grade}_{d}")
+            min_dd = model.NewIntVar(0, bound, f"d02_min_{grade}_{d}")
+            model.AddMaxEquality(max_dd, [day_diff[c, d] for c in cls_list])
+            model.AddMinEquality(min_dd, [day_diff[c, d] for c in cls_list])
+            spread = model.NewIntVar(0, bound, f"d02_spread_{grade}_{d}")
+            model.Add(spread == max_dd - min_dd)
+            soft_terms.append(W_D02 * spread)
 
     # Минимизируем сумму soft-нарушений с весами
     if soft_terms:
