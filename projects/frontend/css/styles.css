@@ -20,7 +20,7 @@
   --max-w-narrow: 720px;
 }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overscroll-behavior-x: none; }
 
 body {
   font-family: var(--font);
@@ -30,6 +30,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
   overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 a { text-decoration: none; color: inherit; }
