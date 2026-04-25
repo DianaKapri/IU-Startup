@@ -39,6 +39,7 @@ const upload = multer({
 });
 
 // Строит понятное сообщение для ok:false — используется и фронтом и логами.
+// warnings может быть смешанным: строки (генератор) + {sheet,row,message} (парсер).
 function buildGenErrorMessage(result, warnings) {
   const sum = result && result.summary ? result.summary : {};
   const placed = Number(sum.placedLessons) || 0;
@@ -47,9 +48,20 @@ function buildGenErrorMessage(result, warnings) {
   const head = total
     ? `Удалось разместить ${placed} из ${total} уроков.`
     : `Не удалось построить расписание.`;
-  const w = (warnings || []).filter(Boolean).slice(0, 3).join(' ');
-  const tail = w ? ' ' + w : '';
-  return (head + tail).slice(0, 400);
+  const parts = (warnings || [])
+    .filter(Boolean)
+    .map((w) => {
+      if (typeof w === 'string') return w;
+      if (w && typeof w === 'object' && w.message) {
+        const where = w.sheet ? `[${w.sheet}${w.row ? ', стр. ' + w.row : ''}] ` : '';
+        return where + w.message;
+      }
+      return '';
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+  const tail = parts.length ? ' ' + parts.join(' | ') : '';
+  return (head + tail).slice(0, 600);
 }
 
 // ── POST /api/generate ──────────────────────────────────────

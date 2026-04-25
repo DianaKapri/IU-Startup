@@ -900,9 +900,16 @@ function spExtractError(resp,fallback){
   }
   if(err&&err.message)return err.message;
   if(resp.code)return resp.code;
-  // Фолбэк: первые предупреждения из warnings (если бэкенд их вернул)
+  // Фолбэк: первые предупреждения из warnings (могут быть строками или {sheet,row,message})
   if(Array.isArray(resp.warnings)&&resp.warnings.length){
-    return resp.warnings.slice(0,2).filter(Boolean).join(' ');
+    return resp.warnings.slice(0,2).filter(Boolean).map(function(w){
+      if(typeof w==='string')return w;
+      if(w&&w.message){
+        var where=w.sheet?'[Лист «'+w.sheet+'»'+(w.row?', стр.'+w.row:'')+'] ':'';
+        return where+w.message;
+      }
+      return '';
+    }).filter(Boolean).join(' | ');
   }
   return fallback||'Неизвестная ошибка';
 }
