@@ -865,3 +865,20 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .how-section { border-top: 1px solid rgba(255,255,255,.06); }
 .how-section--white { border-top: 1px solid rgba(0,0,0,.06); }
 .price--light { border-top: 1px solid rgba(0,0,0,.06); }
+
+/* ═══ Contacts section on landing ═══ */
+.contacts-section { background: #000; padding: 80px 24px; text-align: center; border-top: 1px solid rgba(255,255,255,.06); }
+.contacts-section__inner { max-width: 860px; margin: 0 auto; }
+.contacts-section__eyebrow { font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: 12px; }
+.contacts-section__title { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; letter-spacing: -.04em; color: #f5f5f7; margin-bottom: 14px; }
+.contacts-section__sub { font-size: 1rem; color: #86868b; margin-bottom: 48px; }
+.contacts-section__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; text-align: left; }
+.contacts-section__card { background: #1c1c1e; border: 1px solid rgba(255,255,255,.1); border-radius: 18px; padding: 24px 22px; display: flex; flex-direction: column; gap: 6px; text-decoration: none; transition: border-color .15s, transform .15s; }
+.contacts-section__card:hover { border-color: rgba(0,113,227,.4); transform: translateY(-2px); }
+.contacts-section__icon { font-size: 1.5rem; }
+.contacts-section__label { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #86868b; }
+.contacts-section__value { font-size: 1rem; font-weight: 600; color: #4da3ff; }
+.contacts-section__hint { font-size: .82rem; color: #86868b; line-height: 1.5; }
+.contacts-section__info { max-width: 580px; margin: 48px auto 0; padding: 20px; background: rgba(255,255,255,.04); border-radius: 14px; }
+.contacts-section__info-title { font-size: .95rem; font-weight: 700; color: #f5f5f7; margin-bottom: 4px; }
+.contacts-section__info-text { font-size: .85rem; color: #86868b; line-height: 1.5; margin: 0; }
