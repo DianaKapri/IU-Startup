@@ -439,12 +439,8 @@ body.nav-open .nav__backdrop { opacity: 1; pointer-events: all; }
 .btn--ghost-light:hover { border-color: rgba(255,255,255,.4); color: #fff; }
 
 /* ===== FOOTER ===== */
-.footer { background: var(--surface-dark); border-top: .5px solid rgba(255,255,255,.06); padding: 20px 24px; }
-.footer__inner { max-width: var(--max-w); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-.footer__logo { font-size: .78rem; font-weight: 500; color: var(--gray-mid); }
-.footer__copy { font-size: .72rem; color: var(--gray-mid); }
-.footer__link { font-size: .78rem; font-weight: 500; color: var(--gray-mid); text-decoration: none; transition: color .15s; }
-.footer__link:hover { color: #f5f5f7; }
+
+/* (old footer removed) */
 
 /* ===== CTA REGISTER ===== */
 .cta-register { background: var(--surface-dark); color: #fff; padding: 100px 24px; text-align: center; }
