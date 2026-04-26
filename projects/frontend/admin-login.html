@@ -2,8 +2,10 @@
 <html lang="ru">
 <head>
 <!-- Microsoft Clarity -->
-<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "weqg9ebzqd");</script>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "wgv6m1c6w5");</script>
+<meta charset="UTF-8"/>
+<link rel="icon" href="/assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/favicon-mob.png"><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Вход в Админ-панель — ШколаПлан</title>
 <link rel="stylesheet" href="/css/styles.css"/>
 <style>
@@ -171,27 +173,29 @@
   </div>
 
   <h1 class="admin-login__title">Вход в Админ-панель</h1>
-  <p class="admin-login__sub">Введите email и пароль для доступа к панели управления</p>
+  <p class="admin-login__sub">Введите данные администратора</p>
 
   <form class="admin-login__form" id="loginForm">
     <div class="admin-login__field">
-      <label class="admin-login__label" for="email">Email</label>
-      <input 
-        class="admin-login__input" 
-        id="email" 
-        type="email" 
-        placeholder="admin@example.com"
+      <label class="admin-login__label" for="adminEmail">Email</label>
+      <input
+        class="admin-login__input"
+        id="adminEmail"
+        type="email"
+        placeholder="admin@shkolaplan.ru"
+        autocomplete="username"
         required
       />
     </div>
 
     <div class="admin-login__field">
-      <label class="admin-login__label" for="password">Пароль</label>
-      <input 
-        class="admin-login__input" 
-        id="password" 
-        type="password" 
+      <label class="admin-login__label" for="adminPassword">Пароль</label>
+      <input
+        class="admin-login__input"
+        id="adminPassword"
+        type="password"
         placeholder="Введите пароль"
+        autocomplete="current-password"
         required
       />
     </div>
@@ -207,82 +211,77 @@
 </div>
 
 <script>
-// Данные для входа в админку (в реальном проекте это должно быть на сервере)
-const ADMIN_CREDENTIALS = {
-  email: 'admin@shkolaplan.ru',
-  password: 'Admin123!@#'
-};
+// TODO: вернуться к аутентификации через токен (X-Admin-Token),
+// когда ADMIN_API_TOKEN будет корректно прописан в GitHub Secrets и .env на проде.
+// Текущий flow: email+пароль → POST /api/auth/admin/login → получаем token → sessionStorage.
 
-// Функция входа
-function handleLogin(event) {
-  event.preventDefault();
-  
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value.trim();
-  const errorEl = document.getElementById('loginError');
-  const loginBtn = document.getElementById('loginBtn');
-  
-  // Сброс ошибки
-  errorEl.style.display = 'none';
-  errorEl.textContent = '';
-  
-  // Валидация
-  if (!email || !password) {
-    showError('Заполните все поля');
-    return;
-  }
-  
-  // Блокируем кнопку
-  loginBtn.disabled = true;
-  loginBtn.textContent = 'Вход...';
-  
-  // Проверка учетных данных
-  setTimeout(() => {
-    if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-      // Успешный вход
-      localStorage.setItem('adminEmail', email);
-      localStorage.setItem('adminPassword', password);
-      
-      // Перенаправление в админку
-      window.location.href = '/admin.html';
-    } else {
-      // Неверные учетные данные
-      showError('Неверный email или пароль');
-      loginBtn.disabled = false;
-      loginBtn.textContent = 'Войти';
-    }
-  }, 500); // Имитация задержки для реалистичности
-}
-
-// Показ ошибки
 function showError(message) {
   const errorEl = document.getElementById('loginError');
   errorEl.textContent = message;
   errorEl.style.display = 'block';
 }
 
-// Обработчик формы
+function clearLegacyCredentials() {
+  localStorage.removeItem('adminEmail');
+  localStorage.removeItem('adminPassword');
+  localStorage.removeItem('adminToken');
+}
+
+function handleLogin(event) {
+  event.preventDefault();
+
+  const email = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value;
+  const errorEl = document.getElementById('loginError');
+  const loginBtn = document.getElementById('loginBtn');
+
+  errorEl.style.display = 'none';
+  errorEl.textContent = '';
+
+  if (!email || !password) {
+    showError('Введите email и пароль');
+    return;
+  }
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Вход...';
+
+  fetch('/api/auth/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+    .then(function (r) { return r.json().then(function (data) { return { status: r.status, data: data }; }); })
+    .then(function (res) {
+      if (!res.data.success) {
+        showError(res.data.error || 'Неверный логин или пароль');
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Войти';
+        return;
+      }
+      clearLegacyCredentials();
+      sessionStorage.setItem('adminToken', res.data.token);
+      window.location.href = '/admin.html';
+    })
+    .catch(function () {
+      showError('Ошибка сети. Попробуйте ещё раз.');
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Войти';
+    });
+}
+
 document.getElementById('loginForm').addEventListener('submit', handleLogin);
 
-// Проверка, не авторизован ли уже пользователь
-document.addEventListener('DOMContentLoaded', function() {
-  const savedEmail = localStorage.getItem('adminEmail');
-  const savedPassword = localStorage.getItem('adminPassword');
-  
-  if (savedEmail && savedPassword) {
-    // Проверяем валидность сохраненных данных
-    if (savedEmail === ADMIN_CREDENTIALS.email && savedPassword === ADMIN_CREDENTIALS.password) {
-      window.location.href = '/admin.html';
-    } else {
-      // Очищаем неверные данные
-      localStorage.removeItem('adminEmail');
-      localStorage.removeItem('adminPassword');
-    }
-  }
-});
+document.addEventListener('DOMContentLoaded', function () {
+  clearLegacyCredentials();
 
-// Автофокус на поле email
-document.getElementById('email').focus();
+  if (sessionStorage.getItem('adminToken')) {
+    window.location.href = '/admin.html';
+    return;
+  }
+
+  document.getElementById('adminEmail').focus();
+});
 </script>
 </body>
 </html>

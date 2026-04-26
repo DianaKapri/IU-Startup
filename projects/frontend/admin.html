@@ -2,8 +2,10 @@
 <html lang="ru">
 <head>
 <!-- Microsoft Clarity -->
-<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "weqg9ebzqd");</script>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "wgv6m1c6w5");</script>
+<meta charset="UTF-8"/>
+<link rel="icon" href="/assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/favicon-mob.png"><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Админ-панель — ШколаПлан</title>
 <link rel="stylesheet" href="/css/styles.css"/>
 <link rel="stylesheet" href="/css/account.css"/>
@@ -153,6 +155,16 @@
   color: #ff453a;
 }
 
+.status-badge--awaiting_payment {
+  background: rgba(10, 132, 255, 0.2);
+  color: #0a84ff;
+}
+
+.status-badge--paid {
+  background: rgba(48, 209, 88, 0.2);
+  color: #30d158;
+}
+
 .admin-actions {
   display: flex;
   gap: 8px;
@@ -235,11 +247,15 @@
     </div>
     <div class="admin-stat">
       <div class="admin-stat__value" id="pendingRequests">0</div>
-      <div class="admin-stat__label">В обработке</div>
+      <div class="admin-stat__label">На рассмотрении</div>
     </div>
     <div class="admin-stat">
       <div class="admin-stat__value" id="processedRequests">0</div>
-      <div class="admin-stat__label">Обработано</div>
+      <div class="admin-stat__label">Ожидают оплаты</div>
+    </div>
+    <div class="admin-stat">
+      <div class="admin-stat__value" id="paidRequests">0</div>
+      <div class="admin-stat__label">Оплачено</div>
     </div>
     <div class="admin-stat">
       <div class="admin-stat__value" id="revenue">0 ₽</div>
@@ -261,49 +277,57 @@
 </div>
 
 <script>
-let currentAdmin = null;
+// Авторизация администратора через токен, переданный в заголовке X-Admin-Token.
+// Токен хранится в sessionStorage['adminToken'] и выставляется на admin-login.html.
+// sessionStorage не сохраняется между сессиями и не доступен другим вкладкам.
+
+function getAdminToken() {
+  return sessionStorage.getItem('adminToken');
+}
+
+function redirectToLogin() {
+  sessionStorage.removeItem('adminToken');
+  // Также чистим устаревшие ключи из localStorage на случай старого браузера.
+  localStorage.removeItem('adminToken');
+  window.location.href = '/admin-login.html';
+}
+
+function adminFetch(url, options) {
+  const opts = options ? Object.assign({}, options) : {};
+  const headers = Object.assign({}, opts.headers || {});
+  const token = getAdminToken();
+  if (token) {
+    headers['X-Admin-Token'] = token;
+  }
+  opts.headers = headers;
+  return fetch(url, opts).then(function (response) {
+    if (response.status === 401) {
+      redirectToLogin();
+      // Возвращаем rejected promise, чтобы вызывающий код не обрабатывал пустой ответ.
+      throw new Error('UNAUTHORIZED');
+    }
+    return response;
+  });
+}
 
 // Проверка авторизации админа
 function checkAdminAuth() {
-  const adminEmail = localStorage.getItem('adminEmail');
-  const adminPassword = localStorage.getItem('adminPassword');
-  
-  if (!adminEmail || !adminPassword) {
-    window.location.href = '/admin-login.html';
+  if (!getAdminToken()) {
+    redirectToLogin();
     return;
   }
-  
-  // Проверяем учетные данные с сервером
-  verifyAdminCredentials(adminEmail, adminPassword);
-}
 
-// Проверка учетных данных админа
-async function verifyAdminCredentials(email, password) {
-  // Проверяем учетные данные локально (для демонстрации)
-  const ADMIN_CREDENTIALS = {
-    email: 'admin@shkolaplan.ru',
-    password: 'Admin123!@#'
-  };
-  
-  if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-    currentAdmin = { email: email };
-    document.getElementById('adminEmail').textContent = email;
-    loadRequests();
-    return;
-  }
-  
-  // Если учетные данные неверны, перенаправляем на страницу входа
-  localStorage.removeItem('adminEmail');
-  localStorage.removeItem('adminPassword');
-  window.location.href = '/admin-login.html';
+  const nameEl = document.getElementById('adminEmail');
+  if (nameEl) nameEl.textContent = 'Администратор';
+  loadRequests();
 }
 
 // Загрузка запросов
 async function loadRequests() {
   try {
-    const response = await fetch('/api/subscription-requests');
+    const response = await adminFetch('/api/subscription-requests');
     const result = await response.json();
-    
+
     if (result.success) {
       displayRequests(result.data);
       updateStats(result.data);
@@ -312,6 +336,7 @@ async function loadRequests() {
       showError('Ошибка загрузки данных: ' + (result.error?.message || 'Неизвестная ошибка'));
     }
   } catch (err) {
+    if (err && err.message === 'UNAUTHORIZED') return; // редирект уже произошёл
     console.error('Ошибка:', err);
     showError('Произошла ошибка при загрузке данных');
   }
@@ -353,9 +378,12 @@ function displayRequests(requests) {
             <td>
               <div class="admin-actions">
                 ${req.status === 'pending' ? `
-                  <button class="admin-btn admin-btn--approve" onclick="updateRequestStatus('${req.id}', 'processed')">Одобрить</button>
+                  <button class="admin-btn admin-btn--approve" onclick="updateRequestStatus('${req.id}', 'awaiting_payment')">Одобрить</button>
                   <button class="admin-btn admin-btn--reject" onclick="updateRequestStatus('${req.id}', 'rejected')">Отклонить</button>
-                ` : '-'}
+                ` : req.status === 'awaiting_payment' ? `
+                  <button class="admin-btn" onclick="copyPaymentLink('${req.payment_url || ''}')">Скопировать ссылку</button>
+                  <button class="admin-btn admin-btn--approve" onclick="checkPayment('${req.payment_id || ''}')">Проверить оплату</button>
+                ` : '—'}
               </div>
             </td>
           </tr>
@@ -371,30 +399,32 @@ function displayRequests(requests) {
 function updateStats(requests) {
   const total = requests.length;
   const pending = requests.filter(r => r.status === 'pending').length;
-  const processed = requests.filter(r => r.status === 'processed').length;
+  const awaitingPayment = requests.filter(r => r.status === 'awaiting_payment').length;
+  const paid = requests.filter(r => r.status === 'paid').length;
   const revenue = requests
-    .filter(r => r.status === 'processed')
+    .filter(r => r.status === 'paid')
     .reduce((sum, r) => sum + (r.price || 0), 0);
-  
+
   document.getElementById('totalRequests').textContent = total;
   document.getElementById('pendingRequests').textContent = pending;
-  document.getElementById('processedRequests').textContent = processed;
+  document.getElementById('processedRequests').textContent = awaitingPayment;
+  document.getElementById('paidRequests').textContent = paid;
   document.getElementById('revenue').textContent = revenue.toLocaleString('ru-RU') + ' ₽';
 }
 
 // Обновление статуса запроса
 async function updateRequestStatus(requestId, newStatus) {
   try {
-    const response = await fetch(`/api/subscription-requests/${requestId}`, {
+    const response = await adminFetch(`/api/subscription-requests/${requestId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ status: newStatus })
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       // Перезагружаем данные
       loadRequests();
@@ -404,6 +434,7 @@ async function updateRequestStatus(requestId, newStatus) {
       alert('Ошибка при обновлении статуса: ' + (result.error?.message || 'Неизвестная ошибка'));
     }
   } catch (err) {
+    if (err && err.message === 'UNAUTHORIZED') return;
     console.error('Ошибка:', err);
     alert('Произошла ошибка при обновлении статуса');
   }
@@ -412,10 +443,43 @@ async function updateRequestStatus(requestId, newStatus) {
 // Получение текста статуса
 function getStatusText(status) {
   switch (status) {
-    case 'pending': return 'В обработке';
-    case 'processed': return 'Обработано';
-    case 'rejected': return 'Отклонено';
-    default: return status;
+    case 'pending':          return 'На рассмотрении';
+    case 'awaiting_payment': return 'Ожидает оплаты';
+    case 'paid':             return 'Оплачено';
+    case 'rejected':         return 'Отклонено';
+    default:                 return status;
+  }
+}
+
+// Копирование ссылки на оплату в буфер обмена
+function copyPaymentLink(url) {
+  if (!url) { alert('Ссылка недоступна'); return; }
+  navigator.clipboard.writeText(url).then(function() {
+    alert('Ссылка скопирована в буфер обмена');
+  }).catch(function() {
+    prompt('Скопируйте ссылку:', url);
+  });
+}
+
+// Ручная проверка оплаты через ЮKassa API (fallback к webhook)
+async function checkPayment(paymentId) {
+  if (!paymentId) { alert('ID платежа недоступен'); return; }
+  try {
+    const response = await adminFetch(`/api/payments/check/${paymentId}`, { method: 'POST' });
+    const result = await response.json();
+    if (!result.success) {
+      alert('Ошибка: ' + (result.error?.message || 'Неизвестная ошибка'));
+      return;
+    }
+    if (result.data.paid) {
+      alert('Оплата подтверждена! Подписка активирована.');
+      loadRequests();
+    } else {
+      alert('Платёж ещё не оплачен (статус: ' + result.data.status + ')');
+    }
+  } catch (err) {
+    if (err && err.message === 'UNAUTHORIZED') return;
+    alert('Произошла ошибка при проверке оплаты');
   }
 }
 
@@ -428,6 +492,9 @@ function showError(message) {
 document.getElementById('refreshBtn').addEventListener('click', loadRequests);
 
 document.getElementById('logoutBtn').addEventListener('click', function() {
+  sessionStorage.removeItem('adminToken');
+  // Чистим устаревшие ключи из localStorage.
+  localStorage.removeItem('adminToken');
   localStorage.removeItem('adminEmail');
   localStorage.removeItem('adminPassword');
   window.location.href = '/admin-login.html';

@@ -3,7 +3,7 @@
 // Автор: —
 // Описание: Точка входа Express. Подключение middleware, монтирование роутов.
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 
 const express = require('express');
 const cors = require('cors');
@@ -57,7 +57,7 @@ app.use('/users', usersRouter);
 
 // ─── Генератор расписания (EP-06) ─────────────────────────────
 const generatorRouter = require('./routes/generator');
-app.use('/api/generate', generatorRouter);
+app.use('/generate', generatorRouter);
 
 // const teachersRouter = require('./routes/teachers');      // EP-06 (TODO)
 // app.use('/api/teachers', teachersRouter);
@@ -65,8 +65,14 @@ app.use('/api/generate', generatorRouter);
 // const roomsRouter = require('./routes/rooms');            // EP-06 (TODO)
 // app.use('/api/rooms', roomsRouter);
 
-// const paymentsRouter = require('./routes/payments');      // EP-09 (TODO)
-// app.use('/api/payments', paymentsRouter);
+const paymentsRouter = require('./routes/payments');
+app.use('/payments', paymentsRouter);
+
+const subscriptionsRouter = require('./routes/subscriptions');
+app.use('/subscription-request', subscriptionsRouter);
+
+const adminSubscriptionsRouter = require('./routes/adminSubscriptions');
+app.use('/subscription-requests', adminSubscriptionsRouter);
 
 // const dashboardRouter = require('./routes/dashboard');    // EP-07 (TODO)
 // app.use('/api/dashboard', dashboardRouter);

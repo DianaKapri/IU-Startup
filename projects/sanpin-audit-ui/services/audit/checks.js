@@ -414,6 +414,76 @@ function checkConsecutiveHard(classSchedule, grade) {
   return violations;
 }
 
+// ─── E-04: Профильные (лёгкие) предметы не в 1-ю позицию ───────
+
+// Лёгкие/профильные предметы, которые традиционно не ставят первым уроком.
+// Сопоставление по нормализованному имени (без кавычек, приведение ё→е).
+const LIGHT_SUBJECTS = new Set([
+  'физическая культура', 'физкультура', 'физ-ра', 'физра',
+  'музыка',
+  'изо', 'изобразительное искусство', 'рисование',
+  'технология', 'труд',
+  'обж', 'основы безопасности жизнедеятельности',
+  'орксэ', 'однкнр',
+]);
+
+function normSubjKey(s) {
+  return String(s || '').toLowerCase().replace(/ё/g, 'е').trim();
+}
+
+function isLightSubject(subject) {
+  return LIGHT_SUBJECTS.has(normSubjKey(subject));
+}
+
+/**
+ * Профильные (физкультура, ИЗО, музыка, ОБЖ, технология) не должны стоять
+ * первым уроком — на 1-й позиции ожидается академический предмет средней
+ * трудности.
+ */
+function checkEarlyLight(classSchedule) {
+  const violations = [];
+  for (let dayIdx = 0; dayIdx < classSchedule.length; dayIdx++) {
+    const day = classSchedule[dayIdx] || [];
+    if (day.length === 0) continue;
+    const first = day[0];
+    if (first && isLightSubject(first)) {
+      violations.push({
+        day: dayIdx,
+        dayLabel: DAY_LABELS[dayIdx] || `День ${dayIdx + 1}`,
+        subject: first,
+      });
+    }
+  }
+  return violations;
+}
+
+// ─── E-05: Один и тот же предмет не подряд ─────────────────────
+
+/**
+ * Один и тот же предмет не должен стоять подряд в одном дне (кроме
+ * помеченных как допускающие «двойной урок» — в текущей версии такой
+ * метки нет, проверка строгая).
+ */
+function checkConsecutiveSame(classSchedule) {
+  const violations = [];
+  for (let dayIdx = 0; dayIdx < classSchedule.length; dayIdx++) {
+    const day = classSchedule[dayIdx] || [];
+    for (let i = 0; i + 1 < day.length; i++) {
+      const a = day[i]; const b = day[i + 1];
+      if (!a || !b) continue;
+      if (normSubjKey(a) === normSubjKey(b)) {
+        violations.push({
+          day: dayIdx,
+          dayLabel: DAY_LABELS[dayIdx] || `День ${dayIdx + 1}`,
+          lessonNum: i + 1,
+          subject: a,
+        });
+      }
+    }
+  }
+  return violations;
+}
+
 // ─── Агрегатор: запуск всех проверок для расписания ───────────
 
 /**
@@ -511,6 +581,30 @@ function runChecks(schedule, opts = {}) {
       });
     }
 
+    // E-04: профильные (лёгкие) предметы первым уроком
+    const lightFirsts = checkEarlyLight(days);
+    for (const lf of lightFirsts) {
+      results.push({
+        ruleId: 'E-04',
+        severity: 'soft',
+        class: className,
+        message: `${className}, ${lf.dayLabel}: профильный предмет «${lf.subject}» на 1-м уроке — рекомендуется поставить его 2-м и позже`,
+        details: lf,
+      });
+    }
+
+    // E-05: одинаковые предметы подряд
+    const sameStreaks = checkConsecutiveSame(days);
+    for (const s of sameStreaks) {
+      results.push({
+        ruleId: 'E-05',
+        severity: 'soft',
+        class: className,
+        message: `${className}, ${s.dayLabel}: «${s.subject}» стоит подряд с урока ${s.lessonNum} (без пометки lab/double)`,
+        details: s,
+      });
+    }
+
     // E-03: подряд сложные предметы
     const streaks = checkConsecutiveHard(days, grade);
     for (const s of streaks) {
@@ -527,6 +621,37 @@ function runChecks(schedule, opts = {}) {
       });
     }
   }
+
+  // D-02: баланс трудности между классами одной параллели.
+  // Считаем дневную трудность каждого класса; для группы классов с одинаковым
+  // grade смотрим max-min по дню. Если разница > 6 — soft violation.
+  const byGrade = {};
+  for (const [className, days] of Object.entries(schedule)) {
+    const grade = parseGrade(className);
+    if (!grade) continue;
+    if (!byGrade[grade]) byGrade[grade] = [];
+    const dailyScores = days.map(day => day.reduce((sum, subj) => sum + getDifficulty(subj, grade, 0), 0));
+    byGrade[grade].push({ name: className, daily: dailyScores });
+  }
+  Object.entries(byGrade).forEach(([gr, group]) => {
+    if (group.length < 2) return;
+    const numDays = Math.max(...group.map(g => g.daily.length));
+    for (let d = 0; d < numDays; d++) {
+      const scores = group.map(g => g.daily[d] || 0);
+      const mx = Math.max(...scores), mn = Math.min(...scores);
+      if (mx - mn <= 6) continue;
+      group.forEach((g, idx) => {
+        if (scores[idx] !== mx && scores[idx] !== mn) return;
+        results.push({
+          ruleId: 'D-02',
+          severity: 'soft',
+          class: g.name,
+          message: `${g.name} (${gr}-й кл.), ${DAY_LABELS[d] || `день ${d+1}`}: ${scores[idx]} б. при разбросе ${mn}–${mx} по параллели`,
+          details: { grade: Number(gr), day: d, dayLabel: DAY_LABELS[d], score: scores[idx], min: mn, max: mx, classes: group.map(x => x.name) },
+        });
+      });
+    }
+  });
 
   return results;
 }

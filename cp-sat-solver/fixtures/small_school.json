@@ -1,0 +1,35 @@
+{
+  "classes": ["5А", "6А", "7А"],
+  "weekDays": 5,
+  "curriculum": [
+    {"classId": "5А", "subject": "Математика",  "weeklyHours": 5, "teacherId": "T1"},
+    {"classId": "5А", "subject": "Русский",     "weeklyHours": 5, "teacherId": "T2"},
+    {"classId": "5А", "subject": "Литература",  "weeklyHours": 3, "teacherId": "T2"},
+    {"classId": "5А", "subject": "Физкультура", "weeklyHours": 3, "teacherId": "T3"},
+    {"classId": "5А", "subject": "ИЗО",         "weeklyHours": 1, "teacherId": "T4"},
+    {"classId": "5А", "subject": "История",     "weeklyHours": 2, "teacherId": "T5"},
+    {"classId": "5А", "subject": "Биология",    "weeklyHours": 2, "teacherId": "T6"},
+    {"classId": "5А", "subject": "Английский",  "weeklyHours": 3, "teacherId": "T7"},
+    {"classId": "6А", "subject": "Математика",  "weeklyHours": 5, "teacherId": "T1"},
+    {"classId": "6А", "subject": "Русский",     "weeklyHours": 6, "teacherId": "T2"},
+    {"classId": "6А", "subject": "Литература",  "weeklyHours": 3, "teacherId": "T2"},
+    {"classId": "6А", "subject": "Физкультура", "weeklyHours": 3, "teacherId": "T3"},
+    {"classId": "6А", "subject": "Музыка",      "weeklyHours": 1, "teacherId": "T4"},
+    {"classId": "6А", "subject": "История",     "weeklyHours": 2, "teacherId": "T5"},
+    {"classId": "6А", "subject": "География",   "weeklyHours": 1, "teacherId": "T6"},
+    {"classId": "6А", "subject": "Английский",  "weeklyHours": 3, "teacherId": "T7"},
+    {"classId": "7А", "subject": "Алгебра",     "weeklyHours": 3, "teacherId": "T1"},
+    {"classId": "7А", "subject": "Геометрия",   "weeklyHours": 2, "teacherId": "T1"},
+    {"classId": "7А", "subject": "Русский",     "weeklyHours": 4, "teacherId": "T2"},
+    {"classId": "7А", "subject": "Литература",  "weeklyHours": 2, "teacherId": "T2"},
+    {"classId": "7А", "subject": "Физкультура", "weeklyHours": 3, "teacherId": "T3"},
+    {"classId": "7А", "subject": "Физика",      "weeklyHours": 2, "teacherId": "T8"},
+    {"classId": "7А", "subject": "История",     "weeklyHours": 2, "teacherId": "T5"},
+    {"classId": "7А", "subject": "Биология",    "weeklyHours": 2, "teacherId": "T6"},
+    {"classId": "7А", "subject": "Английский",  "weeklyHours": 3, "teacherId": "T7"}
+  ],
+  "constraints": {
+    "T1": {"teacherName": "Иванова А.П.", "methodDay": "Чт", "maxLessonsPerDay": 6}
+  },
+  "timeLimitSeconds": 60
+}

@@ -45,6 +45,25 @@
   </div>
 </div>
 <div id="wizStep1" class="wiz-step" style="display:none">
+  <div class="wiz-xlsx">
+    <p class="wiz-xlsx__title">Быстрый старт через Excel</p>
+    <p class="wiz-xlsx__sub">Скачайте шаблон, заполните в Excel или Numbers — и расписание построится сразу после загрузки.</p>
+    <div class="wiz-xlsx__actions">
+      <a href="/assets/generator-template.xlsx" class="wiz-btn wiz-btn--ghost" download>📥 Скачать шаблон</a>
+      <input type="file" id="wizXlsxInput" accept=".xlsx,.xls" style="display:none" onchange="wizXlsxUpload(this.files[0])"/>
+      <button type="button" class="wiz-btn wiz-btn--primary" onclick="document.getElementById('wizXlsxInput').click()">📤 Загрузить заполненный</button>
+    </div>
+    <div class="wiz-field" style="margin-top:12px">
+      <label class="wiz-label">РЕЖИМ ГЕНЕРАЦИИ</label>
+      <div class="wiz-toggle" id="wizModeToggle">
+        <span class="wiz-toggle__opt wiz-toggle__opt--on" data-val="fast">⚡ Быстро</span>
+        <span class="wiz-toggle__opt" data-val="optimal">🎯 Оптимально</span>
+      </div>
+      <p id="wizModeHint" style="margin:6px 0 0;font-size:12px;color:#86868b">Быстро: до 1 секунды. Оптимально: CP-SAT solver, до 10 минут — глобально лучшее расписание по СанПиН.</p>
+    </div>
+    <p class="wiz-xlsx__status" id="wizXlsxStatus" style="display:none"></p>
+    <p class="wiz-xlsx__or">— или заполните поэтапно ниже —</p>
+  </div>
   <div class="wiz-field"><label class="wiz-label">НАЗВАНИЕ ШКОЛЫ</label><input class="wiz-input wiz-input--native" id="wizSchoolNameInput" value="Школа №42, г. Москва" placeholder="Название школы" onchange="wizData.schoolName=this.value"/></div>
   <div class="wiz-row-2">
     <div class="wiz-field"><label class="wiz-label">СМЕНЫ</label><div class="wiz-toggle" id="wizShiftsToggle"><span class="wiz-toggle__opt wiz-toggle__opt--on" data-val="1">1</span><span class="wiz-toggle__opt" data-val="2">2</span></div></div>

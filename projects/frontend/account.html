@@ -2,11 +2,14 @@
 <html lang="ru">
 <head>
 <!-- Microsoft Clarity -->
-<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "weqg9ebzqd");</script>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "wgv6m1c6w5");</script>
+<meta charset="UTF-8"/>
+<link rel="icon" href="/assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/favicon-mob.png"><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Личный кабинет — ШколаПлан</title>
 <link rel="stylesheet" href="./css/styles.css"/>
 <link rel="stylesheet" href="./css/account.css"/>
+<link rel="stylesheet" href="./css/paywall.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
@@ -21,13 +24,32 @@
   </div>
   <div class="nav__right">
     <a href="./subscription.html" class="nav__link nav__link--buy" id="navBuyBtn">Купить подписку</a>
-    <button class="nav__profile" id="navProfileBtn" type="button" aria-label="Профиль">
-      <div class="nav__avatar" id="accAvatar">У</div>
-      <div class="nav__profile-info">
-        <span class="nav__profile-name" id="accName">—</span>
-        <span class="nav__profile-school" id="accSchool">—</span>
+    <div class="nav__profile-wrap">
+      <button class="nav__profile" id="navProfileBtn" type="button" aria-label="Меню профиля" aria-haspopup="true" aria-expanded="false">
+        <div class="nav__avatar" id="accAvatar">У</div>
+        <div class="nav__profile-info">
+          <span class="nav__profile-name" id="accName">—</span>
+          <span class="nav__profile-school" id="accSchool">—</span>
+        </div>
+        <span class="plan-badge" id="planBadge" hidden></span>
+        <svg class="nav__profile-caret" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="profile-menu" id="profileMenu" role="menu" aria-hidden="true">
+        <button class="profile-menu__item" type="button" role="menuitem" id="menuOpenProfile">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+          Профиль
+        </button>
+        <button class="profile-menu__item" type="button" role="menuitem" id="menuChangePassword">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Сменить пароль
+        </button>
+        <div class="profile-menu__sep"></div>
+        <button class="profile-menu__item profile-menu__item--danger" type="button" role="menuitem" id="menuLogout">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          Выйти
+        </button>
       </div>
-    </button>
+    </div>
   </div>
 </div></nav>
 
@@ -82,6 +104,19 @@
     <div class="acc-builder__head">
       <h2 class="acc-builder__title">Составление расписания</h2>
       <p class="acc-builder__sub">Заполните параметры школы, и мы сгенерируем рабочую сетку с проверкой по СанПиН.</p>
+    </div>
+
+    <div class="acc-builder__xlsx" id="builderXlsxBox">
+      <div class="acc-builder__xlsx-text">
+        <p class="acc-builder__xlsx-title">Быстрый старт через Excel</p>
+        <p class="acc-builder__xlsx-sub">Скачайте шаблон, заполните в Excel или Numbers и загрузите обратно — расписание построится одним кликом.</p>
+      </div>
+      <div class="acc-builder__xlsx-actions">
+        <a href="/assets/generator-template.xlsx" class="btn btn--ghost btn--sm" download>📥 Скачать шаблон</a>
+        <input type="file" id="builderXlsxInput" accept=".xlsx,.xls" style="display:none"/>
+        <button type="button" class="btn btn--primary btn--sm" id="builderXlsxBtn">📤 Загрузить заполненный</button>
+      </div>
+      <p class="acc-builder__xlsx-or">— или заполните вручную ниже —</p>
     </div>
 
     <div class="acc-builder__steps">
@@ -276,11 +311,6 @@
       <input class="field__input" id="profileEmail" type="email"/>
       <span class="field__err" id="profileEmailErr"></span>
     </div>
-    <div class="field">
-      <label class="field__label" for="profilePassword">Новый пароль <span style="opacity:.5;font-weight:400">(необязательно)</span></label>
-      <input class="field__input" id="profilePassword" type="password" placeholder="оставьте пустым, чтобы не менять"/>
-      <span class="field__err" id="profilePasswordErr"></span>
-    </div>
     <p class="profile-modal__err" id="profileGlobalErr"></p>
     <p class="profile-modal__ok" id="profileSuccess" style="display:none">Изменения сохранены!</p>
     <button class="btn btn--primary btn--full" type="submit">Сохранить</button>
@@ -288,6 +318,34 @@
   <div class="profile-modal__footer">
     <button class="profile-modal__logout" id="profileLogout" type="button">Выйти из аккаунта</button>
   </div>
+</aside>
+
+<!-- Change Password Modal -->
+<aside class="profile-modal" id="passwordModal" aria-hidden="true">
+  <div class="profile-modal__header">
+    <h2 class="profile-modal__title">Смена пароля</h2>
+    <button class="profile-modal__close" id="passwordClose" aria-label="Закрыть">✕</button>
+  </div>
+  <form class="profile-modal__form" id="passwordForm">
+    <div class="field">
+      <label class="field__label" for="currentPassword">Текущий пароль</label>
+      <input class="field__input" id="currentPassword" type="password" autocomplete="current-password"/>
+      <span class="field__err" id="currentPasswordErr"></span>
+    </div>
+    <div class="field">
+      <label class="field__label" for="newPassword">Новый пароль</label>
+      <input class="field__input" id="newPassword" type="password" autocomplete="new-password" placeholder="не менее 6 символов"/>
+      <span class="field__err" id="newPasswordErr"></span>
+    </div>
+    <div class="field">
+      <label class="field__label" for="newPasswordConfirm">Повторите новый пароль</label>
+      <input class="field__input" id="newPasswordConfirm" type="password" autocomplete="new-password"/>
+      <span class="field__err" id="newPasswordConfirmErr"></span>
+    </div>
+    <p class="profile-modal__err" id="passwordGlobalErr"></p>
+    <p class="profile-modal__ok" id="passwordSuccess" style="display:none">Пароль изменён. В следующий раз входите с новым паролем.</p>
+    <button class="btn btn--primary btn--full" type="submit">Сохранить новый пароль</button>
+  </form>
 </aside>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -299,6 +357,7 @@
 // Инициализация навигации с аватаром пользователя
 spInitNav();
 </script>
+<script src="./js/paywall.js"></script>
 <script src="./js/account.js"></script>
 </body>
 </html>

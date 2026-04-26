@@ -1,0 +1,512 @@
+"""Построение CP-SAT модели из GeneratorInput.
+
+Этап 1 (MVP): hard constraints (учебный план, X-01, C-01..C-02, CONF, T-02).
+Этап 2: soft constraints (E-01, E-03, E-04, E-05, D-01, E-02, D-02) + objective.
+T-01 (этажи) — Этап 3, требует room-переменных.
+"""
+from __future__ import annotations
+import time
+from collections import defaultdict
+from typing import Dict, List, Set, Tuple, Optional
+from ortools.sat.python import cp_model
+
+from models import GeneratorInput, GeneratorOutput, GeneratorSummary
+from sanpin import get_difficulty, is_hard, is_light
+
+# Веса штрафов для soft-правил (определяют приоритет в objective)
+W_E01 = 3   # сложный не на 2-4 уроке
+W_E03 = 5   # 2+ сложных подряд
+W_E04 = 4   # профильный (фк, муз, изо) на 1-м уроке
+W_E05 = 4   # одинаковый предмет подряд
+W_D01 = 1   # peak day на пн/пт (excess в очках difficulty, поэтому вес мал)
+W_D02 = 1   # дисбаланс параллели (spread в очках difficulty, вес мал)
+# E-02 (равномерность max-min) исключён — конфликтует с D-01 (peak в среду).
+# T-01 (этажи) — Этап 3, требует room-переменных.
+
+DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+
+
+def parse_grade(class_name: str) -> int:
+    """Извлекает номер параллели из «5А» → 5."""
+    digits = ""
+    for ch in class_name:
+        if ch.isdigit():
+            digits += ch
+        elif digits:
+            break
+    return int(digits) if digits else 5
+
+
+def get_max_lessons_per_day(grade: int) -> int:
+    """Лимит уроков в день по СанПиН (упрощённо)."""
+    if grade <= 1:
+        return 4
+    if grade <= 4:
+        return 5
+    if grade <= 6:
+        return 6
+    return 7
+
+
+def get_max_weekly_hours(grade: int, week_days: int) -> int:
+    """Недельная норма по СанПиН (упрощённо)."""
+    table_5d = {1: 21, 2: 23, 3: 23, 4: 23, 5: 29, 6: 30, 7: 32, 8: 33, 9: 33, 10: 34, 11: 34}
+    base = table_5d.get(grade, 34)
+    return base + 3 if week_days == 6 else base
+
+
+def build_and_solve(inp: GeneratorInput) -> GeneratorOutput:
+    """Главная точка входа: строит модель, запускает solver, возвращает результат."""
+
+    t_build_start = time.time()
+    classes = list(inp.classes)
+    if not classes:
+        return GeneratorOutput(
+            ok=False,
+            summary=GeneratorSummary(
+                classesCount=0, placedLessons=0, status="invalid",
+                solveTimeMs=0, buildTimeMs=0, variablesCount=0,
+            ),
+            error="Список классов пуст",
+        )
+
+    week_days = inp.weekDays
+    days_range = list(range(week_days))
+
+    # Уникальные предметы и пары (class, subject) из curriculum
+    pairs = set()
+    by_class_subj_hours = {}
+    by_class_subj_teacher = {}
+
+    for entry in inp.curriculum:
+        if entry.classId not in classes:
+            continue
+        if entry.weeklyHours <= 0:
+            continue
+        key = (entry.classId, entry.subject)
+        pairs.add(key)
+        by_class_subj_hours[key] = entry.weeklyHours
+        by_class_subj_teacher[key] = entry.teacherId
+
+    if not pairs:
+        return GeneratorOutput(
+            ok=False,
+            summary=GeneratorSummary(
+                classesCount=len(classes), placedLessons=0, status="invalid",
+                solveTimeMs=0, buildTimeMs=0, variablesCount=0,
+            ),
+            error="Учебный план пуст",
+        )
+
+    # Максимальное число слотов в день
+    max_slots = max(get_max_lessons_per_day(parse_grade(c)) for c in classes)
+    slots_range = list(range(1, max_slots + 1))
+
+    # ─── CP-SAT модель ─────────────────────────────────────────
+    model = cp_model.CpModel()
+
+    # x[c, sub, d, s] = 1 если в этой ячейке стоит этот предмет
+    x = {}
+    for cls, sub in pairs:
+        for d in days_range:
+            for s in slots_range:
+                x[cls, sub, d, s] = model.NewBoolVar(f"x_{cls}_{sub}_{d}_{s}")
+
+    # y[c, d, s] = 1 если в этой ячейке есть хоть какой-то урок (для X-01)
+    y = {}
+    for c in classes:
+        for d in days_range:
+            for s in slots_range:
+                y[c, d, s] = model.NewBoolVar(f"y_{c}_{d}_{s}")
+                # y = OR(x по всем sub этого класса)
+                cls_pairs = [x[c, sub, d, s] for (cls2, sub) in pairs if cls2 == c]
+                if cls_pairs:
+                    model.AddMaxEquality(y[c, d, s], cls_pairs)
+                else:
+                    model.Add(y[c, d, s] == 0)
+
+    # ─── Hard constraints ──────────────────────────────────────
+
+    # H1. Учебный план: для каждой пары (c, sub) ровно weekly_hours занятий
+    for (cls, sub), hrs in by_class_subj_hours.items():
+        model.Add(sum(x[cls, sub, d, s] for d in days_range for s in slots_range) == hrs)
+
+    # H2. В одной ячейке (c, d, s) — не больше одного предмета
+    for c in classes:
+        for d in days_range:
+            for s in slots_range:
+                cls_subjects = [x[c, sub, d, s] for (cls2, sub) in pairs if cls2 == c]
+                if cls_subjects:
+                    model.Add(sum(cls_subjects) <= 1)
+
+    # H3. C-01: лимит уроков в день для класса (по grade)
+    for c in classes:
+        pd_lim = get_max_lessons_per_day(parse_grade(c))
+        for d in days_range:
+            model.Add(sum(y[c, d, s] for s in slots_range) <= pd_lim)
+
+    # H4. C-02: недельный лимит уроков для класса
+    for c in classes:
+        wk_max = get_max_weekly_hours(parse_grade(c), week_days)
+        model.Add(sum(y[c, d, s] for d in days_range for s in slots_range) <= wk_max)
+
+    # H5. X-01: нет окон. y[d,s+1]=1 → y[d,s]=1
+    for c in classes:
+        for d in days_range:
+            for s in range(1, max_slots):  # 1..max_slots-1
+                # y[c,d,s] >= y[c,d,s+1]
+                model.Add(y[c, d, s] >= y[c, d, s + 1])
+
+    # H6. CONF: учитель не в двух местах одновременно
+    teacher_lessons = defaultdict(list)
+    for (cls, sub) in pairs:
+        tid = by_class_subj_teacher.get((cls, sub))
+        if tid:
+            teacher_lessons[tid].append((cls, sub))
+    for tid, lessons in teacher_lessons.items():
+        if len(lessons) <= 1:
+            continue
+        for d in days_range:
+            for s in slots_range:
+                model.Add(sum(x[c, sub, d, s] for c, sub in lessons) <= 1)
+
+    # H7. Учитель: methodDay / unavailableDays (T-02)
+    DAY_IDX = {n: i for i, n in enumerate(DAY_NAMES)}
+    for tid, constraint in inp.constraints.items():
+        forbidden_days = set()
+        if constraint.methodDay:
+            md_idx = DAY_IDX.get(constraint.methodDay)
+            if md_idx is not None and md_idx < week_days:
+                forbidden_days.add(md_idx)
+        for day_name in constraint.unavailableDays:
+            di = DAY_IDX.get(day_name)
+            if di is not None and di < week_days:
+                forbidden_days.add(di)
+        if not forbidden_days:
+            continue
+        lessons = teacher_lessons.get(tid, [])
+        for d in forbidden_days:
+            for s in slots_range:
+                for cls, sub in lessons:
+                    model.Add(x[cls, sub, d, s] == 0)
+
+    # H8. Учитель: maxLessonsPerDay (T-02)
+    for tid, constraint in inp.constraints.items():
+        if not constraint.maxLessonsPerDay:
+            continue
+        lessons = teacher_lessons.get(tid, [])
+        if not lessons:
+            continue
+        for d in days_range:
+            model.Add(sum(x[cls, sub, d, s] for cls, sub in lessons for s in slots_range) <= constraint.maxLessonsPerDay)
+
+    # ─── Pre-solve diagnostics ──────────────────────────────────
+    diagnostics = []
+
+    # Check: total class hours vs weekly max
+    for c in classes:
+        grade = parse_grade(c)
+        wk_max = get_max_weekly_hours(grade, week_days)
+        total = sum(by_class_subj_hours.get((c, sub), 0) for (cls2, sub) in pairs if cls2 == c)
+        if total > wk_max:
+            diagnostics.append(f"C-02: {c} — {total} ч/нед, макс. {wk_max} для {grade} кл.")
+
+    # Check: total class hours vs daily capacity
+    for c in classes:
+        grade = parse_grade(c)
+        pd_lim = get_max_lessons_per_day(grade)
+        total = sum(by_class_subj_hours.get((c, sub), 0) for (cls2, sub) in pairs if cls2 == c)
+        if total > pd_lim * week_days:
+            diagnostics.append(f"C-01: {c} — {total} ч/нед не помещаются в {week_days} дн × {pd_lim} ур/дн = {pd_lim * week_days}")
+
+    # Check: teacher hours vs available slots (accounting for method days)
+    for tid, lessons in teacher_lessons.items():
+        total = sum(by_class_subj_hours.get((c, sub), 0) for c, sub in lessons)
+        forbidden = 0
+        if tid in inp.constraints:
+            con = inp.constraints[tid]
+            if con.methodDay and con.methodDay in DAY_NAMES[:week_days]:
+                forbidden += 1
+            for dn in con.unavailableDays:
+                if dn in DAY_NAMES[:week_days]:
+                    forbidden += 1
+        avail_days = week_days - forbidden
+        max_per_day = 7
+        if tid in inp.constraints and inp.constraints[tid].maxLessonsPerDay:
+            max_per_day = inp.constraints[tid].maxLessonsPerDay
+        capacity = avail_days * max_per_day
+        teacher_name = ""
+        for entry in inp.curriculum:
+            if entry.teacherId == tid:
+                teacher_name = entry.teacherName
+                break
+        if total > capacity:
+            diagnostics.append(f"T-02: {teacher_name} — {total} ч/нед, доступно {avail_days} дн × {max_per_day} ур = {capacity}")
+
+    # Check: room capacity
+    room_hours: Dict[str, int] = defaultdict(int)
+    for entry in inp.curriculum:
+        if entry.roomId:
+            room_hours[entry.roomId] += entry.weeklyHours
+    max_slots_per_room = week_days * max_slots
+    for rid, hrs in room_hours.items():
+        if hrs > max_slots_per_room:
+            diagnostics.append(f"R-00: каб. {rid} — {hrs} ч/нед, доступно {max_slots_per_room} слотов")
+
+    if diagnostics:
+        return GeneratorOutput(
+            ok=False,
+            summary=GeneratorSummary(
+                classesCount=len(classes),
+                placedLessons=0,
+                status="infeasible_pre",
+                solveTimeMs=0,
+                buildTimeMs=build_time_ms,
+                variablesCount=0,
+            ),
+            error="Невозможно составить расписание:\n" + "\n".join(diagnostics),
+        )
+
+    # H9. CONF комнат: одна комната не в двух классах одновременно
+    # Made SOFT — high penalty instead of hard constraint
+    W_ROOM = 50
+    room_lessons = defaultdict(list)
+    for entry in inp.curriculum:
+        if entry.roomId:
+            room_lessons[entry.roomId].append((entry.classId, entry.subject))
+    for rid, lessons in room_lessons.items():
+        by_shift = defaultdict(list)
+        for cls, sub in lessons:
+            sh = inp.shifts.get(cls, 1)
+            by_shift[sh].append((cls, sub))
+        for shift, group in by_shift.items():
+            if len(group) <= 1:
+                continue
+            for d in days_range:
+                for s in slots_range:
+                    vars_in_slot = [x[cls, sub, d, s] for cls, sub in group if (cls, sub) in x]
+                    if len(vars_in_slot) > 1:
+                        overflow = model.NewIntVar(0, len(vars_in_slot), f"room_{rid}_{d}_{s}")
+                        model.Add(overflow >= sum(vars_in_slot) - 1)
+                        soft_terms.append(W_ROOM * overflow)
+
+    # ─── Soft constraints + objective (Этап 2) ────────────────
+    soft_terms = []
+
+    # E-01: сложный предмет на slot 1 или slot >= 5 → штраф W_E01
+    for c in classes:
+        grade = parse_grade(c)
+        for sub in {sub for (cls2, sub) in pairs if cls2 == c}:
+            if not is_hard(sub, grade):
+                continue
+            for d in days_range:
+                for s in slots_range:
+                    if s == 1 or s >= 5:
+                        soft_terms.append(W_E01 * x[c, sub, d, s])
+
+    # E-04: лёгкий профильный на slot 1 → штраф W_E04
+    for c in classes:
+        for sub in {sub for (cls2, sub) in pairs if cls2 == c}:
+            if not is_light(sub):
+                continue
+            for d in days_range:
+                soft_terms.append(W_E04 * x[c, sub, d, 1])
+
+    # E-05: один и тот же предмет подряд (slot s и s+1 одного и того же subj)
+    # Создаём индикатор: e05[c,sub,d,s] >= x[c,sub,d,s] + x[c,sub,d,s+1] - 1
+    for c in classes:
+        for sub in {sub for (cls2, sub) in pairs if cls2 == c}:
+            for d in days_range:
+                for s in slots_range[:-1]:
+                    ind = model.NewBoolVar(f"e05_{c}_{sub}_{d}_{s}")
+                    model.Add(x[c, sub, d, s] + x[c, sub, d, s + 1] - 1 <= ind)
+                    soft_terms.append(W_E05 * ind)
+
+    # E-03: 2 сложных предмета подряд (любые hard subjects)
+    # Сначала вычислим hard_at[c, d, s] = OR(x[c, sub, d, s] для sub в hard_subjects класса)
+    hard_at: Dict[Tuple[str, int, int], cp_model.IntVar] = {}
+    for c in classes:
+        grade = parse_grade(c)
+        hard_subs_for_c = [sub for (cls2, sub) in pairs if cls2 == c and is_hard(sub, grade)]
+        for d in days_range:
+            for s in slots_range:
+                if not hard_subs_for_c:
+                    continue
+                ha = model.NewBoolVar(f"hard_at_{c}_{d}_{s}")
+                model.AddMaxEquality(ha, [x[c, sub, d, s] for sub in hard_subs_for_c])
+                hard_at[c, d, s] = ha
+
+    for c in classes:
+        for d in days_range:
+            for s in slots_range[:-1]:
+                if (c, d, s) not in hard_at or (c, d, s + 1) not in hard_at:
+                    continue
+                ind = model.NewBoolVar(f"e03_{c}_{d}_{s}")
+                model.Add(hard_at[c, d, s] + hard_at[c, d, s + 1] - 1 <= ind)
+                soft_terms.append(W_E03 * ind)
+
+    # day_diff[c, d] = суммарная трудность дня (нужна для D-01, D-02)
+    # Тугая граница: суммарная weekly-difficulty / week_days * 3 (peak ≤ 3× avg)
+    day_diff: Dict[Tuple[str, int], cp_model.IntVar] = {}
+    dd_bound_for: Dict[str, int] = {}
+    for c in classes:
+        grade = parse_grade(c)
+        total_diff = sum(
+            get_difficulty(sub, grade) * by_class_subj_hours[(cls2, sub)]
+            for (cls2, sub) in pairs if cls2 == c
+        )
+        # peak per day максимум = total (если все в один день, что блокирует C-01)
+        # реалистично: peak ≤ max_lessons_per_day * 13 (max diff)
+        bound = min(total_diff, get_max_lessons_per_day(grade) * 13)
+        dd_bound_for[c] = max(bound, 1)
+
+    for c in classes:
+        grade = parse_grade(c)
+        bound = dd_bound_for[c]
+        for d in days_range:
+            dd = model.NewIntVar(0, bound, f"dd_{c}_{d}")
+            terms = []
+            for (cls2, sub) in pairs:
+                if cls2 != c:
+                    continue
+                diff = get_difficulty(sub, grade)
+                if diff <= 0:
+                    continue
+                for s in slots_range:
+                    terms.append(diff * x[c, sub, d, s])
+            if terms:
+                model.Add(dd == sum(terms))
+            else:
+                model.Add(dd == 0)
+            day_diff[c, d] = dd
+
+    # D-01: «peak day» не должен быть на пн/пт. Штрафуем превышение Mon/Fri над Wed.
+    if week_days >= 5:
+        wed = 2  # среда — желаемый peak
+        edge_days = [0]  # понедельник
+        if week_days - 1 != wed:
+            edge_days.append(week_days - 1)  # пятница (или суббота)
+        for c in classes:
+            bound = dd_bound_for[c]
+            for ed in edge_days:
+                excess = model.NewIntVar(0, bound, f"d01_excess_{c}_{ed}")
+                model.Add(excess >= day_diff[c, ed] - day_diff[c, wed])
+                soft_terms.append(W_D01 * excess)
+
+    # D-02: баланс параллели — классы одной параллели должны иметь похожую нагрузку по дням.
+    parallel_groups: Dict[int, List[str]] = defaultdict(list)
+    for c in classes:
+        parallel_groups[parse_grade(c)].append(c)
+    for grade, cls_list in parallel_groups.items():
+        if len(cls_list) < 2:
+            continue
+        bound = max(dd_bound_for[c] for c in cls_list)
+        for d in days_range:
+            max_dd = model.NewIntVar(0, bound, f"d02_max_{grade}_{d}")
+            min_dd = model.NewIntVar(0, bound, f"d02_min_{grade}_{d}")
+            model.AddMaxEquality(max_dd, [day_diff[c, d] for c in cls_list])
+            model.AddMinEquality(min_dd, [day_diff[c, d] for c in cls_list])
+            spread = model.NewIntVar(0, bound, f"d02_spread_{grade}_{d}")
+            model.Add(spread == max_dd - min_dd)
+            soft_terms.append(W_D02 * spread)
+
+    # Минимизируем сумму soft-нарушений с весами
+    if soft_terms:
+        model.Minimize(sum(soft_terms))
+
+    build_time_ms = int((time.time() - t_build_start) * 1000)
+
+    # ─── Solve ─────────────────────────────────────────────────
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = inp.timeLimitSeconds
+    if inp.seed > 0:
+        solver.parameters.random_seed = inp.seed
+    solver.parameters.log_search_progress = False
+
+    t_solve_start = time.time()
+    status = solver.Solve(model)
+    solve_time_ms = int((time.time() - t_solve_start) * 1000)
+
+    status_name = {
+        cp_model.OPTIMAL: "optimal",
+        cp_model.FEASIBLE: "feasible",
+        cp_model.INFEASIBLE: "infeasible",
+        cp_model.MODEL_INVALID: "invalid",
+        cp_model.UNKNOWN: "unknown",
+    }.get(status, "unknown")
+
+    if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        # Build diagnostic hints
+        hints = []
+        # Check teacher conflicts
+        for tid, lessons in teacher_lessons.items():
+            total = sum(by_class_subj_hours.get((c, sub), 0) for c, sub in lessons)
+            teacher_name = ""
+            for entry in inp.curriculum:
+                if entry.teacherId == tid:
+                    teacher_name = entry.teacherName
+                    break
+            if total > 20:
+                hints.append(f"  • {teacher_name}: {total} ч/нед — попробуйте разделить нагрузку")
+        # Check if too many classes share slots
+        if len(classes) > 10:
+            hints.append(f"  • {len(classes)} классов — попробуйте генерировать по сменам")
+
+        hint_text = ""
+        if hints:
+            hint_text = "\n\nВозможные причины:\n" + "\n".join(hints[:5])
+            hint_text += "\n\nРекомендация: уменьшите количество классов или добавьте учителей."
+
+        return GeneratorOutput(
+            ok=False,
+            summary=GeneratorSummary(
+                classesCount=len(classes),
+                placedLessons=0,
+                status=status_name,
+                solveTimeMs=solve_time_ms,
+                buildTimeMs=build_time_ms,
+                variablesCount=len(x) + len(y),
+            ),
+            error=f"Не удалось составить расписание: ограничения противоречивы.{hint_text}",
+        )
+
+    # ─── Извлекаем расписание ─────────────────────────────────
+    schedule = {}
+    placed = 0
+    for c in classes:
+        days = []
+        for d in days_range:
+            day = []
+            for s in slots_range:
+                if not solver.Value(y[c, d, s]):
+                    continue
+                # Найти какой предмет здесь
+                placed_subj = ""
+                for (cls2, sub) in pairs:
+                    if cls2 != c:
+                        continue
+                    if solver.Value(x[c, sub, d, s]):
+                        placed_subj = sub
+                        break
+                day.append(placed_subj)
+                if placed_subj:
+                    placed += 1
+            days.append(day)
+        schedule[c] = days
+
+    soft_penalty = int(solver.ObjectiveValue()) if soft_terms else 0
+
+    return GeneratorOutput(
+        ok=True,
+        schedule=schedule,
+        summary=GeneratorSummary(
+            classesCount=len(classes),
+            placedLessons=placed,
+            unplacedLessons=0,
+            softPenalty=soft_penalty,
+            status=status_name,
+            solveTimeMs=solve_time_ms,
+            buildTimeMs=build_time_ms,
+            variablesCount=len(x) + len(y),
+        ),
+    )

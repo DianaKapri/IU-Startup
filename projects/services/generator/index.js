@@ -45,11 +45,71 @@ const { normalizeSubject } = require('../../sanpin-audit-ui/services/parser/norm
 const MAX_SLOTS    = 7;          // максимальное число уроков в день в сетке
 const MAX_BT_CALLS = 5_000_000;  // лимит рекурсий backtracking
 
+// День недели → индекс (0-based). Используется для ограничений учителей (T-02).
+const DAY_NAME_TO_IDX = {
+  'пн': 0, 'пон': 0, 'понедельник': 0,
+  'вт': 1, 'вто': 1, 'вторник': 1,
+  'ср': 2, 'сре': 2, 'среда': 2,
+  'чт': 3, 'чет': 3, 'четверг': 3,
+  'пт': 4, 'пят': 4, 'пятница': 4,
+  'сб': 5, 'суб': 5, 'суббота': 5,
+};
+
+function parseDayIdx(raw) {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number') return raw >= 0 && raw < 6 ? raw : null;
+  const k = String(raw).toLowerCase().replace(/ё/g, 'е').trim();
+  return DAY_NAME_TO_IDX[k] != null ? DAY_NAME_TO_IDX[k] : null;
+}
+
+function parseDayList(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(parseDayIdx).filter(v => v != null);
+  return String(raw).split(/[,;\s]+/).map(parseDayIdx).filter(v => v != null);
+}
+
+// Нормализует constraints в форму { tid → { forbiddenDays: Set<int>, maxPerDay: int|null, teacherName } }
+function normalizeConstraints(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [tid, c] of Object.entries(raw)) {
+    if (!c || typeof c !== 'object') continue;
+    const forbidden = new Set();
+    const md = parseDayIdx(c.methodDay);
+    if (md != null) forbidden.add(md);
+    for (const d of parseDayList(c.unavailableDays)) forbidden.add(d);
+    const m = Number(c.maxLessonsPerDay);
+    out[tid] = {
+      forbiddenDays: forbidden,
+      maxPerDay:    Number.isFinite(m) && m > 0 ? m : null,
+      teacherName:  c.teacherName || tid,
+    };
+  }
+  return out;
+}
+
 // ─── Вспомогательные функции ─────────────────────────────────
 
 function parseGrade(cls) {
   const m = String(cls).match(/^(\d{1,2})/);
   return m ? parseInt(m[1], 10) : 5;
+}
+
+// Seeded pseudo-random (LCG). Детерминирован при том же seed.
+function seededRand(seed) {
+  let s = (seed | 0) || 1;
+  return function () {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    return s / 0x7fffffff;
+  };
+}
+
+function shuffleInPlace(arr, rand) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
 }
 
 function normSubj(raw) {
@@ -102,11 +162,14 @@ function c03ok(cls, d, clsDayCnt, clsTotal, numD, pdLimDay) {
 
 // ─── Построение очереди событий ──────────────────────────────
 
-function buildEvents(curriculum, classIds, numD) {
+function buildEvents(curriculum, classIds, numD, shifts, seed) {
   const byTeacher = {};
+  shifts = shifts || {};
+  const rand = seed ? seededRand(seed) : null;
 
   for (const cls of classIds) {
     const grade   = parseGrade(cls);
+    const shift   = shifts[cls] === 2 ? 2 : 1;
     const weekKey = numD === 6 ? 6 : 5;
     const wkMax   = getMaxWeeklyHours(grade, weekKey) || 34;
     const pdLim   = getMaxLessonsPerDay(grade, weekKey) || 7;
@@ -123,7 +186,7 @@ function buildEvents(curriculum, classIds, numD) {
         const rid  = String(c.roomId     || ('R_' + subj.replace(/\s/g, '').slice(0, 6)));
         const diff = getDifficulty(subj, grade);
         const h    = Math.max(0, Number(c.weeklyHours) || 0);
-        return Array.from({ length: h }, () => ({ cls, subj, tid, rid, diff, grade }));
+        return Array.from({ length: h }, () => ({ cls, subj, tid, rid, diff, grade, shift }));
       })
       .sort((a, b) => b.diff - a.diff);
 
@@ -135,7 +198,11 @@ function buildEvents(curriculum, classIds, numD) {
     }
   }
 
-  const sortedTids = Object.keys(byTeacher)
+  // Если есть seed — предварительно перетасовываем tids и classes внутри tiers,
+  // чтобы stable-sort по количеству events сохранил случайный порядок равных.
+  const allTids = Object.keys(byTeacher);
+  if (rand) shuffleInPlace(allTids, rand);
+  const sortedTids = allTids
     .sort((a, b) => byTeacher[b].length - byTeacher[a].length);
 
   const ordered = [];
@@ -146,7 +213,9 @@ function buildEvents(curriculum, classIds, numD) {
       if (!byClass[ev.cls]) byClass[ev.cls] = [];
       byClass[ev.cls].push(ev);
     }
-    const classes = Object.keys(byClass).sort();
+    const classes = Object.keys(byClass);
+    if (rand) shuffleInPlace(classes, rand);
+    else classes.sort();
     let any = true;
     while (any) {
       any = false;
@@ -161,8 +230,38 @@ function buildEvents(curriculum, classIds, numD) {
 
 // ─── CSP backtracking ────────────────────────────────────────
 
-function placeAllClasses(allEv, classIds, numD) {
+function placeAllClasses(allEv, classIds, numD, tConstraints, shifts) {
   const N = allEv.length;
+  tConstraints = tConstraints || {};
+  shifts = shifts || {};
+
+  // Эпик 3.1: shift каждого класса для формирования ключей conflict-карт
+  function classShift(cls) { return shifts[cls] === 2 ? 2 : 1; }
+
+  // T-02: предвычисляем счётчики уроков учителя по дням для maxPerDay
+  const teacherDayCnt = {}; // tid → [6]int
+  function tDayGet(tid, d) {
+    if (!tid || !teacherDayCnt[tid]) return 0;
+    return teacherDayCnt[tid][d] || 0;
+  }
+  function tDayInc(tid, d) {
+    if (!tid) return;
+    if (!teacherDayCnt[tid]) teacherDayCnt[tid] = Array(numD).fill(0);
+    teacherDayCnt[tid][d]++;
+  }
+  function tDayDec(tid, d) {
+    if (!tid || !teacherDayCnt[tid]) return;
+    teacherDayCnt[tid][d]--;
+  }
+
+  // Проверяет, что учитель доступен в день d и не превысит maxPerDay.
+  function teacherAvailable(tid, d) {
+    const tc = tConstraints[tid];
+    if (!tc) return true;
+    if (tc.forbiddenDays.has(d)) return false;
+    if (tc.maxPerDay && tDayGet(tid, d) >= tc.maxPerDay) return false;
+    return true;
+  }
 
   const clsTotal     = {};
   const clsHardTotal = {};  // total hard lessons per class (for E-03 balance)
@@ -176,17 +275,71 @@ function placeAllClasses(allEv, classIds, numD) {
 
   const clsDayCnt  = {};
   const clsHardCnt = {};  // hard-subject count per (cls, day) for E-03 balance
+  const clsDaySubj = {};  // per (cls, d) → array of subjects at each slot (для E-03/E-05 scoring)
+  const clsDayDiff = {};  // per (cls, d) → суммарная diff дня (для D-02 cross-class)
   for (const cls of classIds) {
     clsDayCnt[cls]  = Array(numD).fill(0);
     clsHardCnt[cls] = Array(numD).fill(0);
+    clsDaySubj[cls] = Array.from({ length: numD }, () => []);
+    clsDayDiff[cls] = Array(numD).fill(0);
   }
 
   const tidDs = new Set();
   const ridDs = new Set();
   const asgn  = new Array(N);
 
+  // ─── Soft scoring (отключено в основной BT, оставлено как утилита) ─
+  // softScore + sortCandsBySoft реализуют value ordering heuristic:
+  // ранжирование кандидатов по сумме soft-предпочтений. Эксперимент
+  // 2026-04-25 показал что в нашем CSP это даёт *худший* результат
+  // (1286 btCalls вместо 105, penalty 407 вместо 190), потому что
+  // BT упирается в hard constraints на «оптимальных» вариантах и
+  // много откатывается. Оставлено для возможной будущей доработки
+  // с MIN-CONFLICTS или другими стратегиями.
+  function softScore(d, s, ev) {
+    const { cls, subj, grade } = ev;
+    const diff = getDifficulty(subj, grade);
+    const threshold = getHardThreshold(grade);
+    const isHard = diff >= threshold;
+    const isLight = LIGHT_SUBJ_CODES.has(subj);
+    const slotIdx = s - 1;
+    let score = 0;
+
+    // E-01: сложный предмет — слот 2-4 (idx 1..3)
+    if (isHard) {
+      if (slotIdx === 0)        score += 8;
+      else if (slotIdx > 3)     score += 4;
+    }
+
+    // E-04: лёгкий профильный — не 1-м уроком
+    if (isLight && slotIdx === 0) score += 6;
+
+    // E-03 / E-05: смотрим соседний (предыдущий) слот в этом дне
+    if (slotIdx > 0) {
+      const prevSubj = (clsDaySubj[cls][d] || [])[slotIdx - 1];
+      if (prevSubj) {
+        if (prevSubj === subj) score += 8;                        // E-05: одинаковые подряд
+        const prevDiff = getDifficulty(prevSubj, grade);
+        if (isHard && prevDiff >= threshold) score += 5;          // E-03: 2 hard подряд
+      }
+    }
+
+    return score;
+  }
+
+  function sortCandsBySoft(cands, ev) {
+    if (cands.length < 2) return cands;
+    // Стабильная сортировка: сохраняем оригинальный порядок (dayOrder)
+    // как tiebreaker. Сортируем только при наличии явной soft-разницы.
+    cands.forEach((c, i) => { c.__idx = i; c.__score = softScore(c.d, c.s, ev); });
+    cands.sort((a, b) => (a.__score - b.__score) || (a.__idx - b.__idx));
+    cands.forEach(c => { delete c.__idx; delete c.__score; });
+    return cands;
+  }
+
   function candidates(ev) {
-    const { cls, subj, tid, rid, grade } = ev;
+    const { cls, subj, tid, rid, grade, shift } = ev;
+    const sh = shift || classShift(cls);
     const diff   = getDifficulty(subj, grade);
     const isHard = diff >= getHardThreshold(grade);
     const maxDay = getMaxLessonsPerDay(grade, numD === 6 ? 6 : 5) || 6;
@@ -227,20 +380,20 @@ function placeAllClasses(allEv, classIds, numD) {
       const pLim = pdLimForDay(d);
       if (clsDayCnt[cls][d] >= pLim)                              continue;
       if (!c03ok(cls, d, clsDayCnt, clsTotal, numD, pLim))         continue;
-      // Hard-balance: limit hard subjects per day to avoid clustering (E-03)
-      // Allow at most ceil(totalHard/numD)+1 hard subjects per day
       if (isHard) {
         const maxHardPerDay = Math.ceil((clsHardTotal[cls] || 0) / numD) + 1;
         if (clsHardCnt[cls][d] >= maxHardPerDay) continue;
       }
-      // Max 1 same subject per day (prevents E-03 same-subj streaks)
       if (subjPerDay[d] >= 1)                                      continue;
+      if (!teacherAvailable(tid, d))                                continue;
       const s = clsDayCnt[cls][d] + 1;
       if (s > MAX_SLOTS)                                           continue;
-      if (tid && tidDs.has(`${tid}:${d}:${s}`))                   continue;
-      if (rid && ridDs.has(`${rid}:${d}:${s}`))                   continue;
+      if (tid && tidDs.has(`${tid}:${d}:${s}:${sh}`))             continue;
+      if (rid && ridDs.has(`${rid}:${d}:${s}:${sh}`))             continue;
       cands.push({ d, s });
     }
+    // Сортируем кандидатов по soft-score: лучший вариант BT попробует первым
+    if (cands.length > 1) sortCandsBySoft(cands, ev);
     // Fallback 1: relax hard-balance if stuck (keep 1-per-subj and teacher/room constraints)
     if (cands.length === 0) {
       for (const d of dayOrder) {
@@ -248,46 +401,59 @@ function placeAllClasses(allEv, classIds, numD) {
         if (clsDayCnt[cls][d] >= pLim)                            continue;
         if (!c03ok(cls, d, clsDayCnt, clsTotal, numD, pLim))       continue;
         if (subjPerDay[d] >= 1)                                    continue;  // 1-per-subj kept
+        if (!teacherAvailable(tid, d))                              continue;  // T-02 kept (hard)
         const s = clsDayCnt[cls][d] + 1;
         if (s > MAX_SLOTS)                                         continue;
-        if (tid && tidDs.has(`${tid}:${d}:${s}`))                 continue;
-        if (rid && ridDs.has(`${rid}:${d}:${s}`))                 continue;
+        if (tid && tidDs.has(`${tid}:${d}:${s}:${sh}`))           continue;
+        if (rid && ridDs.has(`${rid}:${d}:${s}:${sh}`))           continue;
         cands.push({ d, s });
       }
+      // sortCandsBySoft отключён: эксперимент показал что value-ordering
+      // в этом CSP ухудшает результат — оптимальные по soft варианты часто
+      // конфликтуют с hard constraints, что приводит к множественным backtrack'ам.
+      // Глобальная оптимизация делается в swap-фазе оптимизатора.
     }
-    // Fallback 2: relax C-03 hard-balance AND 1-per-subj, but keep teacher/room (hard constraints)
-    // This only fires when it is mathematically impossible to place the lesson otherwise
-    // (e.g. weekly hours > weekDays * max-per-day). A warning is emitted by the caller.
+    // Fallback 2: relax C-03, 1-per-subj и T-02. Last-resort placement.
     if (cands.length === 0) {
       for (const d of dayOrder) {
         const pLim = pdLimForDay(d);
         if (clsDayCnt[cls][d] >= pLim)                            continue;
         const s = clsDayCnt[cls][d] + 1;
         if (s > MAX_SLOTS)                                         continue;
-        if (tid && tidDs.has(`${tid}:${d}:${s}`))                 continue;
-        if (rid && ridDs.has(`${rid}:${d}:${s}`))                 continue;
+        if (tid && tidDs.has(`${tid}:${d}:${s}:${sh}`))           continue;
+        if (rid && ridDs.has(`${rid}:${d}:${s}:${sh}`))           continue;
         cands.push({ d, s });
       }
+      // sortCandsBySoft отключён: эксперимент показал что value-ordering
+      // в этом CSP ухудшает результат — оптимальные по soft варианты часто
+      // конфликтуют с hard constraints, что приводит к множественным backtrack'ам.
+      // Глобальная оптимизация делается в swap-фазе оптимизатора.
     }
     return cands;
   }
 
   function place(i, d, s) {
-    const { cls, tid, rid, diff, grade } = allEv[i];
+    const { cls, subj, tid, rid, diff, grade, shift } = allEv[i];
+    const sh = shift || classShift(cls);
     clsDayCnt[cls][d]++;
     if (diff >= getHardThreshold(grade)) clsHardCnt[cls][d]++;
-    if (tid) tidDs.add(`${tid}:${d}:${s}`);
-    if (rid) ridDs.add(`${rid}:${d}:${s}`);
+    clsDaySubj[cls][d][s - 1] = subj;
+    clsDayDiff[cls][d] += diff;
+    if (tid) { tidDs.add(`${tid}:${d}:${s}:${sh}`); tDayInc(tid, d); }
+    if (rid) ridDs.add(`${rid}:${d}:${s}:${sh}`);
     asgn[i] = { d, s };
   }
 
   function unplace(i) {
     const { d, s } = asgn[i];
-    const { cls, tid, rid, diff, grade } = allEv[i];
+    const { cls, tid, rid, diff, grade, shift } = allEv[i];
+    const sh = shift || classShift(cls);
     clsDayCnt[cls][d]--;
     if (diff >= getHardThreshold(grade)) clsHardCnt[cls][d]--;
-    if (tid) tidDs.delete(`${tid}:${d}:${s}`);
-    if (rid) ridDs.delete(`${rid}:${d}:${s}`);
+    clsDaySubj[cls][d][s - 1] = undefined;
+    clsDayDiff[cls][d] -= diff;
+    if (tid) { tidDs.delete(`${tid}:${d}:${s}:${sh}`); tDayDec(tid, d); }
+    if (rid) ridDs.delete(`${rid}:${d}:${s}:${sh}`);
     asgn[i] = undefined;
   }
 
@@ -304,6 +470,19 @@ function placeAllClasses(allEv, classIds, numD) {
   }
 
   const ok = bt(0);
+
+  // Post-check T-02: найти уроки, поставленные вопреки constraint учителя.
+  const t02Violations = [];
+  for (let i = 0; i < N; i++) {
+    if (!asgn[i]) continue;
+    const { tid } = allEv[i];
+    const tc = tConstraints[tid];
+    if (!tc) continue;
+    const d = asgn[i].d;
+    if (tc.forbiddenDays.has(d)) {
+      t02Violations.push({ tid, teacherName: tc.teacherName, day: d, class: allEv[i].cls, subject: allEv[i].subj });
+    }
+  }
 
   const schedules = {};
   for (const cls of classIds) {
@@ -323,7 +502,7 @@ function placeAllClasses(allEv, classIds, numD) {
     }
   }
 
-  return { schedules, ok, calls, placed: asgn.filter(Boolean).length, total: N };
+  return { schedules, ok, calls, placed: asgn.filter(Boolean).length, total: N, t02Violations };
 }
 
 // ─── Swap-оптимизатор ────────────────────────────────────────
@@ -457,7 +636,16 @@ function optimalDayOrder(lessons, grade) {
 }
 
 
-function softPenalty(days, grade) {
+// Лёгкие/профильные предметы (нормализованные коды) — используются для E-04
+const LIGHT_SUBJ_CODES = new Set(['фк', 'муз', 'изо', 'обж', 'техн', 'мхк', 'орксэ', 'однк', 'окрмир']);
+
+/**
+ * @param {string[][]} days
+ * @param {number} grade
+ * @param {{cls?: string, allSchedules?: Object, classIds?: string[]}} [ctx]
+ *   — опциональный контекст для cross-class правил (D-02)
+ */
+function softPenalty(days, grade, ctx) {
   let penalty = 0;
   const threshold = getHardThreshold(grade);
   const dayScores = [];
@@ -466,24 +654,26 @@ function softPenalty(days, grade) {
     const active = lessons.filter(s => s);
     let dayScore = 0, streak = 0;
 
+    // E-04: первый урок дня не должен быть профильным (физ-ра, муз, изо, ОБЖ, технология, …)
+    if (active.length > 0 && LIGHT_SUBJ_CODES.has(active[0])) penalty += 4;
+
     for (let i = 0; i < active.length; i++) {
       const diff = getDifficulty(active[i], grade);
       dayScore += diff;
       if (diff >= threshold) {
-        // E-01: сложный предмет не на позициях 2-4 (1-based)
         if (!(i >= 1 && i <= 3)) penalty += 3;
-        // E-03: подряд сложные
         streak++;
         if (streak === 2) penalty += 2;
         if (streak >= 3)  penalty += 5;
       } else {
         streak = 0;
       }
+      // E-05: одинаковый предмет подряд (не считаем lab/double)
+      if (i > 0 && active[i] === active[i - 1]) penalty += 4;
     }
     dayScores.push(dayScore);
   }
 
-  // E-02: в середине недели (Ср/Чт) должно быть легче
   if (dayScores.length >= 4) {
     const midMin  = Math.min(dayScores[2] ?? Infinity, dayScores[3] ?? Infinity);
     const others  = dayScores.filter((_, i) => i !== 2 && i !== 3 && dayScores[i] > 0);
@@ -493,17 +683,44 @@ function softPenalty(days, grade) {
     }
   }
 
-  // D-01: пик не в начале/конце недели
   if (dayScores.length >= 3) {
     const peak = Math.max(...dayScores);
     if (dayScores[0] === peak) penalty += 5;
     if (dayScores[dayScores.length - 1] === peak) penalty += 5;
   }
 
+  // D-02: дисбаланс параллели (cross-class). Только если передан ctx.
+  if (ctx && ctx.cls && ctx.allSchedules && ctx.classIds) {
+    const siblings = ctx.classIds.filter(c => c !== ctx.cls && parseGrade(c) === grade);
+    if (siblings.length > 0) {
+      for (let d = 0; d < dayScores.length; d++) {
+        const all = [dayScores[d]];
+        for (const sib of siblings) {
+          const sibDay = (ctx.allSchedules[sib] || [])[d] || [];
+          all.push(sibDay.reduce((s, sb) => s + getDifficulty(sb, grade, 0), 0));
+        }
+        const mx = Math.max(...all), mn = Math.min(...all);
+        if (mx - mn > 6) {
+          // Этот класс — экстремум? Тогда штраф
+          if (dayScores[d] === mx || dayScores[d] === mn) penalty += 3;
+        }
+      }
+    }
+  }
+
   return penalty;
 }
 
 function optimize(schedules, allEv, classIds, numD) {
+  // Метрики swap-проходов (Эпик 1.1.1)
+  const metrics = { passesDone: 0, swapsApplied: 0, penaltyBefore: 0, penaltyAfter: 0 };
+
+  // Начальная penalty — суммарная по всем классам, с учётом D-02
+  for (const cls of classIds) {
+    metrics.penaltyBefore += softPenalty(schedules[cls] || [], parseGrade(cls),
+      { cls, allSchedules: schedules, classIds });
+  }
+
   // Карта: (cls, d, s_0based) → {tid}
   const slotTid = {};
   for (const ev of allEv) {
@@ -549,13 +766,15 @@ function optimize(schedules, allEv, classIds, numD) {
             if (tidConflict(t1, d, s2, cls)) continue;
             if (tidConflict(t2, d, s1, cls)) continue;
 
-            const before = softPenalty(days, grade);
+            const ctxOpt = { cls, allSchedules: schedules, classIds };
+            const before = softPenalty(days, grade, ctxOpt);
             [days[d][s1], days[d][s2]] = [days[d][s2], days[d][s1]];
             [slotTid[`${cls}:${d}:${s1}`], slotTid[`${cls}:${d}:${s2}`]] =
               [slotTid[`${cls}:${d}:${s2}`], slotTid[`${cls}:${d}:${s1}`]];
 
-            if (softPenalty(days, grade) < before) {
+            if (softPenalty(days, grade, ctxOpt) < before) {
               improved = true;
+              metrics.swapsApplied++;
             } else {
               [days[d][s1], days[d][s2]] = [days[d][s2], days[d][s1]];
               [slotTid[`${cls}:${d}:${s1}`], slotTid[`${cls}:${d}:${s2}`]] =
@@ -571,12 +790,19 @@ function optimize(schedules, allEv, classIds, numD) {
       // D-01 day-difficulty balancing is achieved by the optimalDayOrder final pass instead.
     }
 
+    metrics.passesDone = pass + 1;
     if (!improved) break;
   }
 
   // Final sort pass removed: optimalDayOrder caused subject duplication due to
   // stale slotTid after intra-day swaps and padding-slot index mismatches.
   // Intra-day swaps above already improve E-01/E-03 safely within each day.
+
+  for (const cls of classIds) {
+    metrics.penaltyAfter += softPenalty(schedules[cls] || [], parseGrade(cls),
+      { cls, allSchedules: schedules, classIds });
+  }
+  return metrics;
 }
 
 // ─── Публичный API ───────────────────────────────────────────
@@ -604,6 +830,40 @@ function optimize(schedules, allEv, classIds, numD) {
  * }}
  */
 function runGenerator(data) {
+  // Multi-start (Эпик 1.1.3): если attempts > 1, пробуем N разных seed
+  // и возвращаем лучший по softPenalty. Эксперимент показал, что разные
+  // seed могут давать радикально разные результаты — некоторые score 0,
+  // другие score 100.
+  const attempts = Math.max(1, Math.min(20, Number(data.attempts) || 1));
+  if (attempts > 1) {
+    const baseSeed = Number(data.seed) || 0;
+    let best = null;
+    const tried = [];
+    for (let i = 0; i < attempts; i++) {
+      const trySeed = baseSeed + i + 1;
+      const result = runOnce({ ...data, seed: trySeed, attempts: 1 });
+      tried.push({ seed: trySeed, ok: result.ok, penalty: result.summary && result.summary.softPenalty });
+      if (!result.ok) continue;
+      if (!best || result.summary.softPenalty < best.summary.softPenalty) {
+        best = result;
+        best.summary.bestSeed = trySeed;
+      }
+    }
+    if (!best) {
+      // Все попытки провалились — возвращаем последнюю как есть
+      const fb = runOnce({ ...data, seed: baseSeed, attempts: 1 });
+      fb.summary.attempts = attempts;
+      fb.summary.attemptsTried = tried;
+      return fb;
+    }
+    best.summary.attempts = attempts;
+    best.summary.attemptsTried = tried;
+    return best;
+  }
+  return runOnce(data);
+}
+
+function runOnce(data) {
   const classes    = Array.isArray(data.classes)    ? data.classes    : [];
   const curriculum = Array.isArray(data.curriculum) ? data.curriculum : [];
   const weekDays   = data.weekDays === 6 ? 6 : 5;
@@ -613,6 +873,36 @@ function runGenerator(data) {
   if (!curriculum.length) return fail('Учебный план пуст.');
 
   const numD = weekDays;
+
+  // T-02: нормализуем ограничения учителей
+  const tConstraints = normalizeConstraints(data.constraints);
+
+  // Preflight: сверяем часы учителя с его доступной ёмкостью
+  // (availableDays × maxPerDay). Если больше — расписание не соберётся полностью.
+  const teacherHours = {};
+  const teacherClasses = {};
+  for (const c of curriculum) {
+    const tid = c.teacherId || null;
+    if (!tid) continue;
+    teacherHours[tid] = (teacherHours[tid] || 0) + (Number(c.weeklyHours) || 0);
+  }
+  for (const [tid, hrs] of Object.entries(teacherHours)) {
+    const tc = tConstraints[tid];
+    if (!tc) continue;
+    const availDays = numD - tc.forbiddenDays.size;
+    if (availDays <= 0) {
+      warnings.push(`${tc.teacherName}: нет доступных дней (все помечены как методические/недоступные).`);
+      continue;
+    }
+    const cap = tc.maxPerDay ? availDays * tc.maxPerDay : availDays * MAX_SLOTS;
+    if (hrs > cap) {
+      warnings.push(
+        `${tc.teacherName}: ${hrs} ч/нед при максимуме ${cap} ч ` +
+        `(${availDays} дн × ${tc.maxPerDay || MAX_SLOTS}/день). ` +
+        `Часть уроков не разместится — ослабьте ограничения или уменьшите нагрузку.`
+      );
+    }
+  }
 
   // C-02: предупреждаем о превышении нормы, а также о физическом лимите (pdLim × numD)
   for (const cls of classes) {
@@ -637,8 +927,27 @@ function runGenerator(data) {
     }
   }
 
-  const allEv = buildEvents(curriculum, classes, numD);
-  const { schedules, ok, calls, placed, total } = placeAllClasses(allEv, classes, numD);
+  const seed = Number(data.seed) || 0;
+  const allEv = buildEvents(curriculum, classes, numD, data.shifts, seed);
+  const { schedules, ok, calls, placed, total, t02Violations } = placeAllClasses(allEv, classes, numD, tConstraints, data.shifts);
+
+  // Если constraint учителя был релаксирован в Fallback 2 — сообщаем пользователю
+  const DAY_LBL = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+  if (t02Violations && t02Violations.length) {
+    const byTeacher = {};
+    for (const v of t02Violations) {
+      const k = v.teacherName;
+      if (!byTeacher[k]) byTeacher[k] = { count: 0, days: new Set() };
+      byTeacher[k].count++;
+      byTeacher[k].days.add(DAY_LBL[v.day] || ('д' + v.day));
+    }
+    for (const [name, info] of Object.entries(byTeacher)) {
+      warnings.push(
+        `T-02: ${name} — ${info.count} урок(а) попало в "выходные" дни ` +
+        `(${Array.from(info.days).join(', ')}). Расписание не собиралось при строгом соблюдении constraint'а.`
+      );
+    }
+  }
 
   if (!ok) {
     warnings.push(
@@ -650,7 +959,7 @@ function runGenerator(data) {
     warnings.push(`Не размещено ${total - placed} уроков из ${total}.`);
   }
 
-  optimize(schedules, allEv, classes, numD);
+  const optMetrics = optimize(schedules, allEv, classes, numD);
 
   let totalPenalty = 0;
   for (const cls of classes) {
@@ -666,6 +975,13 @@ function runGenerator(data) {
       unplacedLessons: total - placed,
       btCalls:         calls,
       softPenalty:     Math.round(totalPenalty),
+      // Эпик 1.1.1 — метрики оптимизатора
+      optimizerPasses: optMetrics.passesDone,
+      swapsApplied:    optMetrics.swapsApplied,
+      penaltyBefore:   Math.round(optMetrics.penaltyBefore),
+      penaltyAfter:    Math.round(optMetrics.penaltyAfter),
+      // Эпик 1.1.3 — seed использованный для генерации (для регенерации)
+      seed:            seed,
     },
     warnings,
   };

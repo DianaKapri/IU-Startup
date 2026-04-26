@@ -2,11 +2,14 @@
 <html lang="ru">
 <head>
 <!-- Microsoft Clarity -->
-<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "weqg9ebzqd");</script>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<script type="text/javascript">(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window, document, "clarity", "script", "wgv6m1c6w5");</script>
+<meta charset="UTF-8"/>
+<link rel="icon" href="/assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/favicon-mob.png"><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>ШколаПлан — Расписание. Переосмыслено.</title>
 <link rel="stylesheet" href="./css/styles.css"/>
 <link rel="stylesheet" href="./css/demo.css"/>
+<link rel="stylesheet" href="./css/subscription.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
@@ -20,7 +23,7 @@
       <a href="#audit" class="nav__link">Аудит</a>
       <a href="#schedule-gen" class="nav__link">Составить расписание</a>
       <a href="#price" class="nav__link">Тарифы</a>
-      <a href="./contacts.html" class="nav__link">Контакты</a>
+      <a href="#contacts" class="nav__link">Контакты</a>
     </div>
     <div id="navGuestLinks" class="nav__guest">
       <a href="./login.html" class="nav__pill nav__pill--ghost">Войти</a>
@@ -43,7 +46,7 @@
     <a href="#audit" class="nav__drawer-link">Аудит</a>
     <a href="#schedule-gen" class="nav__drawer-link">Составить расписание</a>
     <a href="#price" class="nav__drawer-link">Тарифы</a>
-    <a href="./contacts.html" class="nav__drawer-link">Контакты</a>
+    <a href="#contacts" class="nav__drawer-link">Контакты</a>
   </div>
   <div class="nav__drawer-footer">
     <a href="./login.html" class="nav__drawer-btn nav__drawer-btn--outline">Войти</a>
@@ -204,13 +207,6 @@
   }
   prev.addEventListener('click', function() { if (idx > 0) { idx--; update(); } });
   next.addEventListener('click', function() { if (idx < total - 1) { idx++; update(); } });
-  var startX = 0;
-  track.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; }, {passive:true});
-  track.addEventListener('touchend', function(e){
-    var dx = e.changedTouches[0].clientX - startX;
-    if (dx < -40 && idx < total-1) { idx++; update(); }
-    if (dx >  40 && idx > 0)       { idx--; update(); }
-  }, {passive:true});
   update();
 })();
 </script>
@@ -218,7 +214,7 @@
 <section class="ribbon"><div class="ribbon__inner">
   <div class="ribbon__stat fade-in"><span class="ribbon__number" data-target="23">0</span><span class="ribbon__label">проверки СанПиН производится</span></div>
   <div class="ribbon__stat fade-in fade-in--d1"><span class="ribbon__headline">5 мс</span><span class="ribbon__label">время аудита расписания</span></div>
-  <div class="ribbon__stat fade-in fade-in--d2"><span class="ribbon__headline">2ч</span><span class="ribbon__label">экономии вашего времени</span></div>
+  <div class="ribbon__stat fade-in fade-in--d2"><span class="ribbon__headline">40ч</span><span class="ribbon__label">экономии вашего времени</span></div>
 </div></section>
 
 <section class="showcase showcase--dark" id="audit"><div class="showcase__inner">
@@ -493,62 +489,65 @@
 </section>
 
 <!-- ═══ SCHEDULE GEN: what's considered ═══ -->
-<section class="sched-params sched-params--light"><div class="sched-params__inner">
-  <p class="sched-params__eyebrow">ЧТО УЧИТЫВАЕТСЯ ПРИ ГЕНЕРАЦИИ</p>
-  <h2 class="sched-params__title">Алгоритм думает за вас</h2>
-  <div class="sched-params__grid">
-    <div class="sched-param">
-      <div class="sched-param__icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="#3b82f6" stroke-width="1.5"/><path d="M3 17c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/></svg>
+<section class="showcase showcase--light"><div class="showcase__inner showcase__inner--wide">
+  <h2 class="showcase__title fade-in">Алгоритм думает за вас</h2>
+  <div class="demo-rules__grid demo-rules__grid--dark" style="margin-top:32px;text-align:left">
+    <div class="demo-rule demo-rule--dark fade-in"><div class="demo-rule__code" style="background:rgba(59,130,246,.1);color:#3b82f6;border-color:rgba(59,130,246,.2)">01</div><div><p class="demo-rule__name">Нагрузка учителей</p><p class="demo-rule__desc">Рабочие часы, выходные дни, максимальное количество уроков в день на педагога.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in fade-in--d1"><div class="demo-rule__code" style="background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.2)">02</div><div><p class="demo-rule__name">Число уроков в день</p><p class="demo-rule__desc">Допустимое количество уроков для каждого класса по нормам СанПиН и школьной программе.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in"><div class="demo-rule__code" style="background:rgba(167,139,250,.1);color:#a78bfa;border-color:rgba(167,139,250,.2)">03</div><div><p class="demo-rule__name">Кабинеты и залы</p><p class="demo-rule__desc">Вместимость, тип кабинета (спортзал, лаборатория, компьютерный класс) и его доступность.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in fade-in--d1"><div class="demo-rule__code" style="background:rgba(245,158,11,.1);color:#f59e0b;border-color:rgba(245,158,11,.2)">04</div><div><p class="demo-rule__name">Трудность предметов</p><p class="demo-rule__desc">Сложные предметы — в первой половине дня, лёгкие — в конце, согласно рекомендациям.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in fade-in--d2"><div class="demo-rule__code" style="background:rgba(6,182,212,.1);color:#06b6d4;border-color:rgba(6,182,212,.2)">05</div><div><p class="demo-rule__name">Окна в расписании</p><p class="demo-rule__desc">Алгоритм минимизирует пустые часы у учителей и не допускает разрывов у классов.</p></div></div>
+    <div class="demo-rule demo-rule--dark fade-in fade-in--d3"><div class="demo-rule__code" style="background:rgba(244,63,94,.1);color:#f43f5e;border-color:rgba(244,63,94,.2)">06</div><div><p class="demo-rule__name">Нормы СанПиН</p><p class="demo-rule__desc">23 автоматические проверки прямо в процессе генерации — нарушения исключены на этапе создания.</p></div></div>
+  </div>
+</div></section>
+
+<!-- ═══ GENERATOR DEMO: animated showcase ═══ -->
+<section class="gen-demo"><div class="gen-demo__inner">
+  <p class="gen-demo__eyebrow fade-in">Как это работает</p>
+  <h2 class="gen-demo__title fade-in">Генерация за 30 секунд</h2>
+  <p class="gen-demo__sub fade-in">Укажите параметры — алгоритм соберёт расписание без нарушений</p>
+
+  <div class="gen-demo__screen">
+    <!-- Step 1: inputs -->
+    <div class="gen-demo__step gen-demo__step--1">
+      <div class="gen-demo__label">Входные данные</div>
+      <div class="gen-demo__chips">
+        <span class="gen-demo__chip gen-demo__chip--a1">5А — 29 ч/нед</span>
+        <span class="gen-demo__chip gen-demo__chip--a2">7Б — 32 ч/нед</span>
+        <span class="gen-demo__chip gen-demo__chip--a3">9А — 33 ч/нед</span>
       </div>
-      <h3 class="sched-param__title">Нагрузка учителей</h3>
-      <p class="sched-param__desc">Рабочие часы, выходные дни, максимальное количество уроков в день на педагога.</p>
+      <div class="gen-demo__chips">
+        <span class="gen-demo__chip gen-demo__chip--a4">Иванова · мат · 5А 7Б</span>
+        <span class="gen-demo__chip gen-demo__chip--a5">Петров · физ · 9А</span>
+      </div>
     </div>
-    <div class="sched-param">
-      <div class="sched-param__icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="13" rx="2" stroke="#22c55e" stroke-width="1.5"/><path d="M2 8h16" stroke="#22c55e" stroke-width="1.5"/><path d="M6 2v4M14 2v4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/></svg>
+
+    <!-- Step 2: processing -->
+    <div class="gen-demo__step gen-demo__step--2">
+      <div class="gen-demo__label">Алгоритм работает</div>
+      <div class="gen-demo__progress"><div class="gen-demo__bar"></div></div>
+      <div class="gen-demo__checks">
+        <span class="gen-demo__check gen-demo__check--c1">✓ Нет окон</span>
+        <span class="gen-demo__check gen-demo__check--c2">✓ СанПиН</span>
+        <span class="gen-demo__check gen-demo__check--c3">✓ Нет конфликтов</span>
       </div>
-      <h3 class="sched-param__title">Число уроков в день</h3>
-      <p class="sched-param__desc">Допустимое количество уроков для каждого класса по нормам СанПиН и школьной программе.</p>
     </div>
-    <div class="sched-param">
-      <div class="sched-param__icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="#a78bfa" stroke-width="1.5"/><path d="M3 8h14M8 3v14" stroke="#a78bfa" stroke-width="1.5"/></svg>
+
+    <!-- Step 3: result grid -->
+    <div class="gen-demo__step gen-demo__step--3">
+      <div class="gen-demo__label">Результат</div>
+      <div class="gen-demo__grid">
+        <div class="gen-demo__hdr">Пн</div><div class="gen-demo__hdr">Вт</div><div class="gen-demo__hdr">Ср</div><div class="gen-demo__hdr">Чт</div><div class="gen-demo__hdr">Пт</div>
+        <div class="gen-demo__cell gen-demo__cell--r1">мат</div><div class="gen-demo__cell gen-demo__cell--r2">рус</div><div class="gen-demo__cell gen-demo__cell--r3">ия</div><div class="gen-demo__cell gen-demo__cell--r4">лит</div><div class="gen-demo__cell gen-demo__cell--r5">мат</div>
+        <div class="gen-demo__cell gen-demo__cell--r6">рус</div><div class="gen-demo__cell gen-demo__cell--r7">мат</div><div class="gen-demo__cell gen-demo__cell--r8">физ</div><div class="gen-demo__cell gen-demo__cell--r9">мат</div><div class="gen-demo__cell gen-demo__cell--r10">ист</div>
+        <div class="gen-demo__cell gen-demo__cell--r11">ия</div><div class="gen-demo__cell gen-demo__cell--r12">ист</div><div class="gen-demo__cell gen-demo__cell--r13">рус</div><div class="gen-demo__cell gen-demo__cell--r14">физ</div><div class="gen-demo__cell gen-demo__cell--r15">рус</div>
+        <div class="gen-demo__cell gen-demo__cell--r16">фк</div><div class="gen-demo__cell gen-demo__cell--r17">био</div><div class="gen-demo__cell gen-demo__cell--r18">мат</div><div class="gen-demo__cell gen-demo__cell--r19">рус</div><div class="gen-demo__cell gen-demo__cell--r20">фк</div>
       </div>
-      <h3 class="sched-param__title">Кабинеты и залы</h3>
-      <p class="sched-param__desc">Вместимость, тип кабинета (спортзал, лаборатория, компьютерный класс) и его доступность.</p>
-    </div>
-    <div class="sched-param">
-      <div class="sched-param__icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 3v14M3 10h14" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="10" r="7" stroke="#f59e0b" stroke-width="1.5"/></svg>
-      </div>
-      <h3 class="sched-param__title">Трудность предметов</h3>
-      <p class="sched-param__desc">Сложные предметы — в первой половине дня и недели, лёгкие — в конце, согласно рекомендациям.</p>
-    </div>
-    <div class="sched-param">
-      <div class="sched-param__icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M4 6h8M4 14h6" stroke="#06b6d4" stroke-width="1.5" stroke-linecap="round"/></svg>
-      </div>
-      <h3 class="sched-param__title">Окна в расписании</h3>
-      <p class="sched-param__desc">Алгоритм минимизирует пустые часы у учителей и не допускает разрывов у классов.</p>
-    </div>
-    <div class="sched-param">
-      <div class="sched-param__icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2l2.09 5.26L18 8.27l-4 3.89.94 5.84L10 15.4l-4.94 2.6L6 12.16 2 8.27l5.91-.01L10 2z" stroke="#f43f5e" stroke-width="1.5" stroke-linejoin="round"/></svg>
-      </div>
-      <h3 class="sched-param__title">Нормы СанПиН</h3>
-      <p class="sched-param__desc">23 автоматические проверки прямо в процессе генерации — нарушения исключены на этапе создания.</p>
+      <div class="gen-demo__score gen-demo__score--anim">Score 92 · 0 нарушений</div>
     </div>
   </div>
 </div></section>
 
-<section class="proof-section"><div class="proof__inner fade-in">
-  <div class="proof__stat"><span class="proof__num">50+</span><span class="proof__label">расписаний уже проверено</span></div>
-  <div class="proof__divider"></div>
-  <div class="proof__stat"><span class="proof__num">1 200+</span><span class="proof__label">нарушений СанПиН выявлено</span></div>
-  <div class="proof__divider"></div>
-  <div class="proof__stat"><span class="proof__num">23</span><span class="proof__label">автоматические проверки</span></div>
-</div></section>
 
 <section class="price price--light" id="price"><div class="price__inner fade-in">
   <p class="price__eyebrow">Стоимость</p>
@@ -556,73 +555,124 @@
   <p class="price__subtitle">Начните бесплатно — без карты и обязательств</p>
   <div class="price__cards">
 
-    <div class="plan plan--light">
+    <div class="plan plan--dark">
       <div class="plan__top">
-        <div class="plan__head">
-          <div>
-            <h3 class="plan__name">Пробный</h3>
-            <p class="plan__desc">Аудит расписания</p>
-          </div>
-          <span class="plan__badge plan__badge--light">Без карты</span>
-        </div>
+        <h3 class="plan__name">Бесплатно</h3>
         <div class="plan__price-row">
-          <span class="plan__amount">0 ₽</span>
-          <span class="plan__period">/ бессрочно</span>
+          <span class="plan__amount">0 <span class="plan__currency">₽</span></span>
         </div>
-        <a href="./login.html?tab=register" class="plan__btn plan__btn--dark">
-          Начать бесплатно
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
+        <p class="plan__period-note">навсегда</p>
       </div>
       <div class="plan__features">
-        <div class="plan__feat"><span class="plan__check plan__check--dk"></span>Аудит по нормам СанПиН</div>
-        <div class="plan__feat"><span class="plan__check plan__check--dk"></span>1 школа</div>
-        <div class="plan__feat"><span class="plan__check plan__check--dk"></span>Анализ нарушений</div>
-        <div class="plan__feat"><span class="plan__check plan__check--dk"></span>Поддержка по email</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Загрузка расписания (.xlsx)</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Аудит СанПиН (7 проверок)</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Тепловая карта нагрузки</div>
+        <div class="plan__feat plan__feat--off"><span class="plan__dash-icon">–</span>Рекомендации по перестановке</div>
+        <div class="plan__feat plan__feat--off"><span class="plan__dash-icon">–</span>Составитель расписания</div>
+        <div class="plan__feat plan__feat--off"><span class="plan__dash-icon">–</span>Экстренные замены</div>
+        <div class="plan__feat plan__feat--off"><span class="plan__dash-icon">–</span>История и сравнение</div>
       </div>
+      <a href="./login.html?tab=register" class="plan__cta plan__cta--ghost">Начать бесплатно</a>
+    </div>
+
+    <div class="plan plan--dark plan--recommended">
+      <div class="plan__ribbon">Лучший выбор</div>
+      <div class="plan__top">
+        <h3 class="plan__name">Школа</h3>
+        <div class="plan__price-row">
+          <span class="plan__amount">12 000 <span class="plan__currency">₽</span></span>
+        </div>
+        <p class="plan__period-note">в год · 1 000 ₽/месяц</p>
+      </div>
+      <div class="plan__features">
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Всё из бесплатного тарифа</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Все 23 проверки СанПиН</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Рекомендации по перестановке</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Составитель расписания</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Экстренные замены за 5 сек</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>История загрузок и сравнение</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon plan__check-icon--blue">✓</span>Приоритетная поддержка</div>
+      </div>
+      <a href="./login.html?tab=register" id="trialBtn" class="plan__cta plan__cta--primary">Купить подписку</a>
     </div>
 
     <div class="plan plan--dark">
-      <div class="plan__top plan__top--dark">
-        <div class="plan__head">
-          <div>
-            <h3 class="plan__name plan__name--lt">Профессиональный</h3>
-            <p class="plan__desc plan__desc--lt">Полный доступ ко всем функциям</p>
-          </div>
-          <span class="plan__badge plan__badge--dark">Лучший выбор</span>
-        </div>
+      <div class="plan__top">
+        <h3 class="plan__name">Корпоративный</h3>
         <div class="plan__price-row">
-          <span class="plan__amount plan__amount--lt">14 400 ₽</span>
-          <span class="plan__period plan__period--lt">/ год</span>
+          <span class="plan__amount">120 000 <span class="plan__currency">₽</span></span>
         </div>
-        <p class="plan__monthly">1 200 ₽/мес · ≈ 40 ₽ в день</p>
-        <a href="./login.html?tab=register" class="plan__btn plan__btn--light">
-          Попробовать 14 дней бесплатно
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 7.5h9M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-        <p class="plan__trial-note">После пробного периода — без автосписания. Оплата только по вашему решению.</p>
+        <p class="plan__period-note">в год · 10 000 ₽/месяц</p>
       </div>
-      <div class="plan__features plan__features--dark">
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Аудит по нормам СанПиН</div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>До 5 школ <span class="plan__feat-diff">(в пробном — 1)</span></div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Генерация расписания <span class="plan__feat-diff">(нет в пробном)</span></div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Экспорт в Excel <span class="plan__feat-diff">(нет в пробном)</span></div>
-        <div class="plan__feat plan__feat--lt"><span class="plan__check plan__check--lt"></span>Приоритетная поддержка</div>
+      <div class="plan__features">
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Всё из тарифа «Школа»</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>До 50 школ в одном аккаунте</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Единый дашборд РОНО / сети</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>API для интеграций</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Выделенный менеджер</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>SLA и приоритетная поддержка</div>
+        <div class="plan__feat plan__feat--on"><span class="plan__check-icon">✓</span>Обучение персонала</div>
       </div>
+      <a href="mailto:hello@shkolaplan.ru" class="plan__cta plan__cta--ghost">Связаться с нами</a>
     </div>
 
   </div>
+
+  <!-- FAQ -->
+  <div class="faq">
+    <h2 class="faq__title">Вопросы и ответы</h2>
+    <div class="faq__list">
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Нужен ли интернет во время аудита?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Да, аудит работает в браузере, но файл обрабатывается локально — данные не покидают ваш компьютер. Интернет нужен только для загрузки страницы.</p></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Какой формат файла поддерживается?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Файлы .xlsx и .xls — стандартные форматы Excel. Если расписание в другом формате, скачайте наш шаблон и заполните его.</p></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Можно ли попробовать перед покупкой?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Да, бесплатный тариф доступен навсегда. Вы можете загружать расписание и получать базовый аудит без регистрации и оплаты.</p></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Как оформить оплату?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Нажмите «Купить подписку» — мы выставим счёт на вашу организацию. Оплата по безналичному расчёту, без автосписания.</p></div>
+      </div>
+      <div class="faq__item">
+        <button class="faq__q" onclick="this.parentNode.classList.toggle('faq__item--open')"><span>Что произойдёт по окончании подписки?</span><span class="faq__plus">+</span></button>
+        <div class="faq__a"><p>Вы перейдёте на бесплатный тариф. Все загруженные расписания сохранятся, но генерация и расширенные проверки станут недоступны.</p></div>
+      </div>
+    </div>
+  </div>
+
 </div></section>
 
-<!-- ═══ WIZARD: shared component ═══ -->
-<div data-wizard-mount="index"></div>
+<!-- ═══ CTA: motivation ═══ -->
+<!-- ═══ CTA + CONTACTS ═══ -->
+<section class="ct-footer" id="contacts">
+  <h2 class="cta-join__title">Расписание быстро и без ошибок с <span class="cta-join__highlight">ШколаПлан.</span></h2>
+  <div class="ct-footer__inner">
+    <div class="ct-footer__col ct-footer__col--brand">
+      <div class="ct-footer__logo"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".9"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/></svg> ШколаПлан</div>
+      <p class="ct-footer__copy">© 2026 ШколаПлан</p>
+    </div>
+    <div class="ct-footer__col">
+      <p class="ct-footer__col-title">Связаться</p>
+      <a href="mailto:hello@shkolaplan.ru" class="ct-footer__link">hello@shkolaplan.ru</a>
+      <a href="mailto:support@shkolaplan.ru" class="ct-footer__link">support@shkolaplan.ru</a>
+      <a href="https://t.me/shkolaplan" class="ct-footer__link" target="_blank" rel="noopener">Telegram — @shkolaplan</a>
+    </div>
+    <div class="ct-footer__col">
+    <div class="ct-footer__col">
+      <p class="ct-footer__col-title">Поддержка</p>
+      <p class="ct-footer__text">Будни: 9:00 — 18:00 (МСК)</p>
+      <p class="ct-footer__text">В выходные ответим<br/>в первый рабочий день</p>
+    </div>
+  </div>
+</section>
 
+<!-- Payment Modal (for authenticated users) -->
 
-<footer class="footer"><div class="footer__inner">
-  <span class="footer__logo">ШколаПлан</span>
-  <a href="./contacts.html" class="footer__link">Контакты</a>
-  <span class="footer__copy">© 2026 ШколаПлан</span>
-</div></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -631,6 +681,80 @@
 <script src="./js/scripts.js"></script>
 <script>
 spInitNav();
+
+(function () {
+  var overlay = document.getElementById('indexPayOverlay');
+  var modal   = document.getElementById('indexPayModal');
+
+  function openPayModal() {
+    modal.classList.add('pay-modal--open');
+    overlay.classList.add('pay-overlay--open');
+  }
+  function closePayModal() {
+    modal.classList.remove('pay-modal--open');
+    overlay.classList.remove('pay-overlay--open');
+  }
+
+  document.getElementById('indexPayClose').addEventListener('click', closePayModal);
+  overlay.addEventListener('click', closePayModal);
+
+  document.getElementById('trialBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+    spIsLoggedIn().then(function (loggedIn) {
+      if (loggedIn) {
+        openPayModal();
+      } else {
+        window.location.href = './login.html?tab=register';
+      }
+    });
+  });
+
+  document.getElementById('indexPaySubmit').addEventListener('click', async function () {
+    var org   = document.getElementById('indexPayOrg').value.trim();
+    var inn   = document.getElementById('indexPayInn').value.trim();
+    var email = document.getElementById('indexPayEmail').value.trim();
+    var err   = document.getElementById('indexPayErr');
+    var ok    = document.getElementById('indexPayOk');
+    err.textContent = ''; ok.textContent = '';
+
+    if (!org || !inn || !email) { err.textContent = 'Заполните все поля.'; return; }
+
+    var btn = document.getElementById('indexPaySubmit');
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Отправляем…';
+
+    var body = { organization_name: org, inn: inn, email: email };
+    try {
+      var user = await spGetCurrentUser();
+      if (user) { body.user_id = user.id; body.user_name = user.name; body.user_school = user.school; }
+    } catch (_) {}
+
+    try {
+      var res = await fetch('/api/subscription-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var data = await res.json();
+      if (!res.ok) {
+        err.textContent = (data.error && data.error.message) || 'Ошибка. Попробуйте позже.';
+        btn.disabled = false;
+        btn.textContent = originalText;
+        return;
+      }
+      ok.textContent = 'Счёт будет отправлен на ' + email + ' в течение 1 рабочего дня. Спасибо!';
+      btn.textContent = 'Заявка отправлена';
+      document.getElementById('indexPayOrg').value = '';
+      document.getElementById('indexPayInn').value = '';
+      document.getElementById('indexPayEmail').value = '';
+    } catch (_) {
+      err.textContent = 'Произошла ошибка. Попробуйте позже.';
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  });
+})();
 
 
 function _renderOptimizedTab(sch, cg, origAudit) {
