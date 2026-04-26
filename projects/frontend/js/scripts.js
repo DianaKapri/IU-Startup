@@ -602,55 +602,127 @@ function wizNext(){
 
 function wizStartGeneration(){
   if(!cooldown('wizGenerate',5000))return;
-  requireHuman(function() {
-  var el=document.getElementById('wizStep4');if(!el)return;
-  var school=escH(wizData.schoolName||'школы');
-  el.innerHTML='<div class="wiz-gen">'
-    +'<p class="wiz-gen__title">Генерация расписания</p>'
-    +'<p class="wiz-gen__school">'+school+'</p>'
-    +'<div class="wiz-gen__bar-wrap"><div class="wiz-gen__bar" id="wizGenBar"></div></div>'
-    +'<p class="wiz-gen__status" id="wizGenStatus">Анализируем учителей и кабинеты…</p>'
-    +'<div class="wiz-gen__done" id="wizGenDone" style="display:none">'
-    +'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="#22c55e" stroke-width="1.5"/><path d="M6 11l3.5 3.5 6.5-7" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-    +'<span>Расписание готово!</span></div>'
-    +'<button onclick="wizOpenSchedule()" class="wiz-gen__cta" id="wizGenCta" style="display:none">Открыть расписание →</button>'
-    +'</div>';
-  var steps=[
-    {pct:15,msg:'Анализируем учителей и кабинеты…'},
-    {pct:32,msg:'Проверяем ограничения по СанПиН…'},
-    {pct:55,msg:'Распределяем нагрузку по дням…'},
-    {pct:74,msg:'Разрешаем конфликты кабинетов…'},
-    {pct:90,msg:'Финальная проверка нарушений…'},
-    {pct:100,msg:'Готово'}
-  ];
-  var bar=document.getElementById('wizGenBar'),st=document.getElementById('wizGenStatus');
-  var i=0;
-  function tick(){
-    if(i>=steps.length){
+  requireHuman(function(){
+    var el=document.getElementById('wizStep4');if(!el)return;
+    var school=escH(wizData.schoolName||'школы');
+    el.innerHTML='<div class="wiz-gen">'
+      +'<p class="wiz-gen__title">Генерация расписания</p>'
+      +'<p class="wiz-gen__school">'+school+'</p>'
+      +'<div class="wiz-gen__bar-wrap"><div class="wiz-gen__bar" id="wizGenBar"></div></div>'
+      +'<p class="wiz-gen__status" id="wizGenStatus">Анализируем учителей и кабинеты…</p>'
+      +'<div class="wiz-gen__done" id="wizGenDone" style="display:none">'
+      +'<svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="#22c55e" stroke-width="1.5"/><path d="M6 11l3.5 3.5 6.5-7" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      +'<span>Расписание готово!</span></div>'
+      +'<p class="wiz-gen__error" id="wizGenError" style="display:none;color:#ff453a;font-size:.82rem;margin-top:8px"></p>'
+      +'<button onclick="wizOpenSchedule()" class="wiz-gen__cta" id="wizGenCta" style="display:none">Открыть расписание →</button>'
+      +'</div>';
+
+    var bar=document.getElementById('wizGenBar');
+    var st=document.getElementById('wizGenStatus');
+
+    function setBar(pct,msg){if(bar)bar.style.width=pct+'%';if(st&&msg)st.textContent=msg;}
+    function showError(msg){
+      var e=document.getElementById('wizGenError');
+      if(e){e.textContent=msg;e.style.display='block';}
+      if(st)st.textContent='Ошибка генерации';
+    }
+
+    setBar(10,'Подготовка данных…');
+
+    /* Build curriculum from wizData */
+    var curriculum=[];
+    var classGrades={};
+    wizData.teachers.forEach(function(t){
+      var classes=(t.classes||'').split(/[,;]+/).map(function(c){return c.trim();}).filter(Boolean);
+      classes.forEach(function(cls){
+        if(!classGrades[cls]){var m=cls.match(/^(\d+)/);classGrades[cls]=m?parseInt(m[1]):7;}
+        curriculum.push({
+          classId:cls,
+          subject:t.subject||'',
+          weeklyHours:parseInt(t.hoursPerWeek||t.hours)||2,
+          teacherId:'T_'+(t.name||'').replace(/\s+/g,'_').slice(0,10)+'_'+cls,
+          roomId:'к.'+(t.room||'101')
+        });
+      });
+    });
+
+    var classes=Object.keys(classGrades);
+    if(!classes.length){showError('Добавьте учителей с классами на шаге 2');return;}
+
+    setBar(25,'Запуск CSP-решателя…');
+
+    /* Determine API base — same origin in prod, localhost in dev */
+    var apiBase = window.location.hostname==='localhost'||window.location.hostname==='127.0.0.1'
+      ? 'http://localhost:3000'
+      : '';
+
+    fetch(apiBase+'/api/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        classes:classes,
+        curriculum:curriculum,
+        weekDays:wizData.days||5,
+        month:10,
+        schoolName:wizData.schoolName||''
+      })
+    })
+    .then(function(r){
+      setBar(75,'Получаем расписание…');
+      if(!r.ok)return r.json().then(function(e){throw new Error(e.error||'Ошибка сервера '+r.status);});
+      return r.json();
+    })
+    .then(function(data){
+      setBar(90,'Проверяем нарушения СанПиН…');
+      if(!data.ok)throw new Error(data.error||'Генератор вернул ошибку');
+
+      /* Convert CSP schedule format to engine.js format (short codes) */
+      var SF_INV={};
+      Object.keys(SF).forEach(function(code){SF_INV[SF[code].toLowerCase()]=code;});
+      function toCode(subj){
+        if(!subj)return'';
+        var lo=subj.toLowerCase().trim();
+        if(SF_INV[lo])return SF_INV[lo];
+        /* partial match */
+        var keys=Object.keys(SF_INV);
+        for(var k=0;k<keys.length;k++){if(lo.indexOf(keys[k])===0||keys[k].indexOf(lo.slice(0,4))===0)return SF_INV[keys[k]];}
+        return lo.slice(0,6);
+      }
+
+      /* data.schedule: {cls: [[slot,...],...]  per day} */
+      var sch={};
+      Object.keys(data.schedule).forEach(function(cls){
+        sch[cls]=data.schedule[cls].map(function(daySlots){
+          return daySlots.map(function(subj){return toCode(subj);}).filter(function(s){return s;});
+        });
+      });
+
+      setBar(100,'Готово!');
       var done=document.getElementById('wizGenDone'),cta=document.getElementById('wizGenCta');
       if(done)done.style.display='flex';
       if(cta)cta.style.display='inline-block';
-      return;
-    }
-    var s=steps[i++];
-    if(bar)bar.style.width=s.pct+'%';
-    if(st&&s.msg!=='Готово')st.textContent=s.msg;
-    setTimeout(tick,i===steps.length?600:900);
-  }
-  setTimeout(tick,300);
+
+      /* Save for schedule.html */
+      var built={sch:sch,cg:classGrades,school:wizData.schoolName||'',audit:data.audit,summary:data.summary};
+      saveWizardRun('schedule','Расписание: '+(built.school||'Без названия'),built);
+      localStorage.setItem(WIZARD_SOURCE_KEY,CURRENT_WIZARD_CONTEXT==='account'?'account':'index');
+      try{sessionStorage.setItem('wizSchedule',JSON.stringify(built));}catch(e){}
+    })
+    .catch(function(err){
+      setBar(100,'');
+      showError('Не удалось сгенерировать: '+(err&&err.message?err.message:err)+'. Проверьте соединение с сервером.');
+      console.error('CSP generation error:',err);
+    });
   }); /* end requireHuman */
-}
-function wizPrev(){
-  var minStep = CURRENT_WIZARD_CONTEXT === 'account' ? 1 : 0;
-  if(wizStep>minStep){wizStep--;wizShowStep();}
 }
 
 function wizBuildSchedule(){
+  /* Kept as fallback — used only if CSP API unavailable */
   var days=wizData.days||5;
   var classSubjects={},classGrades={};
   wizData.teachers.forEach(function(t){
     var sub=t.subject||'';
-    var code=normSubj(sub)||sub.toLowerCase().slice(0,6);
+    var code=normSubj&&normSubj(sub)?normSubj(sub):sub.toLowerCase().slice(0,6);
     if(!code)return;
     var hrs=parseInt(t.hoursPerWeek||t.hours)||2;
     var classes=(t.classes||'').split(/[,;]+/).map(function(c){return c.trim();}).filter(Boolean);
@@ -667,12 +739,11 @@ function wizBuildSchedule(){
     var maxPD=grade<=4?5:grade<=8?6:7;
     var lessons=[];
     classSubjects[cls].forEach(function(s){for(var h=0;h<s.hours;h++)lessons.push(s.code);});
-    /* shuffle lessons */
     for(var i=lessons.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=lessons[i];lessons[i]=lessons[j];lessons[j]=tmp;}
-    var dayArr=[];for(var d=0;d<5;d++)dayArr.push([]);
+    var dayArr=[];for(var d=0;d<days;d++)dayArr.push([]);
     lessons.forEach(function(l){
       var best=0,mn=dayArr[0].length;
-      for(var d=1;d<5;d++){if(dayArr[d].length<mn){mn=dayArr[d].length;best=d;}}
+      for(var d=1;d<days;d++){if(dayArr[d].length<mn){mn=dayArr[d].length;best=d;}}
       if(dayArr[best].length<maxPD)dayArr[best].push(l);
     });
     sch[cls]=dayArr;
@@ -682,11 +753,6 @@ function wizBuildSchedule(){
 
 function wizOpenSchedule(){
   if(!cooldown('wizSchedule'))return;
-  var built=wizBuildSchedule();
-  if(!built){alert('Добавьте учителей с классами на шаге 2');return;}
-  built.school=wizData.schoolName||'';
-  saveWizardRun('schedule','Расписание: ' + (built.school || 'Без названия'),built);
-  localStorage.setItem(WIZARD_SOURCE_KEY, CURRENT_WIZARD_CONTEXT === 'account' ? 'account' : 'index');
-  try{sessionStorage.setItem('wizSchedule',JSON.stringify(built));}catch(e){}
+  localStorage.setItem(WIZARD_SOURCE_KEY,CURRENT_WIZARD_CONTEXT==='account'?'account':'index');
   window.location.href='./schedule.html';
 }

@@ -109,21 +109,46 @@ var _schData=null;
   Object.keys(sch).forEach(function(c){sch[c].forEach(function(d){d.forEach(function(l){if(l)totalLessons++;});});});
   var audit=doAudit(sch,cg);
   var violations=audit.vi?audit.vi.length:0;
+  /* Prefer CSP audit data if available */
+  var cspAudit=data.audit||null;
+  var hardCount=cspAudit?cspAudit.hardCount:violations;
+  var softCount=cspAudit?cspAudit.softCount:(audit.wa?audit.wa.length:0);
+  var scoreVal=cspAudit&&cspAudit.score!==undefined?cspAudit.score:(audit.score!==undefined?audit.score:'—');
+  var scoreColor=scoreVal==='—'?'#86868b':scoreVal>=90?'#22c55e':scoreVal>=70?'#ffd60a':'#ff453a';
 
   var statsEl=document.getElementById('schStats');
   statsEl.innerHTML=[
     {v:classCount,l:'Классов'},
     {v:totalLessons,l:'Уроков / неделю'},
-    {v:audit.score!==undefined?audit.score:'—',l:'Оценка качества'},
-    {v:violations,l:'Нарушений СанПиН'}
+    {v:'<span style="color:'+scoreColor+'">'+scoreVal+'</span>',l:'Оценка качества'},
+    {v:'<span style="color:'+(hardCount===0?'#22c55e':'#ff453a')+'">'+hardCount+'</span>',l:'Жёстких нарушений'},
+    {v:softCount,l:'Рекомендаций'}
   ].map(function(s){
     return '<div class="sch-stat"><div class="sch-stat__val">'+s.v+'</div><div class="sch-stat__lbl">'+s.l+'</div></div>';
   }).join('');
+
+  /* Show CSP violations panel if available */
+  if(cspAudit&&cspAudit.violations&&cspAudit.violations.length){
+    var vpEl=document.createElement('div');
+    vpEl.className='sch-panel';
+    vpEl.innerHTML='<div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#86868b;margin-bottom:10px">Аудит СанПиН</div>'
+      +cspAudit.violations.slice(0,20).map(function(v){
+        var color=v.type==='hard'?'#ff453a':v.type==='soft'?'#ffd60a':'#22c55e';
+        var bg=v.type==='hard'?'rgba(255,69,58,.07)':v.type==='soft'?'rgba(255,214,10,.07)':'rgba(34,197,94,.06)';
+        return '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 9px;border-radius:6px;margin-bottom:4px;font-size:.8rem;background:'+bg+'">'
+          +'<span style="font-family:monospace;font-size:.7rem;padding:2px 5px;border-radius:3px;background:rgba(255,255,255,.07);color:#86868b;white-space:nowrap;flex-shrink:0">'+escH(v.rule||'')+'</span>'
+          +'<span style="color:'+color+'">'+escH(v.msg||'')+'</span></div>';
+      }).join('')
+      +(cspAudit.violations.length>20?'<div style="font-size:.75rem;color:#86868b;margin-top:6px">...и ещё '+(cspAudit.violations.length-20)+' записей</div>':'');
+    var gridPanel=document.querySelector('.sch-panel');
+    if(gridPanel&&gridPanel.parentNode)gridPanel.parentNode.insertBefore(vpEl,gridPanel);
+  }
 
   var tbl=document.getElementById('schGridTbl');
   renderGrid(sch,cg,audit,tbl);
 })();
 
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function downloadExcel(){
   if(!_schData){return;}
   var sch=_schData.sch,school=_schData.school||'Расписание';
