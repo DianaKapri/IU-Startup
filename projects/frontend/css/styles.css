@@ -329,7 +329,7 @@ body.nav-open .nav__backdrop { opacity: 1; pointer-events: all; }
 .pg-mock__slot { height: 26px; border-radius: 5px; font-size: .6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; letter-spacing:.01em; }
 
 /* ===== RIBBON ===== */
-.ribbon { background: var(--surface-dark); padding: 0 24px 48px; }
+.ribbon { background: var(--surface-dark); padding: 64px 24px; }
 .ribbon__inner { max-width: var(--max-w); margin: 0 auto; display: flex; justify-content: center; align-items: flex-end; gap: 60px; flex-wrap: wrap; }
 .ribbon__stat { text-align: center; display: flex; flex-direction: column; align-items: center; }
 .ribbon__number { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 700; letter-spacing: -.03em; color: #fff; line-height: 1.1; }
