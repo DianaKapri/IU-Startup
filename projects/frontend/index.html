@@ -73,58 +73,30 @@
       <!-- Card 1: Аудит -->
       <a href="#audit" class="pg-card" onclick="event.preventDefault();toggleInlineDemo();document.getElementById('audit').scrollIntoView({behavior:'smooth'})">
         <div class="pg-card__img">
-          <div class="pg-mock pg-mock--audit">
-            <div class="pg-mock__bar">
-              <span class="pg-mock__dots"><span></span><span></span><span></span></span>
-              <span class="pg-mock__tab">Аудит СанПиН · Школа №42</span>
+          <div class="pg-visual pg-visual--audit">
+            <div class="pg-visual__file">
+              <svg width="32" height="38" viewBox="0 0 32 38" fill="none"><rect x="1" y="1" width="30" height="36" rx="4" stroke="#30d158" stroke-width="1.5"/><path d="M8 12h16M8 18h12M8 24h14" stroke="#30d158" stroke-width="1.2" stroke-linecap="round" opacity=".5"/><text x="16" y="9" text-anchor="middle" fill="#30d158" font-size="6" font-weight="700">.xlsx</text></svg>
+              <span class="pg-visual__arrow">→</span>
             </div>
-            <div class="pg-mock__body">
-              <div class="pg-mock__badge pg-mock__badge--red">3 нарушения · 2 предупреждения</div>
-              <div class="pg-mock__grid">
-                <div class="pg-mock__grid-head">
-                  <span></span><span>5А</span><span>7В</span><span>9А</span><span>10Б</span>
-                </div>
-                <div class="pg-mock__grid-row">
-                  <span class="pg-mock__day">Пн</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--err pg-mock__cell--pulse">7 ур.</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                </div>
-                <div class="pg-mock__grid-row">
-                  <span class="pg-mock__day">Вт</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--warn">Физ №1</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                </div>
-                <div class="pg-mock__grid-row">
-                  <span class="pg-mock__day">Ср</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--err">7 ур.</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--warn">Хим №1</span>
-                </div>
-                <div class="pg-mock__grid-row">
-                  <span class="pg-mock__day">Чт</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--err">6 ур.</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                </div>
-                <div class="pg-mock__grid-row">
-                  <span class="pg-mock__day">Пт</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                  <span class="pg-mock__cell pg-mock__cell--ok">✓</span>
-                </div>
+            <div class="pg-visual__results">
+              <div class="pg-visual__row pg-visual__row--err">
+                <span class="pg-visual__dot pg-visual__dot--red"></span>
+                <span>7В · Пн — 7 уроков (макс. 6)</span>
               </div>
-              <div class="pg-mock__annotation">
-                <span class="pg-mock__ann-dot"></span>
-                <span class="pg-mock__ann-text">7В · Пн — превышение нормы уроков (7 из 6 макс.)</span>
+              <div class="pg-visual__row pg-visual__row--err">
+                <span class="pg-visual__dot pg-visual__dot--red"></span>
+                <span>9А · Ср — 7 уроков (макс. 6)</span>
+              </div>
+              <div class="pg-visual__row pg-visual__row--warn">
+                <span class="pg-visual__dot pg-visual__dot--orange"></span>
+                <span>5А · Вт — физика 1-м уроком</span>
+              </div>
+              <div class="pg-visual__row pg-visual__row--ok">
+                <span class="pg-visual__dot pg-visual__dot--green"></span>
+                <span>10Б — без нарушений</span>
               </div>
             </div>
+            <div class="pg-visual__score">Score 71 · 3 нарушения</div>
           </div>
         </div>
         <div class="pg-card__title">Аудит расписания по СанПиН</div>
@@ -133,58 +105,50 @@
       </a>
 
       <!-- Card 2: Составление -->
-      <a href="#wizard-section" class="pg-card" onclick="event.preventDefault();wizSelect(1);wizOpen();document.getElementById('wizard-section').scrollIntoView({behavior:'smooth'})">
+      <a href="#schedule-gen" class="pg-card" onclick="event.preventDefault();document.getElementById('schedule-gen').scrollIntoView({behavior:'smooth'})">
         <div class="pg-card__img">
-          <div class="pg-mock pg-mock--gen">
-            <div class="pg-mock__bar">
-              <span class="pg-mock__dots"><span></span><span></span><span></span></span>
-              <span class="pg-mock__tab">Генерация расписания · 9А</span>
-            </div>
-            <div class="pg-mock__body">
-              <div class="pg-mock__badge pg-mock__badge--green">Расписание готово · 0 нарушений</div>
-              <div class="pg-mock__sched">
-                <div class="pg-mock__sched-head">
-                  <span></span><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span>
-                </div>
-                <div class="pg-mock__sched-row">
-                  <span class="pg-mock__snum">1</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.26);color:#4cd964;border:1px solid rgba(76,217,100,.3)">Рус</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.24);color:#ffcc00;border:1px solid rgba(255,204,0,.3)">Физ</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.24);color:#da8fff;border:1px solid rgba(218,143,255,.3)">Ист</span>
-                </div>
-                <div class="pg-mock__sched-row">
-                  <span class="pg-mock__snum">2</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.26);color:#4cd964;border:1px solid rgba(76,217,100,.3)">Рус</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.26);color:#4cd964;border:1px solid rgba(76,217,100,.3)">Рус</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.24);color:#ffcc00;border:1px solid rgba(255,204,0,.3)">Физ</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
-                </div>
-                <div class="pg-mock__sched-row">
-                  <span class="pg-mock__snum">3</span>
-                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.24);color:#da8fff;border:1px solid rgba(218,143,255,.3)">Ист</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.24);color:#ffcc00;border:1px solid rgba(255,204,0,.3)">Физ</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.28);color:#5ac8fa;border:1px solid rgba(90,200,250,.3)">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.26);color:#4cd964;border:1px solid rgba(76,217,100,.3)">Рус</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,69,58,.24);color:#ff6b6b;border:1px solid rgba(255,107,107,.3)">Хим</span>
-                </div>
-                <div class="pg-mock__sched-row">
-                  <span class="pg-mock__snum">4</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,159,10,.24);color:#ffcc00;border:1px solid rgba(255,204,0,.3)">Физ</span>
-                  <span class="pg-mock__slot" style="background:rgba(191,90,242,.24);color:#da8fff;border:1px solid rgba(218,143,255,.3)">Ист</span>
-                  <span class="pg-mock__slot" style="background:rgba(255,69,58,.24);color:#ff6b6b;border:1px solid rgba(255,107,107,.3)">Хим</span>
-                  <span class="pg-mock__slot" style="background:rgba(41,151,255,.18);color:#5ac8fa">Мат</span>
-                  <span class="pg-mock__slot" style="background:rgba(52,199,89,.16);color:#34c759">Рус</span>
-                </div>
+          <div class="pg-visual pg-visual--gen">
+            <div class="pg-visual__sched-grid">
+              <div class="pg-visual__sched-hdr"><span></span><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span></div>
+              <div class="pg-visual__sched-row">
+                <span class="pg-visual__snum">1</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+                <span class="pg-visual__slot pg-visual__slot--purple">Ия</span>
+                <span class="pg-visual__slot pg-visual__slot--teal">Лит</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+              </div>
+              <div class="pg-visual__sched-row">
+                <span class="pg-visual__snum">2</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+                <span class="pg-visual__slot pg-visual__slot--orange">Физ</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+                <span class="pg-visual__slot pg-visual__slot--purple">Ист</span>
+              </div>
+              <div class="pg-visual__sched-row">
+                <span class="pg-visual__snum">3</span>
+                <span class="pg-visual__slot pg-visual__slot--purple">Ия</span>
+                <span class="pg-visual__slot pg-visual__slot--orange">Физ</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+                <span class="pg-visual__slot pg-visual__slot--red">Хим</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+              </div>
+              <div class="pg-visual__sched-row">
+                <span class="pg-visual__snum">4</span>
+                <span class="pg-visual__slot pg-visual__slot--mint">ФК</span>
+                <span class="pg-visual__slot pg-visual__slot--teal">Био</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+                <span class="pg-visual__slot pg-visual__slot--mint">ФК</span>
               </div>
             </div>
+            <div class="pg-visual__score pg-visual__score--green">Score 92 · 0 нарушений</div>
           </div>
         </div>
         <div class="pg-card__title">Составление расписания по СанПиН</div>
         <div class="pg-card__summary">Укажите классы, учителей и кабинеты — алгоритм за 30 минут автоматически построит расписание без нарушений и «окон».</div>
-        <div class="pg-card__cta">Попробовать <svg class="pg-card__cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+        <div class="pg-card__cta">Подробнее <svg class="pg-card__cta-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
       </a>
 
     </div>
