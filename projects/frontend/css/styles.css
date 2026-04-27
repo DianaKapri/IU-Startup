@@ -889,57 +889,48 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .gen-demo__title { font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 700; color: #1d1d1f; letter-spacing: -.03em; margin-bottom: 10px; }
 .gen-demo__sub { font-size: 1rem; color: #6e6e73; margin-bottom: 32px; }
 
-.gen-demo__screen { background: #1d1d1f; border-radius: 16px; padding: 20px 20px; text-align: left; overflow: hidden; max-width: 540px; margin: 0 auto; }
-.gen-demo__step { margin-bottom: 16px; }
-.gen-demo__step:last-child { margin-bottom: 0; }
-.gen-demo__label { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #555; margin-bottom: 10px; }
+.gen-demo__screen { background: #1d1d1f; border-radius: 16px; padding: 24px; text-align: left; overflow: hidden; max-width: 540px; margin: 0 auto; position: relative; min-height: 260px; }
 
-/* Chips — inputs */
-.gen-demo__chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.gen-demo__chip { font-size: .75rem; padding: 5px 12px; border-radius: 8px; background: rgba(255,255,255,.06); color: #bbb; border: 1px solid rgba(255,255,255,.08); opacity: 0; animation: chipIn .4s ease forwards; }
-.gen-demo__chip--a1 { animation-delay: .3s; }
-.gen-demo__chip--a2 { animation-delay: .6s; }
-.gen-demo__chip--a3 { animation-delay: .9s; }
-.gen-demo__chip--a4 { animation-delay: 1.4s; }
-.gen-demo__chip--a5 { animation-delay: 1.7s; }
-@keyframes chipIn { to { opacity: 1; } }
+/* Slideshow: 4 slides, 16s cycle */
+.gen-demo__slides { position: relative; }
+.gen-demo__slide { position: absolute; top: 0; left: 0; right: 0; opacity: 0; animation: gdSlide 16s infinite ease; }
+.gen-demo__slide--1 { animation-delay: 0s; }
+.gen-demo__slide--2 { animation-delay: 4s; }
+.gen-demo__slide--3 { animation-delay: 8s; }
+.gen-demo__slide--4 { animation-delay: 12s; position: relative; } /* last one holds height */
+@keyframes gdSlide { 0%{opacity:0} 3%{opacity:1} 23%{opacity:1} 27%{opacity:0} 100%{opacity:0} }
+
+.gen-demo__label { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #3b82f6; margin-bottom: 14px; }
+
+/* Fields */
+.gen-demo__field { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.gen-demo__field-label { font-size: .75rem; color: #666; }
+.gen-demo__field-val { font-size: .8rem; font-weight: 600; color: #ddd; }
+
+/* Chips */
+.gen-demo__chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.gen-demo__chip { font-size: .72rem; padding: 5px 10px; border-radius: 7px; background: rgba(255,255,255,.06); color: #aaa; border: 1px solid rgba(255,255,255,.08); }
+.gen-demo__chip--sp { border-color: rgba(59,130,246,.25); color: #6db3f8; }
+
+/* Teacher rows */
+.gen-demo__trow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+.gen-demo__tname { font-size: .8rem; font-weight: 600; color: #ddd; min-width: 110px; }
+.gen-demo__tsubj { font-size: .75rem; color: #3b82f6; min-width: 90px; }
+.gen-demo__thrs { font-size: .72rem; color: #666; margin-left: auto; }
 
 /* Progress bar */
-.gen-demo__progress { height: 4px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
-.gen-demo__bar { height: 100%; width: 0; background: #3b82f6; border-radius: 4px; animation: barFill 3s 2.5s ease forwards; }
-@keyframes barFill { to { width: 100%; } }
+.gen-demo__progress { height: 4px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+.gen-demo__bar--loop { height: 100%; width: 0; background: #3b82f6; border-radius: 4px; animation: barLoop 16s infinite ease; }
+@keyframes barLoop { 0%,75%{width:0} 78%{width:30%} 85%{width:70%} 92%{width:100%} 100%{width:100%} }
 
 /* Checks */
-.gen-demo__checks { display: flex; gap: 16px; }
-.gen-demo__check { font-size: .75rem; color: #30d158; opacity: 0; }
-.gen-demo__check--c1 { animation: chipIn .3s 4s ease forwards; }
-.gen-demo__check--c2 { animation: chipIn .3s 4.4s ease forwards; }
-.gen-demo__check--c3 { animation: chipIn .3s 4.8s ease forwards; }
+.gen-demo__checks-row { display: flex; gap: 14px; margin-bottom: 14px; }
+.gen-demo__chk { font-size: .72rem; color: #30d158; font-weight: 600; }
 
-/* Result grid */
-.gen-demo__grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 12px; }
-.gen-demo__hdr { font-size: .65rem; font-weight: 600; color: #555; text-align: center; padding: 4px; }
-.gen-demo__cell { font-size: .72rem; font-weight: 600; text-align: center; padding: 6px 4px; border-radius: 6px; background: rgba(59,130,246,.12); color: #6db3f8; opacity: 0; }
-.gen-demo__cell--r1  { animation: chipIn .15s 5.2s ease forwards; }
-.gen-demo__cell--r2  { animation: chipIn .15s 5.3s ease forwards; }
-.gen-demo__cell--r3  { animation: chipIn .15s 5.4s ease forwards; }
-.gen-demo__cell--r4  { animation: chipIn .15s 5.5s ease forwards; }
-.gen-demo__cell--r5  { animation: chipIn .15s 5.6s ease forwards; }
-.gen-demo__cell--r6  { animation: chipIn .15s 5.7s ease forwards; }
-.gen-demo__cell--r7  { animation: chipIn .15s 5.8s ease forwards; }
-.gen-demo__cell--r8  { animation: chipIn .15s 5.9s ease forwards; background: rgba(244,63,94,.12); color: #f87171; }
-.gen-demo__cell--r9  { animation: chipIn .15s 6.0s ease forwards; }
-.gen-demo__cell--r10 { animation: chipIn .15s 6.1s ease forwards; }
-.gen-demo__cell--r11 { animation: chipIn .15s 6.2s ease forwards; }
-.gen-demo__cell--r12 { animation: chipIn .15s 6.3s ease forwards; }
-.gen-demo__cell--r13 { animation: chipIn .15s 6.4s ease forwards; }
-.gen-demo__cell--r14 { animation: chipIn .15s 6.5s ease forwards; background: rgba(244,63,94,.12); color: #f87171; }
-.gen-demo__cell--r15 { animation: chipIn .15s 6.6s ease forwards; }
-.gen-demo__cell--r16 { animation: chipIn .15s 6.7s ease forwards; background: rgba(34,197,94,.12); color: #4ade80; }
-.gen-demo__cell--r17 { animation: chipIn .15s 6.8s ease forwards; }
-.gen-demo__cell--r18 { animation: chipIn .15s 6.9s ease forwards; }
-.gen-demo__cell--r19 { animation: chipIn .15s 7.0s ease forwards; }
-.gen-demo__cell--r20 { animation: chipIn .15s 7.1s ease forwards; background: rgba(34,197,94,.12); color: #4ade80; }
+/* Grid */
+.gen-demo__grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-bottom: 10px; }
+.gen-demo__hdr { font-size: .62rem; font-weight: 600; color: #555; text-align: center; padding: 3px; }
+.gen-demo__cell { font-size: .7rem; font-weight: 600; text-align: center; padding: 5px 2px; border-radius: 5px; background: rgba(59,130,246,.12); color: #6db3f8; }
 
-/* Score */
-.gen-demo__score { font-size: .85rem; font-weight: 700; color: #30d158; text-align: center; opacity: 0; animation: chipIn .4s 7.4s ease forwards; }
+/* Result */
+.gen-demo__result { font-size: .82rem; font-weight: 700; color: #30d158; text-align: center; }

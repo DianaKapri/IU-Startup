@@ -508,42 +508,60 @@
   <p class="gen-demo__sub fade-in">Укажите параметры — алгоритм соберёт расписание без нарушений</p>
 
   <div class="gen-demo__screen">
-    <!-- Step 1: inputs -->
-    <div class="gen-demo__step gen-demo__step--1">
-      <div class="gen-demo__label">Входные данные</div>
-      <div class="gen-demo__chips">
-        <span class="gen-demo__chip gen-demo__chip--a1">5А — 29 ч/нед</span>
-        <span class="gen-demo__chip gen-demo__chip--a2">7Б — 32 ч/нед</span>
-        <span class="gen-demo__chip gen-demo__chip--a3">9А — 33 ч/нед</span>
+    <div class="gen-demo__slides">
+      <!-- Slide 1: Школа и классы -->
+      <div class="gen-demo__slide gen-demo__slide--1">
+        <div class="gen-demo__label">1. Школа и классы</div>
+        <div class="gen-demo__field"><span class="gen-demo__field-label">Школа</span><span class="gen-demo__field-val">МБОУ СОШ №42, г. Москва</span></div>
+        <div class="gen-demo__chips">
+          <span class="gen-demo__chip">5А · 29 ч</span>
+          <span class="gen-demo__chip">6Б · 30 ч</span>
+          <span class="gen-demo__chip">7А · 32 ч</span>
+          <span class="gen-demo__chip">9А · 33 ч</span>
+          <span class="gen-demo__chip">11Б · 34 ч</span>
+        </div>
+        <div class="gen-demo__field"><span class="gen-demo__field-label">Смена</span><span class="gen-demo__field-val">1</span></div>
+        <div class="gen-demo__field"><span class="gen-demo__field-label">Дней в неделе</span><span class="gen-demo__field-val">5</span></div>
       </div>
-      <div class="gen-demo__chips">
-        <span class="gen-demo__chip gen-demo__chip--a4">Иванова · мат · 5А 7Б</span>
-        <span class="gen-demo__chip gen-demo__chip--a5">Петров · физ · 9А</span>
+      <!-- Slide 2: Учителя -->
+      <div class="gen-demo__slide gen-demo__slide--2">
+        <div class="gen-demo__label">2. Учителя и нагрузка</div>
+        <div class="gen-demo__trow"><span class="gen-demo__tname">Иванова А.И.</span><span class="gen-demo__tsubj">Математика</span><span class="gen-demo__thrs">5А 7А · 18 ч</span></div>
+        <div class="gen-demo__trow"><span class="gen-demo__tname">Петрова Е.С.</span><span class="gen-demo__tsubj">Русский язык</span><span class="gen-demo__thrs">6Б 9А · 16 ч</span></div>
+        <div class="gen-demo__trow"><span class="gen-demo__tname">Сидорова М.В.</span><span class="gen-demo__tsubj">Физика</span><span class="gen-demo__thrs">9А 11Б · 14 ч</span></div>
+        <div class="gen-demo__trow"><span class="gen-demo__tname">Козлова Н.П.</span><span class="gen-demo__tsubj">Ин. язык</span><span class="gen-demo__thrs">5А 6Б 7А · 20 ч</span></div>
       </div>
-    </div>
-
-    <!-- Step 2: processing -->
-    <div class="gen-demo__step gen-demo__step--2">
-      <div class="gen-demo__label">Алгоритм работает</div>
-      <div class="gen-demo__progress"><div class="gen-demo__bar"></div></div>
-      <div class="gen-demo__checks">
-        <span class="gen-demo__check gen-demo__check--c1">✓ Нет окон</span>
-        <span class="gen-demo__check gen-demo__check--c2">✓ СанПиН</span>
-        <span class="gen-demo__check gen-demo__check--c3">✓ Нет конфликтов</span>
+      <!-- Slide 3: Кабинеты -->
+      <div class="gen-demo__slide gen-demo__slide--3">
+        <div class="gen-demo__label">3. Кабинеты</div>
+        <div class="gen-demo__chips">
+          <span class="gen-demo__chip">201 · обычный</span>
+          <span class="gen-demo__chip">302 · обычный</span>
+          <span class="gen-demo__chip gen-demo__chip--sp">К-1 · информатика</span>
+          <span class="gen-demo__chip gen-demo__chip--sp">306 · физика</span>
+          <span class="gen-demo__chip gen-demo__chip--sp">СЗ-1 · спортзал</span>
+          <span class="gen-demo__chip">103 · обычный</span>
+        </div>
+        <div class="gen-demo__field"><span class="gen-demo__field-label">Всего</span><span class="gen-demo__field-val">19 кабинетов</span></div>
       </div>
-    </div>
-
-    <!-- Step 3: result grid -->
-    <div class="gen-demo__step gen-demo__step--3">
-      <div class="gen-demo__label">Результат</div>
-      <div class="gen-demo__grid">
-        <div class="gen-demo__hdr">Пн</div><div class="gen-demo__hdr">Вт</div><div class="gen-demo__hdr">Ср</div><div class="gen-demo__hdr">Чт</div><div class="gen-demo__hdr">Пт</div>
-        <div class="gen-demo__cell gen-demo__cell--r1">мат</div><div class="gen-demo__cell gen-demo__cell--r2">рус</div><div class="gen-demo__cell gen-demo__cell--r3">ия</div><div class="gen-demo__cell gen-demo__cell--r4">лит</div><div class="gen-demo__cell gen-demo__cell--r5">мат</div>
-        <div class="gen-demo__cell gen-demo__cell--r6">рус</div><div class="gen-demo__cell gen-demo__cell--r7">мат</div><div class="gen-demo__cell gen-demo__cell--r8">физ</div><div class="gen-demo__cell gen-demo__cell--r9">мат</div><div class="gen-demo__cell gen-demo__cell--r10">ист</div>
-        <div class="gen-demo__cell gen-demo__cell--r11">ия</div><div class="gen-demo__cell gen-demo__cell--r12">ист</div><div class="gen-demo__cell gen-demo__cell--r13">рус</div><div class="gen-demo__cell gen-demo__cell--r14">физ</div><div class="gen-demo__cell gen-demo__cell--r15">рус</div>
-        <div class="gen-demo__cell gen-demo__cell--r16">фк</div><div class="gen-demo__cell gen-demo__cell--r17">био</div><div class="gen-demo__cell gen-demo__cell--r18">мат</div><div class="gen-demo__cell gen-demo__cell--r19">рус</div><div class="gen-demo__cell gen-demo__cell--r20">фк</div>
+      <!-- Slide 4: Генерация -->
+      <div class="gen-demo__slide gen-demo__slide--4">
+        <div class="gen-demo__label">4. Алгоритм собирает расписание</div>
+        <div class="gen-demo__progress"><div class="gen-demo__bar gen-demo__bar--loop"></div></div>
+        <div class="gen-demo__checks-row">
+          <span class="gen-demo__chk">✓ Нет окон</span>
+          <span class="gen-demo__chk">✓ СанПиН</span>
+          <span class="gen-demo__chk">✓ Нет конфликтов</span>
+        </div>
+        <div class="gen-demo__grid">
+          <div class="gen-demo__hdr">Пн</div><div class="gen-demo__hdr">Вт</div><div class="gen-demo__hdr">Ср</div><div class="gen-demo__hdr">Чт</div><div class="gen-demo__hdr">Пт</div>
+          <div class="gen-demo__cell">мат</div><div class="gen-demo__cell">рус</div><div class="gen-demo__cell">ия</div><div class="gen-demo__cell">лит</div><div class="gen-demo__cell">мат</div>
+          <div class="gen-demo__cell">рус</div><div class="gen-demo__cell">мат</div><div class="gen-demo__cell">физ</div><div class="gen-demo__cell">мат</div><div class="gen-demo__cell">ист</div>
+          <div class="gen-demo__cell">ия</div><div class="gen-demo__cell">ист</div><div class="gen-demo__cell">рус</div><div class="gen-demo__cell">физ</div><div class="gen-demo__cell">рус</div>
+          <div class="gen-demo__cell">фк</div><div class="gen-demo__cell">био</div><div class="gen-demo__cell">мат</div><div class="gen-demo__cell">рус</div><div class="gen-demo__cell">фк</div>
+        </div>
+        <div class="gen-demo__result">Score 92 · 0 нарушений</div>
       </div>
-      <div class="gen-demo__score gen-demo__score--anim">Score 92 · 0 нарушений</div>
     </div>
   </div>
 </div></section>
