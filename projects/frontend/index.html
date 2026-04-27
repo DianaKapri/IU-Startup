@@ -45,8 +45,8 @@
         </div>
         <div class="nav-pop__body">
           <a href="./account.html" class="nav-pop__link">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-            Личный кабинет
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5.5" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-2.76 2.69-5 6-5s6 2.24 6 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Редактировать профиль
           </a>
           <a href="./account.html#settings" class="nav-pop__link">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2M3.75 3.75l1.42 1.42M10.83 10.83l1.42 1.42M3.75 12.25l1.42-1.42M10.83 5.17l1.42-1.42" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -1104,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
           var name = u.name || u.email || '';
           var initial = name[0] ? name[0].toUpperCase() : '?';
           ['navAvatar','navPopAvatar'].forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = initial; });
-          var nameEl = document.getElementById('navUserName'); if (nameEl) nameEl.textContent = name;
+          var nameEl = document.getElementById('navUserName'); if (nameEl) nameEl.textContent = u.email || name;
           var popName = document.getElementById('navPopName'); if (popName) popName.textContent = name;
           var popEmail = document.getElementById('navPopEmail'); if (popEmail) popEmail.textContent = u.email || '';
         }).catch(function(){});
