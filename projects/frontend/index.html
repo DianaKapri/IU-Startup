@@ -73,15 +73,30 @@
       <!-- Card 1: Аудит -->
       <a href="#audit" class="pg-card" onclick="event.preventDefault();toggleInlineDemo();document.getElementById('audit').scrollIntoView({behavior:'smooth'})">
         <div class="pg-card__img">
-          <div class="pg-hero-visual">
-            <div class="pg-hero-visual__dots">
-              <span class="pg-hv-dot" style="background:#ff453a"></span>
-              <span class="pg-hv-dot" style="background:#ff9f0a"></span>
-              <span class="pg-hv-dot" style="background:#30d158"></span>
+          <div class="pg-visual pg-visual--audit">
+            <div class="pg-visual__file">
+              <svg width="32" height="38" viewBox="0 0 32 38" fill="none"><rect x="1" y="1" width="30" height="36" rx="4" stroke="#30d158" stroke-width="1.5"/><path d="M8 12h16M8 18h12M8 24h14" stroke="#30d158" stroke-width="1.2" stroke-linecap="round" opacity=".5"/><text x="16" y="9" text-anchor="middle" fill="#30d158" font-size="6" font-weight="700">.xlsx</text></svg>
+              <span class="pg-visual__arrow">→</span>
             </div>
-            <div class="pg-hero-visual__big">3</div>
-            <div class="pg-hero-visual__label">нарушения найдены</div>
-            <div class="pg-hero-visual__sub">из 23 проверок СанПиН</div>
+            <div class="pg-visual__results">
+              <div class="pg-visual__row pg-visual__row--err">
+                <span class="pg-visual__dot pg-visual__dot--red"></span>
+                <span>7В · Пн — 7 уроков (макс. 6)</span>
+              </div>
+              <div class="pg-visual__row pg-visual__row--err">
+                <span class="pg-visual__dot pg-visual__dot--red"></span>
+                <span>9А · Ср — 7 уроков (макс. 6)</span>
+              </div>
+              <div class="pg-visual__row pg-visual__row--warn">
+                <span class="pg-visual__dot pg-visual__dot--orange"></span>
+                <span>5А · Вт — физика 1-м уроком</span>
+              </div>
+              <div class="pg-visual__row pg-visual__row--ok">
+                <span class="pg-visual__dot pg-visual__dot--green"></span>
+                <span>10Б — без нарушений</span>
+              </div>
+            </div>
+            <div class="pg-visual__score">Score 71 · 3 нарушения</div>
           </div>
         </div>
         <div class="pg-card__title">Аудит расписания по СанПиН</div>
@@ -92,15 +107,43 @@
       <!-- Card 2: Составление -->
       <a href="#schedule-gen" class="pg-card" onclick="event.preventDefault();document.getElementById('schedule-gen').scrollIntoView({behavior:'smooth'})">
         <div class="pg-card__img">
-          <div class="pg-hero-visual pg-hero-visual--green">
-            <div class="pg-hero-visual__dots">
-              <span class="pg-hv-dot" style="background:#30d158"></span>
-              <span class="pg-hv-dot" style="background:#30d158"></span>
-              <span class="pg-hv-dot" style="background:#30d158"></span>
+          <div class="pg-visual pg-visual--gen">
+            <div class="pg-visual__sched-grid">
+              <div class="pg-visual__sched-hdr"><span></span><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span></div>
+              <div class="pg-visual__sched-row">
+                <span class="pg-visual__snum">1</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+                <span class="pg-visual__slot pg-visual__slot--purple">Ия</span>
+                <span class="pg-visual__slot pg-visual__slot--teal">Лит</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+              </div>
+              <div class="pg-visual__sched-row">
+                <span class="pg-visual__snum">2</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+                <span class="pg-visual__slot pg-visual__slot--orange">Физ</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+                <span class="pg-visual__slot pg-visual__slot--purple">Ист</span>
+              </div>
+              <div class="pg-visual__sched-row">
+                <span class="pg-visual__snum">3</span>
+                <span class="pg-visual__slot pg-visual__slot--purple">Ия</span>
+                <span class="pg-visual__slot pg-visual__slot--orange">Физ</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+                <span class="pg-visual__slot pg-visual__slot--red">Хим</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+              </div>
+              <div class="pg-visual__sched-row">
+                <span class="pg-visual__snum">4</span>
+                <span class="pg-visual__slot pg-visual__slot--mint">ФК</span>
+                <span class="pg-visual__slot pg-visual__slot--teal">Био</span>
+                <span class="pg-visual__slot pg-visual__slot--blue">Мат</span>
+                <span class="pg-visual__slot pg-visual__slot--green">Рус</span>
+                <span class="pg-visual__slot pg-visual__slot--mint">ФК</span>
+              </div>
             </div>
-            <div class="pg-hero-visual__big pg-hero-visual__big--green">0</div>
-            <div class="pg-hero-visual__label">нарушений</div>
-            <div class="pg-hero-visual__sub">расписание собрано за 30 сек</div>
+            <div class="pg-visual__score pg-visual__score--green">Score 92 · 0 нарушений</div>
           </div>
         </div>
         <div class="pg-card__title">Составление расписания по СанПиН</div>
