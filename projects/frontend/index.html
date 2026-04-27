@@ -508,59 +508,30 @@
   <p class="gen-demo__sub fade-in">Укажите параметры — алгоритм соберёт расписание без нарушений</p>
 
   <div class="gen-demo__screen">
-    <div class="gen-demo__slides">
-      <!-- Slide 1: Школа и классы -->
-      <div class="gen-demo__slide gen-demo__slide--1">
-        <div class="gen-demo__label">1. Школа и классы</div>
-        <div class="gen-demo__field"><span class="gen-demo__field-label">Школа</span><span class="gen-demo__field-val">МБОУ СОШ №42, г. Москва</span></div>
-        <div class="gen-demo__chips">
-          <span class="gen-demo__chip">5А · 29 ч</span>
-          <span class="gen-demo__chip">6Б · 30 ч</span>
-          <span class="gen-demo__chip">7А · 32 ч</span>
-          <span class="gen-demo__chip">9А · 33 ч</span>
-          <span class="gen-demo__chip">11Б · 34 ч</span>
+    <div class="retro-tv">
+      <div class="retro-tv__frame">
+        <div class="retro-tv__crt">
+          <marquee class="retro-tv__marquee-v" direction="down" behavior="alternate" scrollamount="2">
+            <marquee behavior="alternate" scrollamount="3">
+              <span class="retro-tv__logo">ШколаПлан<span class="retro-tv__logo-sub">Расписание</span></span>
+            </marquee>
+          </marquee>
         </div>
-        <div class="gen-demo__field"><span class="gen-demo__field-label">Смена</span><span class="gen-demo__field-val">1</span></div>
-        <div class="gen-demo__field"><span class="gen-demo__field-label">Дней в неделе</span><span class="gen-demo__field-val">5</span></div>
       </div>
-      <!-- Slide 2: Учителя -->
-      <div class="gen-demo__slide gen-demo__slide--2">
-        <div class="gen-demo__label">2. Учителя и нагрузка</div>
-        <div class="gen-demo__trow"><span class="gen-demo__tname">Иванова А.И.</span><span class="gen-demo__tsubj">Математика</span><span class="gen-demo__thrs">5А 7А · 18 ч</span></div>
-        <div class="gen-demo__trow"><span class="gen-demo__tname">Петрова Е.С.</span><span class="gen-demo__tsubj">Русский язык</span><span class="gen-demo__thrs">6Б 9А · 16 ч</span></div>
-        <div class="gen-demo__trow"><span class="gen-demo__tname">Сидорова М.В.</span><span class="gen-demo__tsubj">Физика</span><span class="gen-demo__thrs">9А 11Б · 14 ч</span></div>
-        <div class="gen-demo__trow"><span class="gen-demo__tname">Козлова Н.П.</span><span class="gen-demo__tsubj">Ин. язык</span><span class="gen-demo__thrs">5А 6Б 7А · 20 ч</span></div>
-      </div>
-      <!-- Slide 3: Кабинеты -->
-      <div class="gen-demo__slide gen-demo__slide--3">
-        <div class="gen-demo__label">3. Кабинеты</div>
-        <div class="gen-demo__chips">
-          <span class="gen-demo__chip">201 · обычный</span>
-          <span class="gen-demo__chip">302 · обычный</span>
-          <span class="gen-demo__chip gen-demo__chip--sp">К-1 · информатика</span>
-          <span class="gen-demo__chip gen-demo__chip--sp">306 · физика</span>
-          <span class="gen-demo__chip gen-demo__chip--sp">СЗ-1 · спортзал</span>
-          <span class="gen-demo__chip">103 · обычный</span>
+      <div class="retro-tv__bottom">
+        <div class="retro-tv__speaker"></div>
+        <div class="retro-tv__controls">
+          <span class="retro-tv__btn">⏻</span>
         </div>
-        <div class="gen-demo__field"><span class="gen-demo__field-label">Всего</span><span class="gen-demo__field-val">19 кабинетов</span></div>
-      </div>
-      <!-- Slide 4: Генерация -->
-      <div class="gen-demo__slide gen-demo__slide--4">
-        <div class="gen-demo__label">4. Алгоритм собирает расписание</div>
-        <div class="gen-demo__progress"><div class="gen-demo__bar gen-demo__bar--loop"></div></div>
-        <div class="gen-demo__checks-row">
-          <span class="gen-demo__chk">✓ Нет окон</span>
-          <span class="gen-demo__chk">✓ СанПиН</span>
-          <span class="gen-demo__chk">✓ Нет конфликтов</span>
+        <div class="retro-tv__controls">
+          <span class="retro-tv__btn">−</span>
+          <span class="retro-tv__btn">+</span>
         </div>
-        <div class="gen-demo__grid">
-          <div class="gen-demo__hdr">Пн</div><div class="gen-demo__hdr">Вт</div><div class="gen-demo__hdr">Ср</div><div class="gen-demo__hdr">Чт</div><div class="gen-demo__hdr">Пт</div>
-          <div class="gen-demo__cell">мат</div><div class="gen-demo__cell">рус</div><div class="gen-demo__cell">ия</div><div class="gen-demo__cell">лит</div><div class="gen-demo__cell">мат</div>
-          <div class="gen-demo__cell">рус</div><div class="gen-demo__cell">мат</div><div class="gen-demo__cell">физ</div><div class="gen-demo__cell">мат</div><div class="gen-demo__cell">ист</div>
-          <div class="gen-demo__cell">ия</div><div class="gen-demo__cell">ист</div><div class="gen-demo__cell">рус</div><div class="gen-demo__cell">физ</div><div class="gen-demo__cell">рус</div>
-          <div class="gen-demo__cell">фк</div><div class="gen-demo__cell">био</div><div class="gen-demo__cell">мат</div><div class="gen-demo__cell">рус</div><div class="gen-demo__cell">фк</div>
+        <div class="retro-tv__controls">
+          <span class="retro-tv__btn">‹</span>
+          <span class="retro-tv__btn">›</span>
         </div>
-        <div class="gen-demo__result">Score 92 · 0 нарушений</div>
+        <div class="retro-tv__speaker"></div>
       </div>
     </div>
   </div>
