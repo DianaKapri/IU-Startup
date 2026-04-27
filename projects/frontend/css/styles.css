@@ -913,3 +913,26 @@ body.login-page { background: #000; color: #f5f5f7; min-height: 100vh; }
 .retro-tv__speaker { background-image: radial-gradient(black .1rem,transparent 0); background-size: .5rem .5rem; flex: 1; min-height: 1.8rem; filter: drop-shadow(0 2px 0 #ffffff0f); }
 .retro-tv__controls { display: flex; align-items: center; gap: .35rem; }
 .retro-tv__btn { display: flex; align-items: center; justify-content: center; width: 1.3rem; height: 1.3rem; border: 1px solid #000; border-radius: 50%; font-size: .65rem; color: #888; cursor: pointer; filter: drop-shadow(0 2px 0 #ffffff0f); }
+
+/* ═══ Nav user popover ═══ */
+.nav__user-wrap { position: relative; }
+.nav__user-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; font-family: inherit; color: inherit; padding: 4px; border-radius: 10px; transition: background .15s; }
+.nav__user-btn:hover { background: rgba(255,255,255,.06); }
+.nav-pop { display: none; position: absolute; top: calc(100% + 8px); right: 0; width: 260px; background: #1c1c1e; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; box-shadow: 0 16px 48px rgba(0,0,0,.4); z-index: 9999; overflow: hidden; animation: navPopIn .15s ease; }
+.nav-pop--open { display: block; }
+@keyframes navPopIn { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.nav-pop__header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.nav-pop__avatar { width: 32px; height: 32px; border-radius: 50%; background: #0071e3; color: #fff; display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 700; flex-shrink: 0; }
+.nav-pop__name { font-size: .88rem; font-weight: 600; color: #f5f5f7; margin: 0; }
+.nav-pop__email { font-size: .72rem; color: #86868b; margin: 0; }
+
+.nav-pop__body { padding: 6px 0; }
+.nav-pop__link { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: #ccc; font-size: .85rem; font-weight: 500; text-decoration: none; transition: background .1s; }
+.nav-pop__link:hover { background: rgba(255,255,255,.06); color: #f5f5f7; }
+.nav-pop__link svg { color: #666; flex-shrink: 0; }
+
+.nav-pop__footer { padding: 6px 0; border-top: 1px solid rgba(255,255,255,.06); }
+.nav-pop__logout { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px; background: none; border: none; color: #ff453a; font-size: .85rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: background .1s; }
+.nav-pop__logout:hover { background: rgba(255,69,58,.08); }
+.nav-pop__logout svg { color: #ff453a; flex-shrink: 0; }
