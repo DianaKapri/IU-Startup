@@ -341,16 +341,14 @@ body.nav-open .nav__backdrop { opacity: 1; pointer-events: all; }
 /* ===== SHOWCASE ===== */
 .showcase { padding: 112px 24px; text-align: center; }
 .showcase--dark { background: var(--surface-dark); color: #fff; padding-top: 64px; }
-.showcase--light { background: var(--white); color: var(--black); }
+.showcase--light { background: #f5f5f7; color: #1d1d1f; }
 .showcase__inner { max-width: var(--max-w-narrow); margin: 0 auto; }
 .showcase__inner--wide { max-width: var(--max-w); }
 .showcase__eyebrow { font-size: .82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
 .showcase--dark .showcase__eyebrow { color: var(--gray-mid); }
-.showcase--light .showcase__eyebrow { color: var(--blue); }
 .showcase__title { font-size: clamp(2rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.07; margin-bottom: 24px; }
 .showcase__text { font-size: clamp(.95rem, 2vw, 1.18rem); font-weight: 300; line-height: 1.6; max-width: 560px; margin: 0 auto 28px; }
 .showcase--dark .showcase__text { color: var(--gray-mid); }
-.showcase--light .showcase__text { color: var(--gray-dark); }
 
 /* ===== CARDS ===== */
 .cards { background: var(--gray-bg); padding: 112px 24px; }
