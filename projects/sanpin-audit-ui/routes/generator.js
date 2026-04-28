@@ -70,7 +70,7 @@ function buildGenErrorMessage(result, warnings) {
 // ── POST /api/generate ──────────────────────────────────────
 // Paid-gated: только plan='paid' с неистёкшим plan_expires_at.
 // mode: 'fast' (по умолчанию, наш JS-генератор) | 'optimal' (CP-SAT, до 30 мин)
-router.post('/generate', requirePlan(['paid']), async (req, res) => {
+router.post('/generate', requirePlan(['paid', 'free']), async (req, res) => {
   try {
     const { classes, curriculum, weekDays } = req.body;
 
@@ -171,7 +171,7 @@ router.post('/generate', requirePlan(['paid']), async (req, res) => {
 // ── POST /api/generate/from-xlsx ─────────────────────────────
 // Paid-gated. multipart/form-data: file = .xlsx template
 // mode: 'fast' (по умолчанию, JS-генератор) | 'optimal' (CP-SAT)
-router.post('/from-xlsx', requirePlan(['paid']), upload.single('file'), async (req, res) => {
+router.post('/from-xlsx', requirePlan(['paid', 'free']), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ ok: false, error: { code: 'NO_FILE', message: 'Файл не получен (поле "file" в multipart/form-data).' } });

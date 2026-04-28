@@ -64,7 +64,8 @@ function requirePlan(allowedPlans = ['paid']) {
       });
     }
 
-    const { plan, plan_expires_at: planExpiresAt } = row;
+    const { plan: rawPlan, plan_expires_at: planExpiresAt } = row;
+    const plan = rawPlan || 'free';
 
     if (!allowed.includes(plan)) {
       return res.status(403).json({
