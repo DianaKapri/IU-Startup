@@ -756,3 +756,101 @@ function wizOpenSchedule(){
   localStorage.setItem(WIZARD_SOURCE_KEY,CURRENT_WIZARD_CONTEXT==='account'?'account':'index');
   window.location.href='./schedule.html';
 }
+
+function spAuthHeaders(){
+  if(typeof _initSupabase!=='function')return Promise.resolve({});
+  return _initSupabase().then(function(sb){
+    return sb.auth.getSession().then(function(res){
+      var token=res.data&&res.data.session&&res.data.session.access_token;
+      return token?{Authorization:'Bearer '+token}:{};
+    });
+  }).catch(function(){return{};});
+}
+
+function spExtractError(resp,fallback){
+  if(!resp)return fallback||'Неизвестная ошибка';
+  var err=resp.error;
+  if(typeof err==='string')return err;
+  if(err&&Array.isArray(err.details)){
+    return err.details.slice(0,3).map(function(d){
+      return (d.sheet?'[Лист «'+d.sheet+'»'+(d.row?', стр.'+d.row:'')+'] ':'')+d.message;
+    }).join(' | ');
+  }
+  if(err&&err.message)return err.message;
+  if(resp.code)return resp.code;
+  if(Array.isArray(resp.warnings)&&resp.warnings.length){
+    return resp.warnings.slice(0,2).filter(Boolean).map(function(w){
+      if(typeof w==='string')return w;
+      if(w&&w.message){
+        var where=w.sheet?'[Лист «'+w.sheet+'»'+(w.row?', стр.'+w.row:'')+'] ':'';
+        return where+w.message;
+      }
+      return '';
+    }).filter(Boolean).join(' | ');
+  }
+  return fallback||'Неизвестная ошибка';
+}
+
+function wizXlsxUpload(file){
+  if(!file)return;
+  if(!cooldown('wizXlsxUpload',2000))return;
+
+  var statusEl=document.getElementById('wizXlsxStatus');
+  function setStatus(msg,isErr){
+    if(!statusEl)return;
+    statusEl.textContent=msg;
+    statusEl.style.display='block';
+    statusEl.style.color=isErr?'#ef4444':'#86868b';
+  }
+  setStatus('Обрабатывается шаблон…',false);
+
+  var fd=new FormData();
+  fd.append('file',file);
+  fd.append('weekDays',String(wizData.days||5));
+  var mode=(wizData.mode==='optimal')?'optimal':'fast';
+  fd.append('mode',mode);
+  if(mode==='optimal'){
+    setStatus('Запущен оптимальный режим (CP-SAT). Это может занять до 10 минут…',false);
+  }
+
+  spAuthHeaders().then(function(headers){
+    return fetch('/api/generate/from-xlsx',{method:'POST',headers:headers,body:fd});
+  })
+    .then(function(r){return r.json();})
+    .then(function(resp){
+      if(!resp||!resp.ok){
+        throw new Error(spExtractError(resp,'Не удалось обработать шаблон'));
+      }
+      var originalSch=JSON.parse(JSON.stringify(resp.schedule));
+      var sch={};
+      Object.keys(resp.schedule).forEach(function(cls){
+        sch[cls]=resp.schedule[cls].map(function(day){
+          return day.map(function(subj){
+            return (typeof normSubj==='function'?normSubj(subj):subj)||subj;
+          });
+        });
+      });
+      var cg={};
+      Object.keys(sch).forEach(function(cls){
+        var m=cls.match(/^(\d+)/);
+        cg[cls]=m?parseInt(m[1],10):7;
+      });
+      var shifts=(resp.meta&&resp.meta.shifts)||{};
+      var built={
+        sch:sch,cg:cg,school:wizData.schoolName||'',
+        originalSch:originalSch,
+        shifts:shifts,
+        curriculum:(resp.meta&&resp.meta.curriculum)||[],
+        teachers:(resp.meta&&resp.meta.teachers)||[],
+        rooms:(resp.meta&&resp.meta.rooms)||[],
+      };
+      saveWizardRun('schedule','Расписание (Excel): '+(built.school||'Без названия'),built);
+      localStorage.setItem(WIZARD_SOURCE_KEY,CURRENT_WIZARD_CONTEXT==='account'?'account':'index');
+      try{sessionStorage.setItem('wizSchedule',JSON.stringify(built));}catch(e){}
+      setStatus('Готово! Переход к расписанию…',false);
+      window.location.href='./schedule.html';
+    })
+    .catch(function(err){
+      setStatus('Ошибка: '+(err.message||err),true);
+    });
+}
