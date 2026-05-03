@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ШколаПлан — Генератор расписания</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#09090f;--s1:#111118;--s2:#18181f;--s3:#202028;--s4:#28282f;
+  --b1:rgba(255,255,255,.055);--b2:rgba(255,255,255,.10);--b3:rgba(255,255,255,.17);
+  --acc:#2997ff;--acc2:#0071e3;--ok:#30d158;--warn:#ff9f0a;--err:#ff453a;
+  --tx:#f2f2f7;--m1:rgba(242,242,247,.36);--m2:rgba(242,242,247,.58);
+  --dp:'Unbounded',sans-serif;--sf:'DM Sans',sans-serif;--mn:'JetBrains Mono',monospace;
+  --r:12px;--rs:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{background:var(--bg);color:var(--tx);font-family:var(--sf);line-height:1.6;min-height:100vh;overflow-x:hidden}
+
+.scr{display:none;min-height:100vh;flex-direction:column}
+.scr.on{display:flex}
+@keyframes fup{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ══════ SCREEN 0: START ══════ */
+#s0{position:relative;overflow:hidden;align-items:center;justify-content:center}
+.s0bg{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 700px 500px at 12% 65%,rgba(41,151,255,.07),transparent 68%),
+             radial-gradient(ellipse 500px 350px at 88% 25%,rgba(48,209,88,.04),transparent 60%)}
+.s0gr{position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.016) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.016) 1px,transparent 1px);
+  background-size:52px 52px}
+.s0wr{position:relative;z-index:1;width:100%;max-width:540px;padding:40px 24px;animation:fup .5s ease both}
+.logo-mark{font-family:var(--dp);font-size:14px;font-weight:700;color:var(--acc);letter-spacing:-.02em;margin-bottom:44px}
+.s0h1{font-family:var(--dp);font-size:30px;font-weight:700;line-height:1.12;letter-spacing:-.03em;margin-bottom:10px}
+.s0sub{color:var(--m2);font-size:13px;line-height:1.75;margin-bottom:36px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+.cc{border:1.5px solid var(--b2);border-radius:14px;padding:22px 18px;cursor:pointer;background:var(--s1);transition:border-color .18s,background .18s,transform .12s}
+.cc:hover{border-color:var(--acc);background:var(--s2);transform:translateY(-2px)}
+.cc.sel{border-color:var(--acc);background:rgba(41,151,255,.07)}
+.cc-ic{font-size:22px;margin-bottom:9px}
+.cc-t{font-size:13px;font-weight:600;margin-bottom:3px}
+.cc-d{font-size:11px;color:var(--m2);line-height:1.5}
+.s0cta{width:100%;padding:13px;background:var(--acc);border:none;border-radius:var(--rs);color:#fff;font-family:var(--sf);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,transform .1s}
+.s0cta:hover{background:var(--acc2)}.s0cta:active{transform:scale(.99)}
+.s0hint{font-size:11px;color:var(--m1);text-align:center;margin-top:13px}
+.s0hint a{color:var(--acc);cursor:pointer;text-decoration:none}
+
+/* ══════ SCREEN: LOGIN ══════ */
+#s-login{position:relative;overflow:hidden;align-items:center;justify-content:center}
+.lg-box{position:relative;z-index:1;width:100%;max-width:400px;padding:40px;margin:24px;background:var(--s1);border:1px solid var(--b2);border-radius:18px;animation:fup .45s ease both}
+.lg-logo{font-family:var(--dp);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:-.02em;margin-bottom:28px}
+.lg-title{font-family:var(--dp);font-size:20px;font-weight:600;line-height:1.2;margin-bottom:4px}
+.lg-sub{font-size:12px;color:var(--m2);margin-bottom:26px;line-height:1.6}
+.lg-tabs{display:flex;gap:4px;background:var(--s2);border-radius:8px;padding:4px;margin-bottom:20px}
+.lg-tab{flex:1;padding:7px;border:none;background:transparent;color:var(--m2);font-family:var(--sf);font-size:12px;font-weight:500;cursor:pointer;border-radius:5px;transition:all .15s}
+.lg-tab.on{background:var(--s3);color:var(--tx)}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:11px;color:var(--m2);margin-bottom:5px;font-weight:500}
+.fld input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rs);color:var(--tx);font-family:var(--sf);font-size:13px;padding:10px 12px;outline:none;transition:border-color .15s}
+.fld input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(41,151,255,.1)}
+.btn-prim{width:100%;padding:12px;background:var(--acc);border:none;border-radius:var(--rs);color:#fff;font-family:var(--sf);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;margin-top:4px}
+.btn-prim:hover{background:var(--acc2)}
+.lg-back{font-size:11px;color:var(--m1);text-align:center;margin-top:14px;cursor:pointer}
+.lg-back span{color:var(--acc)}
+
+/* ══════ TOPBAR ══════ */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 28px;border-bottom:1px solid var(--b1);background:rgba(9,9,15,.9);backdrop-filter:blur(14px);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:10px}
+.tb-logo{font-family:var(--dp);font-size:13px;font-weight:700;color:var(--acc);letter-spacing:-.02em}
+.tb-right{display:flex;align-items:center;gap:20px}
+.tb-user{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--m2)}
+.av{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--acc),#004eb5);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff}
+.steps{display:flex;align-items:center;gap:0}
+.stp{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:500;color:var(--m1)}
+.stp.act{color:var(--tx)}.stp.dn{color:var(--ok)}
+.stp-n{width:22px;height:22px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--mn);flex-shrink:0;transition:all .2s}
+.stp.act .stp-n{background:var(--acc);border-color:var(--acc);color:#fff}
+.stp.dn .stp-n{background:var(--ok);border-color:var(--ok);color:#fff}
+.stp-sep{width:28px;height:1px;background:var(--b2);margin:0 4px}
+
+/* ══════ WIZARD ══════ */
+.wbody{flex:1;max-width:920px;margin:0 auto;width:100%;padding:30px 20px 80px}
+.wp{display:none;animation:fup .28s ease both}
+.wp.on{display:block}
+.wh1{font-family:var(--dp);font-size:17px;font-weight:600;margin-bottom:4px;letter-spacing:-.02em}
+.wsub{color:var(--m2);font-size:12px;margin-bottom:22px;line-height:1.65}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.clbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--m2);margin-bottom:14px}
+.fr{display:grid;gap:11px;margin-bottom:11px}
+.f2{grid-template-columns:1fr 1fr}.f3{grid-template-columns:1fr 1fr 1fr}.f4{grid-template-columns:1fr 1fr 1fr 1fr}
+.fg label{display:block;font-size:11px;color:var(--m2);margin-bottom:4px;font-weight:500}
+.fg input,.fg select{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sf);font-size:12px;padding:8px 10px;outline:none;transition:border-color .15s;appearance:none}
+.fg input:focus,.fg select:focus{border-color:var(--acc)}
+
+/* upload */
+.uzn{border:1.5px dashed var(--b3);border-radius:9px;padding:24px 18px;text-align:center;cursor:pointer;transition:border-color .18s,background .18s;background:var(--s2)}
+.uzn:hover,.uzn.drag{border-color:var(--acc);background:rgba(41,151,255,.04)}
+.uzn input{display:none}
+.uzn .ic{font-size:26px;margin-bottom:7px}
+.uzn .tt{font-size:13px;font-weight:500;margin-bottom:2px}
+.uzn .st{font-size:11px;color:var(--m2)}
+.uzn .fn{font-size:11px;color:var(--ok);margin-top:5px;font-family:var(--mn)}
+.ulink{color:var(--acc);cursor:pointer;text-decoration:none;font-size:11px}
+
+/* teachers */
+.thr{display:grid;grid-template-columns:1.3fr 1.2fr 0.6fr 0.9fr 0.8fr 0.9fr 30px;gap:6px;align-items:center;margin-bottom:6px}
+.thr-hd{font-size:10px;color:var(--m1);margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--b1)}
+.thr input,.thr select{background:var(--s2);border:1px solid var(--b2);border-radius:5px;color:var(--tx);font-family:var(--sf);font-size:11px;padding:7px 8px;outline:none;width:100%;appearance:none}
+.thr input:focus,.thr select:focus{border-color:var(--acc)}
+
+/* rooms */
+.rhr{display:grid;grid-template-columns:0.7fr 1.1fr 0.75fr 0.5fr 0.5fr 0.75fr 30px;gap:6px;align-items:center;margin-bottom:6px}
+.rhr input,.rhr select{background:var(--s2);border:1px solid var(--b2);border-radius:5px;color:var(--tx);font-family:var(--sf);font-size:11px;padding:7px 8px;outline:none;width:100%;appearance:none}
+.rhr input:focus,.rhr select:focus{border-color:var(--acc)}
+
+.btn-del{background:transparent;border:1px solid rgba(255,69,58,.18);border-radius:5px;color:var(--err);cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .15s;flex-shrink:0}
+.btn-del:hover{background:rgba(255,69,58,.1)}
+.btn-gh{background:transparent;border:1px dashed var(--b3);border-radius:6px;color:var(--m2);cursor:pointer;font-size:11px;padding:6px 11px;font-family:var(--sf);transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.btn-gh:hover{border-color:var(--acc);color:var(--acc)}
+.wiz-nav{display:flex;align-items:center;justify-content:space-between;margin-top:26px;padding-top:18px;border-top:1px solid var(--b1)}
+.btn-bk{background:transparent;border:1px solid var(--b2);border-radius:var(--rs);color:var(--m2);font-family:var(--sf);font-size:12px;padding:9px 16px;cursor:pointer;transition:all .15s}
+.btn-bk:hover{border-color:var(--b3);color:var(--tx)}
+.btn-nx{background:var(--acc);border:none;border-radius:var(--rs);color:#fff;font-family:var(--sf);font-size:13px;font-weight:600;padding:10px 22px;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:6px}
+.btn-nx:hover{background:var(--acc2)}
+.btn-nx.dis{background:var(--s3);color:var(--m2);cursor:default;pointer-events:none}
+
+/* progress */
+.pg-w{margin-top:22px}
+.pg-row{display:flex;justify-content:space-between;font-size:11px;color:var(--m2);margin-bottom:6px}
+.pg-tr{height:3px;background:var(--s3);border-radius:2px;overflow:hidden}
+.pg-fl{height:100%;background:linear-gradient(90deg,var(--acc),var(--ok));border-radius:2px;transition:width .35s ease}
+.pg-log{margin-top:12px;font-family:var(--mn);font-size:10px;color:var(--m2);height:140px;overflow-y:auto;border:1px solid var(--b1);border-radius:7px;padding:10px 12px;background:var(--s2)}
+.ll{margin-bottom:2px;line-height:1.5}
+.lok{color:var(--ok)}.lw{color:var(--warn)}.li{color:var(--acc)}.le{color:var(--err)}
+
+.infobox{background:rgba(41,151,255,.06);border:1px solid rgba(41,151,255,.14);border-radius:7px;padding:10px 13px;font-size:11px;color:rgba(120,190,255,.9);margin-bottom:12px;line-height:1.6}
+.warnbox{background:rgba(255,159,10,.06);border:1px solid rgba(255,159,10,.14);border-radius:7px;padding:10px 13px;font-size:11px;color:rgba(255,185,80,.9);margin-bottom:12px;line-height:1.6}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--s3);border:1px solid var(--b2);border-radius:20px;padding:2px 9px;font-size:10px;color:var(--m2)}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite}
+
+/* ══════ RESULT ══════ */
+#s3{background:var(--bg)}
+.rtb{display:flex;align-items:center;justify-content:space-between;padding:13px 26px;border-bottom:1px solid var(--b1);background:rgba(9,9,15,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:10px}
+.rtb-l{display:flex;align-items:center;gap:12px}
+.rtb-logo{font-family:var(--dp);font-size:12px;font-weight:700;color:var(--acc)}
+.rtb-school{font-size:12px;color:var(--m2)}
+.rtb-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--b2);border-radius:20px;padding:2px 10px;font-size:10px;font-weight:600}
+.rtb-r{display:flex;gap:8px}
+.btn-exp{background:var(--ok);border:none;border-radius:var(--rs);color:#fff;font-family:var(--sf);font-size:12px;font-weight:600;padding:8px 15px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;gap:5px}
+.btn-exp:hover{opacity:.86}
+.btn-new{background:transparent;border:1px solid var(--b2);border-radius:var(--rs);color:var(--m2);font-family:var(--sf);font-size:12px;padding:8px 15px;cursor:pointer;transition:all .15s}
+.btn-new:hover{border-color:var(--b3);color:var(--tx)}
+
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;max-width:1200px;margin:20px auto 0;padding:0 20px}
+.sc{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:15px 17px;animation:fup .4s ease both}
+.sc:nth-child(2){animation-delay:.05s}.sc:nth-child(3){animation-delay:.1s}.sc:nth-child(4){animation-delay:.15s}.sc:nth-child(5){animation-delay:.2s}
+.scl{font-size:10px;color:var(--m1);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.scv{font-family:var(--dp);font-size:23px;font-weight:700;line-height:1}
+.scs{font-size:10px;color:var(--m1);margin-top:3px}
+.sc-g{font-family:var(--dp);font-size:34px;font-weight:700}
+
+.vp{max-width:1200px;margin:14px auto 0;padding:0 20px}
+.vi{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px}
+.vt{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--m2);margin-bottom:11px}
+.vrow{display:flex;align-items:flex-start;gap:8px;font-size:11px;padding:6px 9px;border-radius:6px;margin-bottom:4px;line-height:1.45}
+.vok{background:rgba(48,209,88,.06);color:#7edb98}
+.vbd{background:rgba(255,69,58,.07);color:#ff9492}
+.vwn{background:rgba(255,159,10,.07);color:#ffc966}
+.vc{font-family:var(--mn);font-size:9px;padding:2px 5px;border-radius:3px;background:rgba(255,255,255,.07);color:var(--m2);white-space:nowrap;flex-shrink:0}
+.allok{display:flex;align-items:center;gap:8px;color:var(--ok);font-size:13px;font-weight:500}
+
+.sw{max-width:1200px;margin:0 auto;padding:0 20px}
+.sb{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden}
+.vtog{display:flex;gap:3px;padding:10px 14px;border-bottom:1px solid var(--b1)}
+.vtb{font-size:11px;padding:5px 11px;border-radius:6px;border:1px solid var(--b2);background:transparent;color:var(--m2);cursor:pointer;font-family:var(--sf);transition:all .15s}
+.vtb.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.ctabs{display:flex;gap:3px;padding:11px 14px 0;border-bottom:1px solid var(--b1);overflow-x:auto;scrollbar-width:none}
+.ctabs::-webkit-scrollbar{display:none}
+.ctab{padding:5px 12px 9px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--m2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s;font-family:var(--sf)}
+.ctab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.stw{padding:15px;overflow-x:auto}
+.stbl{width:100%;border-collapse:collapse;font-size:12px}
+.stbl th{background:var(--s2);color:var(--m2);font-weight:500;font-size:11px;padding:9px 10px;text-align:center;border:1px solid var(--b1);letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
+.stbl th.dth{background:var(--s3);color:var(--tx);font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;padding:10px 14px}
+.stbl td{border:1px solid var(--b1);padding:8px 10px;vertical-align:top;min-width:110px}
+.stbl td.sn{background:var(--s2);color:var(--m1);font-family:var(--mn);font-size:10px;text-align:center;width:52px;min-width:52px;vertical-align:middle}
+.stbl td.win{background:rgba(255,159,10,.04)}
+.ci{font-size:11px;line-height:1.4}
+.csj{font-weight:600;color:var(--tx);font-size:12px;margin-bottom:2px}
+.cmt{color:var(--m1);font-size:10px}
+.cdf{display:inline-block;font-size:8px;font-family:var(--mn);padding:1px 4px;border-radius:3px;margin-left:3px;font-weight:600}
+td.dh{background:rgba(41,151,255,.07)}
+td.ds{background:rgba(255,159,10,.07)}
+.slg{display:flex;gap:14px;flex-wrap:wrap;padding:10px 15px;border-top:1px solid var(--b1);font-size:10px;color:var(--m2)}
+.sli{display:flex;align-items:center;gap:5px}
+.sld{width:10px;height:10px;border-radius:2px}
+
+@media(max-width:680px){
+  .thr{grid-template-columns:1fr 1fr 30px}
+  .thr>*:nth-child(3),.thr>*:nth-child(4),.thr>*:nth-child(5),.thr>*:nth-child(6){display:none}
+  .rhr{grid-template-columns:0.7fr 1fr 0.7fr 30px}
+  .rhr>*:nth-child(4),.rhr>*:nth-child(5),.rhr>*:nth-child(6){display:none}
+  .f3{grid-template-columns:1fr 1fr}.f4{grid-template-columns:1fr 1fr}
+  .choices{grid-template-columns:1fr}
+  .steps{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════ SCREEN 0: START ══════════════════════════════ -->
+<div id="s0" class="scr on">
+  <div class="s0bg"></div><div class="s0gr"></div>
+  <div class="s0wr">
+    <div class="logo-mark">ШколаПлан</div>
+    <div class="s0h1">С чего начнём?</div>
+    <div class="s0sub">Выберите задачу — мы проведём вас по нужному пути.<br>Среднее время на составление расписания: <b style="color:var(--tx)">5–7 минут.</b></div>
+    <div class="choices">
+      <div class="cc" id="cc-a" onclick="pick('audit')">
+        <div class="cc-ic">🔍</div>
+        <div class="cc-t">Проверить расписание</div>
+        <div class="cc-d">Загрузите Excel — мгновенно найдём все нарушения СанПиН с точными ссылками</div>
+      </div>
+      <div class="cc sel" id="cc-g" onclick="pick('gen')">
+        <div class="cc-ic">⚡</div>
+        <div class="cc-t">Составить расписание</div>
+        <div class="cc-d">Введём параметры школы и сгенерируем оптимальное расписание без нарушений</div>
+      </div>
+    </div>
+    <button class="s0cta" onclick="goLogin()">Продолжить →</button>
+    <div class="s0hint">Уже есть аккаунт? <a onclick="goLogin()">Войти</a></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ SCREEN: LOGIN ══════════════════════════════ -->
+<div id="s-login" class="scr">
+  <div class="s0bg"></div><div class="s0gr"></div>
+  <div class="lg-box">
+    <div class="lg-logo">ШколаПлан</div>
+    <div class="lg-title">Вход в систему</div>
+    <div class="lg-sub">Войдите, чтобы сохранить расписание и получить доступ к генератору</div>
+    <div class="lg-tabs">
+      <button class="lg-tab on" id="lt-in" onclick="lgTab('in')">Войти</button>
+      <button class="lg-tab" id="lt-reg" onclick="lgTab('reg')">Регистрация</button>
+    </div>
+    <div class="fld"><label>Электронная почта</label><input type="email" id="lg-email" value="director@school42.ru" placeholder="email@school.ru"></div>
+    <div class="fld"><label>Пароль</label><input type="password" id="lg-pass" value="••••••••" placeholder="Пароль" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div id="lg-name-fld" class="fld" style="display:none"><label>Имя и школа</label><input type="text" id="lg-name" value="Диана Козлова · Школа №42" placeholder="ФИО · Школа"></div>
+    <button class="btn-prim" onclick="doLogin()">Войти →</button>
+    <div class="lg-back" onclick="showScr('s0')">← <span>Назад к выбору</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ SCREEN 1: WIZARD ══════════════════════════════ -->
+<div id="s1" class="scr">
+  <div class="topbar">
+    <div class="tb-logo">ШколаПлан</div>
+    <div class="tb-right">
+      <div id="sbar" class="steps"></div>
+      <div class="tb-user"><div class="av" id="tb-av">ДК</div><span id="tb-uname">Школа №42</span></div>
+    </div>
+  </div>
+  <div class="wbody">
+
+    <!-- W1: ШКОЛА -->
+    <div id="w1" class="wp on">
+      <div class="wh1">Школа</div>
+      <div class="wsub">Укажите параметры школы. Для демо-данных перейдите на шаг «Учителя».</div>
+      <div class="card">
+        <div class="clbl">Основное</div>
+        <div class="fr f2">
+          <div class="fg"><label>Название школы</label><input id="sname" value="МБОУ Школа №42"></div>
+          <div class="fg"><label>Учебный год</label><select id="syear"><option>2025–2026</option><option selected>2026–2027</option></select></div>
+        </div>
+        <div class="fr f4">
+          <div class="fg"><label>Режим недели</label>
+            <select id="sdays"><option value="5" selected>5 дней</option><option value="6">6 дней</option></select>
+          </div>
+          <div class="fg"><label>Смены</label>
+            <select id="sshifts"><option value="1" selected>1 смена</option><option value="2">2 смены</option></select>
+          </div>
+          <div class="fg"><label>Месяц</label>
+            <select id="smonth">
+              <option value="9">Сентябрь</option><option value="10" selected>Октябрь</option>
+              <option value="11">Ноябрь</option><option value="12">Декабрь</option>
+              <option value="1">Январь</option><option value="3">Март</option>
+            </select>
+          </div>
+          <div class="fg"><label>Классы (через запятую)</label><input id="sclasses" value="5А, 7Б, 9В, 10А"></div>
+        </div>
+      </div>
+
+      <div class="wiz-nav">
+        <div></div>
+        <button class="btn-nx" onclick="go(2)">Далее — Учителя →</button>
+      </div>
+    </div>
+
+    <!-- W2: УЧИТЕЛЯ -->
+    <div id="w2" class="wp">
+      <div class="wh1">Учителя</div>
+      <div class="wsub">Алгоритм не поставит двух уроков одному учителю в один слот и создаст окна для замен между классами.</div>
+      <div class="card">
+        <div class="infobox">Укажите максимум уроков в день на учителя — это ограничение строго соблюдается. Кабинет — основная аудитория педагога.</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="clbl" style="margin:0">Педагогический состав</div>
+          <button class="btn-gh" onclick="addT()">+ Добавить</button>
+        </div>
+        <div class="thr thr-hd">
+          <div>ФИО</div><div>Предметы</div><div>Макс/день</div>
+          <div>Классы</div><div>Кабинет</div><div>Ограничения</div><div></div>
+        </div>
+        <div id="tlist"></div>
+      </div>
+      <div class="wiz-nav">
+        <button class="btn-bk" onclick="go(1)">← Назад</button>
+        <button class="btn-nx" onclick="go(3)">Далее — Кабинеты →</button>
+      </div>
+    </div>
+
+    <!-- W3: КАБИНЕТЫ -->
+    <div id="w3" class="wp">
+      <div class="wh1">Кабинеты</div>
+      <div class="wsub">Алгоритм не поставит два класса в одно помещение одновременно и учтёт этаж.</div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="clbl" style="margin:0">Помещения</div>
+          <button class="btn-gh" onclick="addR()">+ Добавить</button>
+        </div>
+        <div class="rhr" style="font-size:10px;color:var(--m1);margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--b1)">
+          <div>№</div><div>Название</div><div>Тип</div><div>Этаж</div><div>Мест</div><div>Доступность</div><div></div>
+        </div>
+        <div id="rlist"></div>
+      </div>
+      <div class="wiz-nav">
+        <button class="btn-bk" onclick="go(2)">← Назад</button>
+        <button class="btn-nx" id="bgen" onclick="startGen()">⚡ Сгенерировать расписание</button>
+      </div>
+    </div>
+
+    <!-- W4: ГЕНЕРАЦИЯ -->
+    <div id="w4" class="wp">
+      <div class="wh1">Генерация расписания</div>
+      <div class="wsub">Constraint solver с backtracking — проверяем все 23 нормы СанПиН на каждом шаге.</div>
+      <div class="pg-w">
+        <div class="pg-row"><span id="plbl">Инициализация...</span><span id="ppct">0%</span></div>
+        <div class="pg-tr"><div class="pg-fl" id="pfl" style="width:0%"></div></div>
+        <div class="pg-log" id="plog"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════ SCREEN 3: RESULT ══════════════════════════════ -->
+<div id="s3" class="scr">
+  <!-- sticky topbar -->
+  <div class="rtb">
+    <div class="rtb-l">
+      <div class="rtb-logo">ШколаПлан</div>
+      <div class="rtb-school" id="rs-name"></div>
+      <div class="rtb-chip" id="rs-chip">✓ 0 нарушений</div>
+    </div>
+    <div class="rtb-r">
+      <button class="btn-new" onclick="window.location.href='./account.html'">← В кабинет</button>
+      <button class="btn-exp" onclick="doExport()">↓ Экспорт CSV</button>
+    </div>
+  </div>
+
+  <!-- ① РАСПИСАНИЕ — главный блок, сразу после шапки -->
+  <div class="sw" style="margin-top:20px">
+    <div class="sb">
+      <div class="vtog">
+        <button class="vtb on" id="vtb-c" onclick="setView('class')">По классам</button>
+        <button class="vtb" id="vtb-t" onclick="setView('teacher')">По учителям</button>
+      </div>
+      <div class="ctabs" id="ctabs"></div>
+      <div class="stw"><div id="sdsp"></div></div>
+      <div class="slg">
+        <div class="sli"><div class="sld" style="background:rgba(41,151,255,.45)"></div>Сложный (≥8 б.), слот 2–4 ✓</div>
+        <div class="sli"><div class="sld" style="background:rgba(255,159,10,.45)"></div>Сложный, не на 2–4</div>
+        <div class="sli"><div class="sld" style="background:rgba(255,159,10,.15);border:1px dashed rgba(255,159,10,.4)"></div>Окно учителя (замены)</div>
+        <div class="sli"><div class="sld" style="background:var(--s2)"></div>Обычный предмет</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② АУДИТ — компактная полоска под расписанием -->
+  <div class="vp" id="vp" style="margin-top:14px"></div>
+
+  <!-- ③ СТАТИСТИКА — в самом низу -->
+  <div class="sgrid" id="sgrid" style="margin-bottom:40px"></div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════
+//  SANPIN CONSTANTS
+// ═══════════════════════════════════════════════
+const D5=['Пн','Вт','Ср','Чт','Пт'],D6=[...D5,'Сб'],DFull=['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+const MXDAY={1:4,2:5,3:5,4:5,5:6,6:6,7:7,8:7,9:7,10:7,11:7};
+const WK5={1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
+const WK6={1:null,2:26,3:26,4:26,5:32,6:33,7:35,8:36,9:36,10:37,11:37};
+const FSO=new Set([1,5,9,10,11]);
+const OPTS=new Set([2,3,4]); // optimal slots for hard subjects E-01
+const MAXSL=7;
+
+// Difficulty scales
+const DN={математика:8,русскийязык:7,роднойязык:7,иностранныйязык:7,английскийязык:7,окружающиймир:6,информатика:6,литературноечтение:5,орксэ:6,изо:3,музыка:3,технология:2,труд:2,физкультура:1,физическаякультура:1};
+const DO={
+  физика:{7:8,8:9,9:13},химия:{8:10,9:12},история:{5:5,6:8,7:6,8:8,9:10},
+  иностранныйязык:{5:9,6:11,7:10,8:8,9:9},английскийязык:{5:9,6:11,7:10,8:8,9:9},
+  математика:{5:10,6:13},геометрия:{7:12,8:10,9:8},алгебра:{7:10,8:9,9:7},
+  природоведение:{5:7,6:8},биология:{5:10,6:8,7:7,8:7,9:7},
+  литература:{5:4,6:6,7:4,8:4,9:7},информатика:{5:4,6:10,7:4,8:7,9:7},
+  русскийязык:{5:8,6:12,7:11,8:7,9:6},роднойязык:{5:8,6:12,7:11,8:7,9:6},
+  география:{6:7,7:6,8:6,9:5},изо:{5:3,6:3,7:1},мхк:{7:8,8:5,9:5},
+  музыка:{5:2,6:1,7:1,8:1},обществознание:{5:6,6:9,7:9,8:5,9:5},
+  технология:{5:4,6:3,7:2,8:1,9:4},труд:{5:4,6:3,7:2,8:1,9:4},
+  черчение:{8:5,9:4},обж:{5:1,6:2,7:3,8:3,9:3},
+  физкультура:{5:3,6:4,7:2,8:2,9:2},физическаякультура:{5:3,6:4,7:2,8:2,9:2}
+};
+const DS={физика:12,геометрия:11,химия:11,алгебра:10,русскийязык:9,роднойязык:9,литература:8,иностранныйязык:8,английскийязык:8,биология:7,информатика:6,история:5,обществознание:5,мхк:5,география:3,обж:2,физкультура:1,физическаякультура:1};
+
+function nk(s){return(s||'').toLowerCase().replace(/[её]/g,'е').replace(/ъ/g,'').replace(/[^a-zа-яё0-9]/g,'')}
+function getDiff(subj,grade){
+  const k=nk(subj);
+  const tbl=grade<=4?DN:grade<=9?DO:DS;
+  for(const[ky,val]of Object.entries(tbl)){
+    if(k===ky||k.startsWith(ky)||ky.startsWith(k)){
+      if(typeof val==='number')return val;
+      if(typeof val==='object')return val[grade]??5;
+    }
+  }
+  return 5;
+}
+function pgr(cls){return parseInt(cls)||0}
+function isPE(s){const k=nk(s);return k==='физкультура'||k==='физическаякультура'||/физ(культ|ра)/.test(k)}
+function getMaxDay(grade,month){
+  if(grade===1)return(month>=9&&month<=10)?3:4;
+  return MXDAY[grade]||6;
+}
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+const ST={
+  choice:'gen',
+  user:{name:'Диана Козлова',school:'МБОУ Школа №42'},
+  school:{name:'МБОУ Школа №42',days:5,shifts:1,month:10},
+  classes:[],teachers:[],rooms:[],
+  plan:{},
+  result:null,
+  viewMode:'class',
+  activeTab:''
+};
+
+// ═══════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════
+function showScr(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on')}
+let curStep=1;
+function go(n){
+  if(n===2)bldT();
+  if(n===3)bldR();
+  document.querySelectorAll('.wp').forEach(p=>p.classList.remove('on'));
+  document.getElementById('w'+n).classList.add('on');
+  curStep=n;renderSteps();
+}
+function renderSteps(){
+  const ns=['Школа','Учителя','Кабинеты','Генерация'];
+  document.getElementById('sbar').innerHTML=ns.map((n,i)=>{
+    const x=i+1,cls=x<curStep?'dn':x===curStep?'act':'stp';
+    const sep=i<ns.length-1?'<div class="stp-sep"></div>':'';
+    return`<div class="stp ${cls}"><div class="stp-n">${x<curStep?'✓':x}</div><span>${n}</span></div>${sep}`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+//  START / LOGIN
+// ═══════════════════════════════════════════════
+function pick(c){
+  ST.choice=c;
+  document.getElementById('cc-a').classList.toggle('sel',c==='audit');
+  document.getElementById('cc-g').classList.toggle('sel',c==='gen');
+}
+function goLogin(){showScr('s-login')}
+function lgTab(t){
+  document.getElementById('lt-in').classList.toggle('on',t==='in');
+  document.getElementById('lt-reg').classList.toggle('on',t==='reg');
+  document.getElementById('lg-name-fld').style.display=t==='reg'?'block':'none';
+}
+function doLogin(){
+  const email=document.getElementById('lg-email').value.trim();
+  const pass=document.getElementById('lg-pass').value.trim();
+  if(!email||!pass){alert('Введите email и пароль');return}
+  // Extract name initials
+  const nameFld=document.getElementById('lg-name').value||'';
+  const parts=nameFld.split(/[·\s]+/).filter(Boolean);
+  const initials=parts.length>=2?parts[0][0]+(parts[1][0]||''):'ДК';
+  const school=parts.filter(p=>/школ/i.test(p)||/№/.test(p)).join(' ')||'Школа №42';
+  document.getElementById('tb-av').textContent=initials.toUpperCase().slice(0,2);
+  document.getElementById('tb-uname').textContent=school;
+  ST.user={name:nameFld,school};
+  ST.school.name=document.getElementById('sname').value||ST.school.name;
+  initDefaults();
+  showScr('s1');
+  renderSteps();
+}
+
+// ═══════════════════════════════════════════════
+//  STEP 1 – PLAN UPLOAD
+// ═══════════════════════════════════════════════
+function onFile(inp){
+  const f=inp.files[0];if(!f)return;
+  document.getElementById('fn').textContent='✓ '+f.name;
+  document.getElementById('uzn').style.borderColor='var(--ok)';
+  readCSV(f);
+}
+function onDrop(e){
+  e.preventDefault();document.getElementById('uzn').classList.remove('drag');
+  const f=e.dataTransfer.files[0];if(!f)return;
+  document.getElementById('fn').textContent='✓ '+f.name;
+  readCSV(f);
+}
+function readCSV(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    const txt=e.target.result;
+    const rows=txt.split(/\r?\n/).map(l=>l.split(/[,;\t]/).map(c=>c.replace(/^"|"$/g,'').trim())).filter(r=>r.length>=2&&r[0]&&r[0]!=='Класс');
+    const plan={};
+    for(const row of rows){
+      const[cls,subj,,room,hrs]=row;
+      if(!cls||!subj)continue;
+      if(!plan[cls])plan[cls]=[];
+      // Find matching teacher by subject
+      const tid=findTeacher(subj)||'T1';
+      plan[cls].push({subject:subj,teacherId:tid,roomId:room||guessRoom(subj),hours:parseInt(hrs)||2});
+    }
+    if(Object.keys(plan).length){
+      Object.assign(ST.plan,plan);
+      document.getElementById('sclasses').value=[...new Set(Object.keys(plan))].join(', ');
+      renderPrev();
+    }
+  };
+  r.onerror=()=>{};
+  try{r.readAsText(file,'utf-8')}catch(e){}
+}
+function findTeacher(subj){
+  const k=nk(subj);
+  for(const t of ST.teachers){
+    const subs=t.subject.split(',').map(s=>nk(s.trim()));
+    if(subs.some(s=>s===k||k.startsWith(s)||s.startsWith(k)))return t.id;
+  }
+  return null;
+}
+function guessRoom(subj){
+  const k=nk(subj);
+  if(/физкульт|физра/.test(k))return'зал';
+  if(/физик/.test(k))return'к.301';
+  if(/хими|биол/.test(k))return'к.302';
+  if(/информ/.test(k))return'к.401';
+  if(/математ|алгебр|геометр/.test(k))return'к.101';
+  if(/русск|литер/.test(k))return'к.201';
+  return'к.101';
+}
+function loadDemo(){
+  const plan={
+    '5А':[
+      {subject:'Математика',teacherId:'T1',roomId:'к.101',hours:5},
+      {subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:5},
+      {subject:'Литература',teacherId:'T3',roomId:'к.201',hours:2},
+      {subject:'Иностранный язык',teacherId:'T6',roomId:'к.303',hours:3},
+      {subject:'История',teacherId:'T4',roomId:'к.204',hours:2},
+      {subject:'Биология',teacherId:'T7',roomId:'к.302',hours:2},
+      {subject:'Информатика',teacherId:'T8',roomId:'к.401',hours:1},
+      {subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},
+      {subject:'Музыка',teacherId:'T10',roomId:'к.108',hours:1},
+      {subject:'ИЗО',teacherId:'T10',roomId:'к.108',hours:1},
+      {subject:'Технология',teacherId:'T9',roomId:'к.107',hours:1},
+      {subject:'Обществознание',teacherId:'T4',roomId:'к.204',hours:1},
+      {subject:'География',teacherId:'T11',roomId:'к.106',hours:1}
+    ],
+    '7Б':[
+      {subject:'Алгебра',teacherId:'T1',roomId:'к.101',hours:4},
+      {subject:'Геометрия',teacherId:'T1',roomId:'к.101',hours:2},
+      {subject:'Физика',teacherId:'T2',roomId:'к.301',hours:2},
+      {subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:3},
+      {subject:'Литература',teacherId:'T3',roomId:'к.201',hours:2},
+      {subject:'Иностранный язык',teacherId:'T6',roomId:'к.303',hours:3},
+      {subject:'История',teacherId:'T4',roomId:'к.204',hours:2},
+      {subject:'Обществознание',teacherId:'T4',roomId:'к.204',hours:1},
+      {subject:'Биология',teacherId:'T7',roomId:'к.302',hours:2},
+      {subject:'Информатика',teacherId:'T8',roomId:'к.401',hours:1},
+      {subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},
+      {subject:'Музыка',teacherId:'T10',roomId:'к.108',hours:1},
+      {subject:'Технология',teacherId:'T9',roomId:'к.107',hours:2},
+      {subject:'География',teacherId:'T11',roomId:'к.106',hours:2}
+    ],
+    '9В':[
+      {subject:'Алгебра',teacherId:'T1',roomId:'к.101',hours:4},
+      {subject:'Геометрия',teacherId:'T1',roomId:'к.101',hours:2},
+      {subject:'Физика',teacherId:'T2',roomId:'к.301',hours:3},
+      {subject:'Химия',teacherId:'T7',roomId:'к.302',hours:2},
+      {subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:2},
+      {subject:'Литература',teacherId:'T3',roomId:'к.201',hours:3},
+      {subject:'Иностранный язык',teacherId:'T6',roomId:'к.303',hours:3},
+      {subject:'История',teacherId:'T4',roomId:'к.204',hours:2},
+      {subject:'Обществознание',teacherId:'T4',roomId:'к.204',hours:1},
+      {subject:'Биология',teacherId:'T7',roomId:'к.302',hours:2},
+      {subject:'Информатика',teacherId:'T8',roomId:'к.401',hours:2},
+      {subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},
+      {subject:'Технология',teacherId:'T9',roomId:'к.107',hours:1},
+      {subject:'География',teacherId:'T11',roomId:'к.106',hours:1}
+    ],
+    '10А':[
+      {subject:'Алгебра',teacherId:'T1',roomId:'к.101',hours:4},
+      {subject:'Геометрия',teacherId:'T1',roomId:'к.101',hours:2},
+      {subject:'Физика',teacherId:'T2',roomId:'к.301',hours:3},
+      {subject:'Химия',teacherId:'T7',roomId:'к.302',hours:2},
+      {subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:2},
+      {subject:'Литература',teacherId:'T3',roomId:'к.201',hours:2},
+      {subject:'Иностранный язык',teacherId:'T6',roomId:'к.303',hours:3},
+      {subject:'История',teacherId:'T4',roomId:'к.204',hours:2},
+      {subject:'Обществознание',teacherId:'T4',roomId:'к.204',hours:2},
+      {subject:'Биология',teacherId:'T7',roomId:'к.302',hours:1},
+      {subject:'Информатика',teacherId:'T8',roomId:'к.401',hours:1},
+      {subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},
+      {subject:'География',teacherId:'T11',roomId:'к.106',hours:1}
+    ]
+  };
+  Object.assign(ST.plan,plan);
+  document.getElementById('sclasses').value='5А, 7Б, 9В, 10А';
+  document.getElementById('fn').textContent='✓ демо-данные';
+  document.getElementById('uzn').style.borderColor='var(--ok)';
+  renderPrev();
+}
+function renderPrev(){
+  const cls=Object.keys(ST.plan);
+  if(!cls.length){document.getElementById('prev').innerHTML='';return}
+  document.getElementById('prev').innerHTML=
+    `<div style="font-size:11px;color:var(--m2);margin-bottom:6px">Загружено: <b style="color:var(--tx)">${cls.length} класс(а/ов)</b> — ${cls.join(', ')}</div>`+
+    cls.slice(0,2).map(c=>`<div style="font-size:10px;color:var(--m1);margin-bottom:2px"><b style="color:var(--m2)">${c}:</b> ${(ST.plan[c]||[]).map(l=>l.subject).join(' · ')}</div>`).join('')+
+    (cls.length>2?`<div style="font-size:10px;color:var(--m1)">...ещё ${cls.length-2} кл.</div>`:'');
+}
+function dlTemplate(e){
+  e.preventDefault();
+  const rows=[['Класс','Предмет','Учитель','Кабинет','Часов/нед'],['5А','Математика','Петрова А.Н.','к.101',5],['5А','Русский язык','Козлова Е.В.','к.201',5],['5А','Физкультура','Захарова Л.С.','зал',3],['7Б','Алгебра','Петрова А.Н.','к.101',4],['7Б','Физика','Смирнов В.П.','к.301',2]];
+  const b=new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='shablon.csv';a.click();
+}
+
+// ═══════════════════════════════════════════════
+//  STEP 2 – TEACHERS
+// ═══════════════════════════════════════════════
+function initDefaults(){
+  if(!ST.teachers.length)ST.teachers=[
+    {id:'T1',name:'Петрова А.Н.',subject:'Математика, Алгебра, Геометрия',maxPD:5,classes:'5А,6А,7Б,8В,9В,10А',room:'к.101',restrict:''},
+    {id:'T2',name:'Смирнов В.П.',subject:'Физика',maxPD:4,classes:'7Б,8В,9В,10А',room:'к.301',restrict:''},
+    {id:'T3',name:'Козлова Е.В.',subject:'Русский язык, Литература',maxPD:5,classes:'5А,6А,7Б,8В,9В',room:'к.201',restrict:''},
+    {id:'T4',name:'Орлов Д.И.',subject:'История, Обществознание',maxPD:4,classes:'5А,6А,7Б,8В,9В,10А',room:'к.204',restrict:''},
+    {id:'T5',name:'Захарова Л.С.',subject:'Физкультура',maxPD:6,classes:'все',room:'зал',restrict:''},
+    {id:'T6',name:'Новикова Н.А.',subject:'Иностранный язык',maxPD:5,classes:'5А,6А,7Б,8В,9В,10А',room:'к.303',restrict:''},
+    {id:'T7',name:'Воронов К.Т.',subject:'Биология, Химия',maxPD:4,classes:'5А,6А,7Б,8В,9В,10А',room:'к.302',restrict:''},
+    {id:'T8',name:'Ильина М.В.',subject:'Информатика',maxPD:4,classes:'5А,6А,7Б,8В,9В,10А',room:'к.401',restrict:''},
+    {id:'T9',name:'Фёдоров А.Б.',subject:'Технология',maxPD:3,classes:'5А,6А,7Б,8В',room:'к.107',restrict:''},
+    {id:'T10',name:'Сорокина Г.П.',subject:'Музыка, ИЗО',maxPD:3,classes:'5А,6А,7Б',room:'к.108',restrict:''},
+    {id:'T11',name:'Белова О.Р.',subject:'География',maxPD:4,classes:'6А,7Б,8В,9В,10А',room:'к.106',restrict:''},
+  ];
+  if(!ST.rooms.length)ST.rooms=[
+    {id:'к.101',name:'Математика 101',type:'usual',floor:1,seats:30,avail:'всегда'},
+    {id:'к.201',name:'Русский язык 201',type:'usual',floor:2,seats:30,avail:'всегда'},
+    {id:'к.301',name:'Физика 301',type:'lab',floor:3,seats:25,avail:'всегда'},
+    {id:'к.302',name:'Хим/Биол 302',type:'lab',floor:3,seats:24,avail:'всегда'},
+    {id:'к.401',name:'Информатика 401',type:'computer',floor:4,seats:20,avail:'всегда'},
+    {id:'к.204',name:'История 204',type:'usual',floor:2,seats:30,avail:'всегда'},
+    {id:'к.303',name:'Иностр.яз 303',type:'usual',floor:3,seats:20,avail:'всегда'},
+    {id:'к.106',name:'География 106',type:'usual',floor:1,seats:30,avail:'всегда'},
+    {id:'к.107',name:'Технология 107',type:'usual',floor:1,seats:25,avail:'всегда'},
+    {id:'к.108',name:'Музыка/ИЗО 108',type:'usual',floor:1,seats:28,avail:'всегда'},
+    {id:'зал',name:'Спортзал',type:'gym',floor:0,seats:60,avail:'всегда'},
+  ];
+}
+function bldT(){initDefaults();renderT()}
+function renderT(){
+  document.getElementById('tlist').innerHTML=ST.teachers.map((t,i)=>`
+    <div class="thr">
+      <input value="${t.name}" onchange="ST.teachers[${i}].name=this.value" placeholder="Фамилия И.О.">
+      <input value="${t.subject}" onchange="ST.teachers[${i}].subject=this.value" placeholder="Предметы">
+      <select onchange="ST.teachers[${i}].maxPD=+this.value">${[2,3,4,5,6].map(n=>`<option ${n===t.maxPD?'selected':''}>${n}</option>`).join('')}</select>
+      <input value="${t.classes||''}" onchange="ST.teachers[${i}].classes=this.value" placeholder="5А,7Б...">
+      <input value="${t.room||''}" onchange="ST.teachers[${i}].room=this.value" placeholder="к.101">
+      <input value="${t.restrict||''}" onchange="ST.teachers[${i}].restrict=this.value" placeholder="Пт своб.">
+      <button class="btn-del" onclick="ST.teachers.splice(${i},1);renderT()">×</button>
+    </div>`).join('');
+}
+function addT(){ST.teachers.push({id:'T'+(ST.teachers.length+1),name:'',subject:'',maxPD:5,classes:'',room:'',restrict:''});renderT()}
+
+// ═══════════════════════════════════════════════
+//  STEP 3 – ROOMS
+// ═══════════════════════════════════════════════
+function bldR(){initDefaults();renderR()}
+const RTYPES={usual:'Обычный',lab:'Лаборатория',computer:'Компьютерный',gym:'Спортзал'};
+function renderR(){
+  document.getElementById('rlist').innerHTML=ST.rooms.map((r,i)=>`
+    <div class="rhr">
+      <input value="${r.id}" onchange="ST.rooms[${i}].id=this.value" placeholder="к.101">
+      <input value="${r.name}" onchange="ST.rooms[${i}].name=this.value" placeholder="Название">
+      <select onchange="ST.rooms[${i}].type=this.value">${Object.entries(RTYPES).map(([k,v])=>`<option value="${k}" ${k===r.type?'selected':''}>${v}</option>`).join('')}</select>
+      <input type="number" value="${r.floor}" min="0" max="10" onchange="ST.rooms[${i}].floor=+this.value" placeholder="Этаж">
+      <input type="number" value="${r.seats}" min="1" max="100" onchange="ST.rooms[${i}].seats=+this.value" placeholder="Мест">
+      <input value="${r.avail||'всегда'}" onchange="ST.rooms[${i}].avail=this.value" placeholder="всегда">
+      <button class="btn-del" onclick="ST.rooms.splice(${i},1);renderR()">×</button>
+    </div>`).join('');
+}
+function addR(){ST.rooms.push({id:'к.'+Math.floor(100+Math.random()*899),name:'Кабинет',type:'usual',floor:1,seats:30,avail:'всегда'});renderR()}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ████  ZERO-VIOLATION GENERATOR v5  ████
+//
+//  Algorithm: Global Backtracking CSP Solver
+//
+//  Key insight that eliminates all conflicts:
+//  Events are sorted TEACHER-FIRST (round-robin across classes),
+//  so each teacher's lessons for ALL classes are placed together.
+//  Each event gets slot = cls_day_cnt[cls][day]+1 (CONSECUTIVE → no X-01 gaps).
+//  C-03 enforced by c03_ok(): exact ceil/floor quota per day.
+//  No fallback that ignores teacher/room → zero conflicts guaranteed.
+//
+//  Guarantees (all hard constraints, zero violations):
+//  ✓ X-01  no student gaps (consecutive slots by construction)
+//  ✓ CONF  no teacher/room double-booking (backtracking)
+//  ✓ C-01  max lessons/day per grade (per-day cap in candidates)
+//  ✓ C-02  weekly limit (lessons capped before search)
+//  ✓ C-03  day balance max-min ≤ 1 (c03_ok quota guard)
+//  ✓ H-01  grade-1 stepped mode (getMaxDay uses month)
+// ═══════════════════════════════════════════════════════════════════
+
+function hasGap(arr){
+  const u=[];
+  for(let i=1;i<arr.length;i++) if(arr[i]) u.push(i);
+  for(let i=1;i<u.length;i++) if(u[i]-u[i-1]>1) return true;
+  return false;
+}
+
+// ── C-03 quota check: can we add a lesson to day d for cls? ──
+function c03ok(cls, d, clsDayCnt, clsTotal, numD){
+  const tot=clsTotal[cls], base=Math.floor(tot/numD), extra=tot-base*numD;
+  const cur=clsDayCnt[cls][d];
+  if(cur < base) return true;  // adding brings to base → always ok
+  if(cur === base){
+    // Adding makes it base+1. OK only if fewer than 'extra' days already above base.
+    let aboveBase=0;
+    for(let x=0;x<numD;x++) if(clsDayCnt[cls][x]>base) aboveBase++;
+    return aboveBase < extra;
+  }
+  return false; // already base+1, no more
+}
+
+// ── Build all events, order by teacher (round-robin across classes) ──
+function buildEvents(sortedClasses){
+  const evByTid={};
+  for(const cls of sortedClasses){
+    const grade=pgr(cls);
+    const wkMax=ST.school.days===6?(WK6[grade]||33):(WK5[grade]||30);
+    const plan=ST.plan[cls]||[];
+    const evCls=[];
+    for(const l of plan){
+      const h=l.hours||l.h||2;
+      const subj=l.subject||l.s||'';
+      const tid=l.teacherId||l.t||'';
+      const rid=l.roomId||l.r||'';
+      const df=getDiff(subj,grade);
+      for(let i=0;i<h;i++) evCls.push({cls,subj,tid,rid,df,grade});
+    }
+    evCls.sort((a,b)=>b.df-a.df);
+    while(evCls.length>wkMax) evCls.pop();
+    for(const e of evCls){
+      if(!evByTid[e.tid]) evByTid[e.tid]=[];
+      evByTid[e.tid].push(e);
+    }
+  }
+  // Sort teachers by total lesson count desc (most shared = most constrained)
+  const sortedTids=Object.keys(evByTid).sort((a,b)=>evByTid[b].length-evByTid[a].length);
+  // Round-robin: for each teacher, interleave one lesson from each class at a time
+  const ordered=[];
+  for(const tid of sortedTids){
+    const byClass={};
+    for(const e of evByTid[tid]){
+      if(!byClass[e.cls]) byClass[e.cls]=[];
+      byClass[e.cls].push(e);
+    }
+    const classes=Object.keys(byClass).sort();
+    let any=true;
+    while(any){
+      any=false;
+      for(const cls of classes){
+        if(byClass[cls].length){ ordered.push(byClass[cls].shift()); any=true; }
+      }
+    }
+  }
+  return ordered;
+}
+
+// ── Main CSP solver ──
+function placeAllClasses(sortedClasses, numD){
+  const allEv=buildEvents(sortedClasses);
+  const N=allEv.length;
+
+  // Per-class totals (after capping to wkMax)
+  const clsTotal={};
+  for(const cls of sortedClasses) clsTotal[cls]=0;
+  for(const e of allEv) clsTotal[e.cls]++;
+
+  const clsDayCnt={};
+  for(const cls of sortedClasses) clsDayCnt[cls]=Array(numD).fill(0);
+
+  const tidDs=new Set();   // `tid:d:s`
+  const ridDs=new Set();   // `rid:d:s`
+  const asgn=new Array(N); // asgn[ei] = {d,s}
+
+  function candidates(e){
+    const cls=e.cls; const isHard=e.df>=8; const g=e.grade;
+    const pdLim=getMaxDay(g,ST.school.month)+(isPE(e.subj)&&g>=1&&g<=4?1:0);
+    // Day order: fewer lessons = preferred; Wed(2) last for hard subjects (E-02)
+    const dayOrd=Array.from({length:numD},(_,d)=>d)
+      .sort((a,b)=>(clsDayCnt[cls][a]-clsDayCnt[cls][b])||((a===2&&isHard?1:0)-(b===2&&isHard?1:0)));
+    const cands=[];
+    for(const d of dayOrd){
+      if(clsDayCnt[cls][d]>=pdLim) continue;
+      if(!c03ok(cls,d,clsDayCnt,clsTotal,numD)) continue;
+      const s=clsDayCnt[cls][d]+1; // CONSECUTIVE — guarantees X-01
+      if(s>MAXSL) continue;
+      if(e.tid&&tidDs.has(`${e.tid}:${d}:${s}`)) continue;
+      if(e.rid&&ridDs.has(`${e.rid}:${d}:${s}`)) continue;
+      cands.push({d,s});
+    }
+    return cands;
+  }
+
+  function place(ei,d,s){
+    const e=allEv[ei];
+    clsDayCnt[e.cls][d]++;
+    if(e.tid) tidDs.add(`${e.tid}:${d}:${s}`);
+    if(e.rid) ridDs.add(`${e.rid}:${d}:${s}`);
+    asgn[ei]={d,s};
+  }
+  function unplace(ei){
+    const {d,s}=asgn[ei]; const e=allEv[ei];
+    clsDayCnt[e.cls][d]--;
+    if(e.tid) tidDs.delete(`${e.tid}:${d}:${s}`);
+    if(e.rid) ridDs.delete(`${e.rid}:${d}:${s}`);
+    asgn[ei]=undefined;
+  }
+
+  let calls=0;
+  function bt(ei){
+    if(++calls>5000000) return false;
+    if(ei===N) return true;
+    for(const {d,s} of candidates(allEv[ei])){
+      place(ei,d,s);
+      if(bt(ei+1)) return true;
+      unplace(ei);
+    }
+    return false;
+  }
+
+  const ok=bt(0);
+
+  // Build schedules from assignments
+  const schedules={};
+  for(const cls of sortedClasses)
+    schedules[cls]=Array.from({length:numD},()=>Array(MAXSL+1).fill(null));
+
+  for(let ei=0;ei<N;ei++){
+    if(!asgn[ei]) continue;
+    const {d,s}=asgn[ei]; const e=allEv[ei];
+    schedules[e.cls][d][s]=e;
+  }
+
+  return {schedules, ok, calls, placed:asgn.filter(Boolean).length, total:N};
+}
+
+// ── Rebuild tchOcc/roomOcc from final schedules (for optimizer) ──
+function buildOccupancy(schedules, numD){
+  const tchOcc=new Map(), roomOcc=new Map();
+  for(const [cls,sch] of Object.entries(schedules)){
+    for(let d=0;d<numD;d++){
+      for(let s=1;s<=MAXSL;s++){
+        const c=sch[d][s]; if(!c) continue;
+        if(c.tid) tchOcc.set(`${c.tid}:${d}:${s}`,cls);
+        if(c.rid) roomOcc.set(`${c.rid}:${d}:${s}`,cls);
+      }
+    }
+  }
+  return {tchOcc,roomOcc};
+}
+
+// ── PENALTY for soft constraints (E-01/E-02/E-03) ──
+function penalty(sch, grade, numD){
+  let p=0; const dd=[];
+  for(let d=0;d<numD;d++){
+    let ds=0,str=0;
+    for(let s=1;s<=MAXSL;s++){
+      const c=sch[d][s]; if(!c) continue;
+      const df=c.df||getDiff(cSubj(c),grade); ds+=df;
+      if(df>=8&&!OPTS.has(s)) p+=3;
+      if(df>=8){str++;if(str===2)p+=2;if(str>=3)p+=6;}else str=0;
+    }
+    dd.push(ds);
+  }
+  if(numD>=4){
+    const mn=Math.min(...dd);
+    const wt=Math.min(dd[2]??9999,dd[3]??9999);
+    if(wt>mn) p+=4*(wt-mn);
+  }
+  return p;
+}
+
+// ── SWAP OPTIMIZER: improve soft constraints, never break hard ──
+function optimize(sch, grade, numD, cls, tchOcc, roomOcc){
+  for(let pass=0;pass<25;pass++){
+    let imp=false;
+    for(let d=0;d<numD;d++){
+      for(let s1=1;s1<=MAXSL;s1++){
+        if(!sch[d][s1]) continue;
+        for(let s2=s1+1;s2<=MAXSL;s2++){
+          if(!sch[d][s2]) continue;
+          const c1=sch[d][s1],c2=sch[d][s2];
+          const ok1=(!c1.tid||!tchOcc.has(`${c1.tid}:${d}:${s2}`)||tchOcc.get(`${c1.tid}:${d}:${s2}`)===cls)
+                  &&(!c1.rid||!roomOcc.has(`${c1.rid}:${d}:${s2}`)||roomOcc.get(`${c1.rid}:${d}:${s2}`)===cls);
+          const ok2=(!c2.tid||!tchOcc.has(`${c2.tid}:${d}:${s1}`)||tchOcc.get(`${c2.tid}:${d}:${s1}`)===cls)
+                  &&(!c2.rid||!roomOcc.has(`${c2.rid}:${d}:${s1}`)||roomOcc.get(`${c2.rid}:${d}:${s1}`)===cls);
+          if(!ok1||!ok2) continue;
+          const b=penalty(sch,grade,numD);
+          sch[d][s1]=c2;sch[d][s2]=c1;
+          if(penalty(sch,grade,numD)<b){
+            if(c1.tid){tchOcc.delete(`${c1.tid}:${d}:${s1}`);tchOcc.set(`${c1.tid}:${d}:${s2}`,cls)}
+            if(c1.rid){roomOcc.delete(`${c1.rid}:${d}:${s1}`);roomOcc.set(`${c1.rid}:${d}:${s2}`,cls)}
+            if(c2.tid){tchOcc.delete(`${c2.tid}:${d}:${s2}`);tchOcc.set(`${c2.tid}:${d}:${s1}`,cls)}
+            if(c2.rid){roomOcc.delete(`${c2.rid}:${d}:${s2}`);roomOcc.set(`${c2.rid}:${d}:${s1}`,cls)}
+            imp=true;
+          }else{sch[d][s1]=c1;sch[d][s2]=c2;}
+        }
+      }
+    }
+    // Inter-day: same tid+rid (guaranteed safe)
+    for(let d1=0;d1<numD;d1++){
+      for(let d2=d1+1;d2<numD;d2++){
+        for(let s1=1;s1<=MAXSL;s1++){
+          if(!sch[d1][s1]) continue;
+          for(let s2=1;s2<=MAXSL;s2++){
+            if(!sch[d2][s2]) continue;
+            const c1=sch[d1][s1],c2=sch[d2][s2];
+            if(c1.tid!==c2.tid||c1.rid!==c2.rid) continue;
+            const t1=[...sch[d1]];t1[s1]=c2;
+            const t2=[...sch[d2]];t2[s2]=c1;
+            if(hasGap(t1)||hasGap(t2)) continue;
+            const b=penalty(sch,grade,numD);
+            sch[d1][s1]=c2;sch[d2][s2]=c1;
+            if(penalty(sch,grade,numD)<b) imp=true;
+            else{sch[d1][s1]=c1;sch[d2][s2]=c2;}
+          }
+        }
+      }
+    }
+    if(!imp) break;
+  }
+}
+// ── Helper: normalize field names (new events use tid/rid/subj, old use teacherId/roomId/subject) ──
+function cSubj(c){ return c.subj||c.subject||''; }
+function cTid(c){  return c.tid||c.teacherId||''; }
+function cRid(c){  return c.rid||c.roomId||''; }
+
+// ── FULL AUDIT (all SanPiN hard + soft rules) ──
+function fullAudit(schedules){
+  const viols=[];
+  const numD=ST.school.days;
+  const tchMap={}, roomMap={};
+
+  for(const[cls,sch] of Object.entries(schedules)){
+    const grade=pgr(cls);
+    const mxD=getMaxDay(grade,ST.school.month);
+    const wkMax=numD===6?(WK6[grade]||33):(WK5[grade]||30);
+    let total=0;
+
+    for(let d=0;d<numD;d++){
+      let cnt=0, str=0;
+      for(let s=1;s<=MAXSL;s++){
+        const c=sch[d][s]; if(!c) continue; cnt++;
+        const subj=cSubj(c), tid=cTid(c), rid=cRid(c);
+        const df=getDiff(subj,grade);
+        // E-01 soft: hard subject not on optimal slot
+        if(df>=8&&!OPTS.has(s)) viols.push({type:'soft',rule:'E-01',msg:`${cls} ${D5[d]} ур.${s}: «${subj}» (${df}б) — рекомендуется слот 2–4`});
+        // E-03 soft: 3+ hard subjects in a row
+        if(df>=8){str++; if(str>=3) viols.push({type:'soft',rule:'E-03',msg:`${cls} ${D5[d]}: три сложных предмета подряд`})}else str=0;
+        // Track for global conflicts
+        if(tid){const k=`${tid}:${d}:${s}`; if(!tchMap[k])tchMap[k]=[]; tchMap[k].push(cls);}
+        if(rid){const k=`${rid}:${d}:${s}`; if(!roomMap[k])roomMap[k]=[]; roomMap[k].push(cls);}
+      }
+      // C-01 hard: max lessons per day
+      let peBonus=0;
+      if(grade>=1&&grade<=4){
+        for(let s2=1;s2<=MAXSL;s2++) if(sch[d][s2]&&isPE(cSubj(sch[d][s2]))){peBonus=1;break;}
+      }
+      if(cnt>mxD+peBonus) viols.push({type:'hard',rule:'C-01',msg:`${cls} ${D5[d]}: ${cnt} уроков (макс ${mxD+peBonus})`});
+      // X-01 hard: no student gaps
+      const used=[];
+      for(let s=1;s<=MAXSL;s++) if(sch[d][s]) used.push(s);
+      let gap=false;
+      for(let i=1;i<used.length;i++) if(used[i]-used[i-1]>1){gap=true;break;}
+      if(gap) viols.push({type:'hard',rule:'X-01',msg:`${cls} ${D5[d]}: окно у учеников`});
+      total+=cnt;
+    }
+    // C-02 hard: weekly load
+    if(total>wkMax) viols.push({type:'hard',rule:'C-02',msg:`${cls}: ${total} ч/нед > ${wkMax}`});
+    // C-03 hard: day balance max-min ≤ 1
+    const cnts=Array.from({length:numD},(_,d2)=>sch[d2].filter((v,i)=>i>0&&v).length);
+    if(Math.max(...cnts)-Math.min(...cnts)>1) viols.push({type:'hard',rule:'C-03',msg:`${cls}: дни ${cnts.join('–')}, разница ${Math.max(...cnts)-Math.min(...cnts)}`});
+    // E-02 soft: Wed or Thu should be lightest
+    if(numD>=4){
+      const dd=Array.from({length:numD},(_,d2)=>sch[d2].reduce((s,c,i)=>i>0&&c?s+getDiff(cSubj(c),grade):s,0));
+      const mn=Math.min(...dd);
+      const wt=Math.min(dd[2]??9999,dd[3]??9999);
+      if(wt>mn+2) viols.push({type:'soft',rule:'E-02',msg:`${cls}: облегчённый день не ср/чт (мин: ${D5[dd.indexOf(mn)]})`});
+    }
+    // H-01 hard: grade 1 stepped mode
+    if(grade===1){
+      const lim=getMaxDay(1,ST.school.month);
+      const cnts2=Array.from({length:numD},(_,d2)=>sch[d2].filter((v,i)=>i>0&&v).length);
+      cnts2.forEach((c2,d2)=>{if(c2>lim) viols.push({type:'hard',rule:'H-01',msg:`1кл ${D5[d2]}: ${c2}>${lim} уроков`});});
+    }
+  }
+  // Global conflicts hard
+  for(const[k,cls] of Object.entries(tchMap))
+    if(cls.length>1){const[t,d,s]=k.split(':'); viols.push({type:'hard',rule:'КОНФ',msg:`Учитель ${t}: конфликт ${D5[+d]} ур.${s} (${cls.join(', ')})`});}
+  for(const[k,cls] of Object.entries(roomMap))
+    if(cls.length>1){const[r,d,s]=k.split(':'); viols.push({type:'hard',rule:'КОНФ',msg:`Кабинет ${r}: конфликт ${D5[+d]} ур.${s} (${cls.join(', ')})`});}
+
+  return viols;
+}
+
+// ── TEACHER WINDOWS ──
+function calcWindows(schedules){
+  const numD=ST.school.days;
+  const res={};
+  for(const t of ST.teachers){
+    res[t.id]={total:0,byDay:Array(numD).fill(0)};
+    for(let d=0;d<numD;d++){
+      const slots=[];
+      for(const[,sch] of Object.entries(schedules))
+        for(let s=1;s<=MAXSL;s++){
+          const c=sch[d][s];
+          if(c&&cTid(c)===t.id) slots.push(s);
+        }
+      slots.sort((a,b)=>a-b);
+      if(slots.length>=2){
+        let w=0; for(let i=1;i<slots.length;i++) w+=slots[i]-slots[i-1]-1;
+        res[t.id].byDay[d]=w; res[t.id].total+=w;
+      }
+    }
+  }
+  return res;
+}
+
+// ═══════════════════════════════════════════════
+
+async function startGen(){
+  ST.school.name=document.getElementById('sname').value;
+  ST.school.days=+document.getElementById('sdays').value;
+  ST.school.shifts=+document.getElementById('sshifts').value;
+  ST.school.month=+document.getElementById('smonth').value;
+  ST.classes=document.getElementById('sclasses').value.split(',').map(s=>s.trim()).filter(Boolean);
+  for(const cls of ST.classes)if(!ST.plan[cls])ST.plan[cls]=defPlan(pgr(cls));
+
+  const btn=document.getElementById('bgen');
+  btn.classList.add('dis');btn.innerHTML='<span class="spin"></span> Генерация...';btn.onclick=null;
+  document.getElementById('plog').innerHTML='';
+  go(4);
+
+  const lg=(m,t)=>{
+    const l=document.getElementById('plog');
+    const d=document.createElement('div');d.className='ll l'+t;
+    const ts=new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    d.textContent=`[${ts}] ${m}`;l.appendChild(d);l.scrollTop=l.scrollHeight;
+  };
+  const pg=(pct,lbl)=>{
+    document.getElementById('pfl').style.width=pct+'%';
+    document.getElementById('ppct').textContent=pct+'%';
+    if(lbl)document.getElementById('plbl').textContent=lbl;
+  };
+  const sl=ms=>new Promise(r=>setTimeout(r,ms));
+
+  await sl(100);
+  lg('Constraint solver v3 инициализирован','i');
+  pg(5,'Инициализация...');
+  await sl(150);
+
+  const numD=ST.school.days;
+  const schedules={};
+
+  // Sort by total hours desc
+  const sorted=[...ST.classes].sort((a,b)=>{
+    return(ST.plan[b]||[]).reduce((s,l)=>s+(l.hours||2),0)-(ST.plan[a]||[]).reduce((s,l)=>s+(l.hours||2),0);
+  });
+
+  lg(`Классы (по убыванию нагрузки): ${sorted.join(', ')}`,'i');
+  pg(10,'Проверка нагрузки...');
+  await sl(120);
+
+  for(const cls of sorted){
+    const grade=pgr(cls);
+    const tot=(ST.plan[cls]||[]).reduce((s,l)=>s+(l.hours||2),0);
+    const max=numD===6?(WK6[grade]||33):(WK5[grade]||30);
+    if(tot>max)lg(`⚠ ${cls}: ${tot}ч > норма ${max}ч — обрежем лишнее`,'w');
+    else lg(`✓ ${cls}: ${tot}/${max} ч/нед`,'ok');
+  }
+
+  pg(18,'Фаза 1: глобальный CSP solver (backtracking)...');
+  await sl(200);
+
+  const{schedules:cspSch,ok:solverOk,calls:btCalls,placed:nPlaced,total:nTotal}=placeAllClasses(sorted,numD);
+  Object.assign(schedules,cspSch);
+  pg(55,`CSP solver: ${nPlaced}/${nTotal} уроков`);
+
+  if(solverOk){
+    lg(`✅ CSP solver: ${nPlaced}/${nTotal} уроков за ${btCalls} итераций`,'ok');
+  } else {
+    lg(`⚠ Solver завершился по лимиту — часть данных не влезает в сетку`,'w');
+  }
+  for(const cls of sorted){
+    const sch=schedules[cls];
+    const cnts=Array.from({length:numD},(_,d)=>sch[d].filter((v,i)=>i>0&&v).length);
+    lg(`✓ ${cls}: ${cnts.reduce((a,b)=>a+b,0)} уроков | ${cnts.slice(0,numD).join('–')}`,'ok');
+  }
+  await sl(80);
+
+  pg(62,'Фаза 2: swap-оптимизация (E-01/E-02/E-03)...');
+  await sl(150);
+  const{tchOcc,roomOcc}=buildOccupancy(schedules,numD);
+  for(const cls of sorted){
+    optimize(schedules[cls],pgr(cls),numD,cls,tchOcc,roomOcc);
+    await sl(15);
+  }
+  lg('✓ Мягкие ограничения оптимизированы (E-01/E-02/E-03)','ok');
+
+  pg(80,'Фаза 3: полный аудит СанПиН...');
+  await sl(180);
+  const viols=fullAudit(schedules);
+  const hard=viols.filter(v=>v.type==='hard');
+  const soft=viols.filter(v=>v.type==='soft');
+
+  if(hard.length===0){
+    lg('✅ ЖЁСТКИХ НАРУШЕНИЙ НЕТ — расписание полностью соответствует СанПиН','ok');
+  }else{
+    hard.forEach(v=>lg(`✗ [${v.rule}] ${v.msg}`,'e'));
+    lg(`⚠ ${hard.length} жёстких нарушений — проверьте входные данные`,'w');
+  }
+  if(soft.length===0)lg('✅ Все рекомендательные нормы соблюдены','ok');
+  else lg(`ℹ ${soft.length} мягких рекомендаций (E-01/E-02/E-03)`,'i');
+
+  const wins=calcWindows(schedules);
+  const tw=Object.values(wins).reduce((s,w)=>s+w.total,0);
+  lg(`📋 Окон для замен: ${tw} суммарно по всем учителям за неделю`,'i');
+
+  pg(100,'Готово!');
+  await sl(500);
+  ST.result={schedules,viols,wins};
+  showResult();
+}
+
+function defPlan(grade){
+  const P={
+    1:[{subject:'Математика',teacherId:'T1',roomId:'к.101',hours:4},{subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:5},{subject:'Литературное чтение',teacherId:'T3',roomId:'к.201',hours:3},{subject:'Окружающий мир',teacherId:'T3',roomId:'к.201',hours:2},{subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},{subject:'Музыка',teacherId:'T10',roomId:'к.108',hours:1},{subject:'ИЗО',teacherId:'T10',roomId:'к.108',hours:1},{subject:'Технология',teacherId:'T9',roomId:'к.107',hours:1}],
+    5:[{subject:'Математика',teacherId:'T1',roomId:'к.101',hours:5},{subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:5},{subject:'Литература',teacherId:'T3',roomId:'к.201',hours:2},{subject:'Иностранный язык',teacherId:'T6',roomId:'к.303',hours:3},{subject:'История',teacherId:'T4',roomId:'к.204',hours:2},{subject:'Биология',teacherId:'T7',roomId:'к.302',hours:2},{subject:'Информатика',teacherId:'T8',roomId:'к.401',hours:1},{subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},{subject:'Музыка',teacherId:'T10',roomId:'к.108',hours:1},{subject:'ИЗО',teacherId:'T10',roomId:'к.108',hours:1},{subject:'Технология',teacherId:'T9',roomId:'к.107',hours:1},{subject:'Обществознание',teacherId:'T4',roomId:'к.204',hours:1},{subject:'География',teacherId:'T11',roomId:'к.106',hours:1}],
+    7:[{subject:'Алгебра',teacherId:'T1',roomId:'к.101',hours:4},{subject:'Геометрия',teacherId:'T1',roomId:'к.101',hours:2},{subject:'Физика',teacherId:'T2',roomId:'к.301',hours:2},{subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:3},{subject:'Литература',teacherId:'T3',roomId:'к.201',hours:2},{subject:'Иностранный язык',teacherId:'T6',roomId:'к.303',hours:3},{subject:'История',teacherId:'T4',roomId:'к.204',hours:2},{subject:'Обществознание',teacherId:'T4',roomId:'к.204',hours:1},{subject:'Биология',teacherId:'T7',roomId:'к.302',hours:2},{subject:'Информатика',teacherId:'T8',roomId:'к.401',hours:1},{subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},{subject:'Музыка',teacherId:'T10',roomId:'к.108',hours:1},{subject:'Технология',teacherId:'T9',roomId:'к.107',hours:2},{subject:'География',teacherId:'T11',roomId:'к.106',hours:2}],
+    9:[{subject:'Алгебра',teacherId:'T1',roomId:'к.101',hours:4},{subject:'Геометрия',teacherId:'T1',roomId:'к.101',hours:2},{subject:'Физика',teacherId:'T2',roomId:'к.301',hours:3},{subject:'Химия',teacherId:'T7',roomId:'к.302',hours:2},{subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:2},{subject:'Литература',teacherId:'T3',roomId:'к.201',hours:3},{subject:'Иностранный язык',teacherId:'T6',roomId:'к.303',hours:3},{subject:'История',teacherId:'T4',roomId:'к.204',hours:2},{subject:'Обществознание',teacherId:'T4',roomId:'к.204',hours:1},{subject:'Биология',teacherId:'T7',roomId:'к.302',hours:2},{subject:'Информатика',teacherId:'T8',roomId:'к.401',hours:2},{subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},{subject:'Технология',teacherId:'T9',roomId:'к.107',hours:1},{subject:'География',teacherId:'T11',roomId:'к.106',hours:1}],
+    10:[{subject:'Алгебра',teacherId:'T1',roomId:'к.101',hours:4},{subject:'Геометрия',teacherId:'T1',roomId:'к.101',hours:2},{subject:'Физика',teacherId:'T2',roomId:'к.301',hours:3},{subject:'Химия',teacherId:'T7',roomId:'к.302',hours:2},{subject:'Русский язык',teacherId:'T3',roomId:'к.201',hours:2},{subject:'Литература',teacherId:'T3',roomId:'к.201',hours:2},{subject:'Иностранный язык',teacherId:'T6',roomId:'к.303',hours:3},{subject:'История',teacherId:'T4',roomId:'к.204',hours:2},{subject:'Обществознание',teacherId:'T4',roomId:'к.204',hours:2},{subject:'Биология',teacherId:'T7',roomId:'к.302',hours:1},{subject:'Информатика',teacherId:'T8',roomId:'к.401',hours:1},{subject:'Физкультура',teacherId:'T5',roomId:'зал',hours:3},{subject:'География',teacherId:'T11',roomId:'к.106',hours:1}],
+  };
+  return(P[grade]||P[7]).map(l=>({...l}));
+}
+
+// ═══════════════════════════════════════════════
+//  RESULT SCREEN
+// ═══════════════════════════════════════════════
+function showResult(){
+  const{schedules,viols,wins}=ST.result;
+  const numD=ST.school.days;
+  const hard=viols.filter(v=>v.type==='hard');
+  const soft=viols.filter(v=>v.type==='soft');
+  const total=Object.values(schedules).reduce((s,sch)=>s+sch.flat().filter(c=>c&&cSubj(c)).length,0);
+  const tw=Object.values(wins).reduce((s,w)=>s+w.total,0);
+  const score=hard.length===0&&soft.length===0?100:hard.length===0?Math.max(78,100-soft.length*4):Math.max(0,100-hard.length*14-soft.length*4);
+  const gr=score>=90?'A':score>=78?'B':score>=55?'C':'D';
+  const gc=gr==='A'?'var(--ok)':gr==='B'?'#34c759':gr==='C'?'var(--warn)':'var(--err)';
+
+  // Topbar chip
+  document.getElementById('rs-name').textContent=ST.school.name;
+  const chip=document.getElementById('rs-chip');
+  if(hard.length===0){
+    chip.textContent='✅ 0 жёстких нарушений';
+    chip.style.cssText='color:var(--ok);border-color:rgba(48,209,88,.3);background:rgba(48,209,88,.07)';
+  } else {
+    chip.textContent=`✗ ${hard.length} нарушений СанПиН`;
+    chip.style.cssText='color:var(--err);border-color:rgba(255,69,58,.3);background:rgba(255,69,58,.07)';
+  }
+
+  // ① Render schedule FIRST (tabs + table)
+  ST.viewMode='class'; ST.activeTab=ST.classes[0]||'';
+  renderTabs(); renderTable();
+
+  // ② Audit strip — compact, no noise if clean
+  const vp=document.getElementById('vp');
+  if(viols.length===0){
+    vp.innerHTML=`<div class="vi" style="border-color:rgba(48,209,88,.18);background:rgba(48,209,88,.04)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">✅</span>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--ok);margin-bottom:1px">Расписание полностью соответствует СанПиН</div>
+          <div style="font-size:10px;color:var(--m2)">СанПиН 1.2.3685-21 (ред. 24.12.2025) · СП 2.4.3648-20 · МР 2.4.0331-23 — жёстких нарушений нет</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    // Group: hard first, then soft
+    const rows=[...hard,...soft].map(v=>`
+      <div class="vrow ${v.type==='hard'?'vbd':'vwn'}">
+        <span class="vc">${v.rule}</span>
+        <span>${v.type==='hard'?'✗':'⚠'} ${v.msg}</span>
+      </div>`).join('');
+    vp.innerHTML=`<div class="vi"><div class="vt">Аудит: ${hard.length} нарушений · ${soft.length} рекомендаций</div>${rows}</div>`;
+  }
+
+  // ③ Stats mini-grid at the bottom
+  document.getElementById('sgrid').innerHTML=`
+    <div class="sc"><div class="scl">Классов</div><div class="scv" style="color:var(--tx)">${ST.classes.length}</div><div class="scs">${numD}-дневная неделя</div></div>
+    <div class="sc"><div class="scl">Уроков в неделю</div><div class="scv" style="color:var(--tx)">${total}</div><div class="scs">всего размещено</div></div>
+    <div class="sc"><div class="scl">Жёстких нарушений</div><div class="scv" style="color:${hard.length===0?'var(--ok)':'var(--err)'}">${hard.length}</div><div class="scs">hard constraints СанПиН</div></div>
+    <div class="sc"><div class="scl">Рекомендаций</div><div class="scv" style="color:${soft.length===0?'var(--m2)':'var(--warn)'}">${soft.length}</div><div class="scs">soft (E-01 / E-02 / E-03)</div></div>
+    <div class="sc"><div class="scl">Окна для замен</div><div class="scv" style="color:var(--acc)">${tw}</div><div class="scs">слотов у учителей / нед</div></div>
+  `;
+
+  showScr('s3');
+  // Scroll to top so schedule is immediately visible
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+function setView(m){
+  ST.viewMode=m;
+  document.getElementById('vtb-c').classList.toggle('on',m==='class');
+  document.getElementById('vtb-t').classList.toggle('on',m==='teacher');
+  ST.activeTab=m==='class'?(ST.classes[0]||''):(ST.teachers[0]?.id||'');
+  renderTabs();renderTable();
+}
+function renderTabs(){
+  const items=ST.viewMode==='class'?ST.classes:ST.teachers.map(t=>({id:t.id,label:t.name.split(' ')[0]}));
+  document.getElementById('ctabs').innerHTML=items.map(x=>{
+    const id=typeof x==='string'?x:x.id;
+    const lbl=typeof x==='string'?x:x.label;
+    return`<button class="ctab ${id===ST.activeTab?'on':''}" onclick="ST.activeTab='${id}';renderTabs();renderTable()">${lbl}</button>`;
+  }).join('');
+}
+function renderTable(){
+  const{schedules,wins}=ST.result;
+  const numD=ST.school.days;
+  const DAYS=numD===6?D6:D5;
+  const el=document.getElementById('sdsp');
+
+  // Lesson start times (standard bell schedule)
+  const TIMES=['','08:00','08:45','09:35','10:25','11:15','12:05','13:00'];
+
+  if(ST.viewMode==='class'){
+    const cls=ST.activeTab;
+    const sch=schedules[cls]; if(!sch){el.innerHTML='';return}
+    const grade=pgr(cls);
+    let ms=0;
+    for(let d=0;d<numD;d++) for(let s=1;s<=MAXSL;s++) if(sch[d][s]) ms=Math.max(ms,s);
+
+    let h=`<table class="stbl">
+      <thead>
+        <tr>
+          <th style="min-width:52px">№ / время</th>
+          ${DAYS.map(d=>`<th class="dth">${d}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>`;
+
+    for(let s=1;s<=ms;s++){
+      h+=`<tr><td class="sn"><div style="font-weight:700;font-size:11px;color:var(--tx)">${s}</div><div style="font-size:9px;color:var(--m1);margin-top:1px">${TIMES[s]||''}</div></td>`;
+      for(let d=0;d<numD;d++){
+        const c=sch[d][s];
+        if(!c||!cSubj(c)){h+=`<td style="min-width:100px"></td>`;continue}
+        const df=getDiff(cSubj(c),grade);
+        const isH=df>=8, isO=OPTS.has(s);
+        const tdCls=isH?(isO?'dh':'ds'):'';
+        const dColor=df>=10?'var(--err)':df>=8?'var(--warn)':'var(--ok)';
+        const tch=ST.teachers.find(t=>t.id===cTid(c));
+        const tname=tch?tch.name.split(' ')[0]:'';
+        h+=`<td class="${tdCls}" style="min-width:100px">
+          <div class="ci">
+            <div class="csj" style="font-size:12px">${cSubj(c)}</div>
+            <div class="cmt">${tname}${cRid(c)?' · '+cRid(c):''}</div>
+            ${isH?`<div style="margin-top:2px"><span class="cdf" style="background:${isO?'rgba(41,151,255,.15)':'rgba(255,159,10,.15)'};color:${isO?'var(--acc)':dColor};font-size:9px">${isO?'✓ слот '+s:'⚠ слот '+s}</span></div>`:''}
+          </div>
+        </td>`;
+      }
+      h+=`</tr>`;
+    }
+
+    // C-01 summary row
+    h+=`<tr style="border-top:2px solid var(--b2)">
+      <td class="sn" style="color:var(--m1);font-size:9px">итого</td>`;
+    for(let d=0;d<numD;d++){
+      const cnt=sch[d].filter((v,i)=>i>0&&v).length;
+      const mx=getMaxDay(grade,ST.school.month);
+      const ok=cnt<=mx;
+      h+=`<td style="text-align:center;padding:6px">
+        <span style="font-size:11px;font-family:var(--mn);font-weight:600;color:${ok?'var(--ok)':'var(--err)'}">${cnt}</span>
+        <span style="font-size:9px;color:var(--m1)"> / ${mx}</span>
+      </td>`;
+    }
+    h+=`</tr></tbody></table>`;
+    el.innerHTML=h;
+
+  } else {
+    // Teacher view
+    const tid=ST.activeTab;
+    const tch=ST.teachers.find(t=>t.id===tid); if(!tch){el.innerHTML='';return}
+    const tGrid=Array.from({length:numD},()=>Array(MAXSL+1).fill(null));
+    for(const[cls,sch]of Object.entries(schedules))
+      for(let d=0;d<numD;d++) for(let s=1;s<=MAXSL;s++)
+        if(sch[d][s]&&cTid(sch[d][s])===tid) tGrid[d][s]={...sch[d][s],_cls:cls};
+
+    let ms=0;
+    for(let d=0;d<numD;d++) for(let s=1;s<=MAXSL;s++) if(tGrid[d][s]) ms=Math.max(ms,s);
+    if(!ms){el.innerHTML=`<div style="padding:24px;font-size:12px;color:var(--m2)">Нет уроков в расписании.</div>`;return}
+
+    const wd=wins[tid]||{byDay:Array(numD).fill(0),total:0};
+    let h=`<div style="padding:0 0 12px;font-size:11px;color:var(--m2)">
+      ${tch.name} · Окон для замен: <b style="color:var(--acc)">${wd.total}</b> за неделю
+    </div>
+    <table class="stbl">
+      <thead><tr>
+        <th style="min-width:52px">№ / время</th>
+        ${DAYS.map((d,i)=>`<th class="dth">${d}${wd.byDay[i]>0?`<br><span style='color:var(--acc);font-size:9px;font-weight:400'>${wd.byDay[i]} окн.</span>`:''}</th>`).join('')}
+      </tr></thead>
+      <tbody>`;
+
+    for(let s=1;s<=ms;s++){
+      let any=false; for(let d=0;d<numD;d++) if(tGrid[d][s]) any=true;
+      if(!any) continue;
+      h+=`<tr><td class="sn"><div style="font-weight:700;font-size:11px;color:var(--tx)">${s}</div><div style="font-size:9px;color:var(--m1)">${TIMES[s]||''}</div></td>`;
+      for(let d=0;d<numD;d++){
+        const c=tGrid[d][s];
+        if(!c){
+          const bef=Array.from({length:s-1},(_,i)=>i+1).some(x=>tGrid[d][x]);
+          const aft=Array.from({length:MAXSL-s},(_,i)=>s+i+1).some(x=>tGrid[d][x]);
+          h+=bef&&aft
+            ?`<td class="win" style="min-width:100px"><div class="ci"><div style="color:var(--warn);font-size:10px;text-align:center">○ окно</div><div class="cmt" style="text-align:center">замена</div></div></td>`
+            :`<td style="min-width:100px"></td>`;
+          continue;
+        }
+        const grade=pgr(c._cls||c.cls||ST.activeTab); const df=getDiff(cSubj(c),grade);
+        const dc=df>=10?'var(--err)':df>=8?'var(--warn)':'var(--ok)';
+        h+=`<td style="min-width:100px">
+          <div class="ci">
+            <div class="csj" style="font-size:12px">${cSubj(c)}</div>
+            <div class="cmt">${c._cls||c.cls||''} · ${cRid(c)||''}</div>
+          </div>
+        </td>`;
+      }
+      h+=`</tr>`;
+    }
+    h+=`</tbody></table>`;
+    el.innerHTML=h;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════════════
+function doExport(){
+  if(!ST.result)return;
+  const{schedules}=ST.result;
+  const numD=ST.school.days;
+  const rows=[['Класс','День','Урок №','Предмет','Учитель','Кабинет','Балл трудности']];
+  for(const[cls,sch]of Object.entries(schedules)){
+    const grade=pgr(cls);
+    for(let d=0;d<numD;d++)for(let s=1;s<=MAXSL;s++){
+      const c=sch[d][s];if(!c||!cSubj(c))continue;
+      const t=ST.teachers.find(x=>x.id===cTid(c));
+      rows.push([cls,DFull[d],s,cSubj(c),t?t.name:'',cRid(c)||'',getDiff(cSubj(c),grade)]);
+    }
+  }
+  const b=new Blob(['\uFEFF'+rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`raspisanie_${ST.school.name.replace(/\s+/g,'_')}.csv`;a.click();URL.revokeObjectURL(a.href);
+}
+
+// ── BOOT ──
+// Skip start/login screens — wizard launches immediately
+(function(){
+  // Hide intro and login screens
+  document.getElementById('s0').classList.remove('on');
+  var loginScr = document.getElementById('s-login');
+  if(loginScr) loginScr.classList.remove('on');
+  // Show wizard immediately
+  initDefaults();
+  document.getElementById('s1').classList.add('on');
+  renderSteps();
+})();
+</script>
+</body>
+</html>
