@@ -101,298 +101,14 @@ initScrollAnimations();
 initHoverEffects();
 initParallaxEffects();
 
-// Top-level handle so the profile-save handler can refresh the header
-// once the dashboard initialises it inside spRequireAuth.
-var __refreshHeader = function () {};
-
-// Profile menu + modals are bound at top level (NOT inside spRequireAuth)
-// so the dropdown opens even if Supabase fails to initialise. Otherwise
-// the auth callback never runs and every click handler stays unbound.
-initProfileUI();
-
-function initProfileUI() {
-  var profileModal   = document.getElementById('profileModal');
-  var profileOverlay = document.getElementById('profileOverlay');
-  var profileClose   = document.getElementById('profileClose');
-  var profileForm    = document.getElementById('profileForm');
-  var navProfileBtn  = document.getElementById('navProfileBtn');
-  var profileMenu    = document.getElementById('profileMenu');
-  var profileWrap    = navProfileBtn ? navProfileBtn.parentNode : null;
-
-  /* ─── Profile dropdown menu ─── */
-  function setMenuOpen(open) {
-    if (!profileWrap || !navProfileBtn) return;
-    profileWrap.classList.toggle('is-open', !!open);
-    navProfileBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (profileMenu) profileMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
-  }
-  function toggleMenu() {
-    setMenuOpen(!(profileWrap && profileWrap.classList.contains('is-open')));
-  }
-
-  if (navProfileBtn) {
-    navProfileBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      toggleMenu();
-    });
-  }
-  document.addEventListener('click', function (e) {
-    if (!profileWrap) return;
-    if (!profileWrap.contains(e.target)) setMenuOpen(false);
-  });
-
-  function clearProfileErrors() {
-    ['profileNameErr','profileSchoolErr','profileEmailErr'].forEach(function (id) {
-      var el = document.getElementById(id); if (el) el.textContent = '';
-    });
-  }
-  function profileErr(id, msg) {
-    var el = document.getElementById(id); if (el) el.textContent = msg;
-  }
-
-  function openProfile() {
-    setMenuOpen(false);
-    if (!profileModal) return;
-    var nameEl    = document.getElementById('profileName');
-    var schoolEl  = document.getElementById('profileSchool');
-    var emailEl   = document.getElementById('profileEmail');
-    var successEl = document.getElementById('profileSuccess');
-    var globalErr = document.getElementById('profileGlobalErr');
-    if (successEl) successEl.style.display = 'none';
-    if (globalErr) globalErr.textContent   = '';
-    clearProfileErrors();
-    profileModal.classList.add('profile-modal--open');
-    if (profileOverlay) profileOverlay.classList.add('profile-overlay--open');
-
-    spGetCurrentUser().then(function (u) {
-      if (!u) return;
-      if (nameEl)   nameEl.value   = u.name || '';
-      if (schoolEl) schoolEl.value = u.school || '';
-      if (emailEl)  emailEl.value  = u.email || '';
-      if (nameEl)   nameEl.focus();
-    }).catch(function () { /* keep modal open with empty fields */ });
-  }
-
-  function closeProfile() {
-    if (profileModal)   profileModal.classList.remove('profile-modal--open');
-    if (profileOverlay) profileOverlay.classList.remove('profile-overlay--open');
-    closePassword();
-  }
-
-  /* ─── Change-password dialog ─── */
-  var passwordModal = document.getElementById('passwordModal');
-  var passwordForm  = document.getElementById('passwordForm');
-  var passwordClose = document.getElementById('passwordClose');
-
-  function clearPasswordErrors() {
-    ['currentPasswordErr','newPasswordErr','newPasswordConfirmErr'].forEach(function (id) {
-      var el = document.getElementById(id); if (el) el.textContent = '';
-    });
-    var globalErr = document.getElementById('passwordGlobalErr');
-    if (globalErr) globalErr.textContent = '';
-  }
-  function passwordErr(id, msg) {
-    var el = document.getElementById(id); if (el) el.textContent = msg;
-  }
-
-  function openPassword() {
-    setMenuOpen(false);
-    if (!passwordModal) return;
-    ['currentPassword','newPassword','newPasswordConfirm'].forEach(function (id) {
-      var el = document.getElementById(id); if (el) el.value = '';
-    });
-    var successEl = document.getElementById('passwordSuccess');
-    if (successEl) successEl.style.display = 'none';
-    clearPasswordErrors();
-    passwordModal.classList.add('profile-modal--open');
-    if (profileOverlay) profileOverlay.classList.add('profile-overlay--open');
-    var firstInput = document.getElementById('currentPassword');
-    if (firstInput) firstInput.focus();
-  }
-
-  function closePassword() {
-    if (passwordModal)  passwordModal.classList.remove('profile-modal--open');
-    if (profileOverlay && profileModal && !profileModal.classList.contains('profile-modal--open')) {
-      profileOverlay.classList.remove('profile-overlay--open');
-    }
-  }
-
-  if (passwordClose) passwordClose.addEventListener('click', closePassword);
-
-  if (passwordForm) {
-    passwordForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      if (typeof cooldown === 'function' && !cooldown('changePassword')) return;
-      clearPasswordErrors();
-
-      var current = (document.getElementById('currentPassword')    || {}).value || '';
-      var next    = (document.getElementById('newPassword')        || {}).value || '';
-      var confirm = (document.getElementById('newPasswordConfirm') || {}).value || '';
-
-      var valid = true;
-      if (!current) { passwordErr('currentPasswordErr', 'Введите текущий пароль'); valid = false; }
-      if (!next || next.length < 6) {
-        passwordErr('newPasswordErr', 'Не менее 6 символов'); valid = false;
-      }
-      if (next !== confirm) {
-        passwordErr('newPasswordConfirmErr', 'Пароли не совпадают'); valid = false;
-      }
-      if (!valid) return;
-
-      var globalErr = document.getElementById('passwordGlobalErr');
-      var submitBtn = passwordForm.querySelector('button[type="submit"]');
-      var origLabel = submitBtn ? submitBtn.textContent : '';
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Сохраняем…'; }
-
-      spChangePassword(current, next).then(function (res) {
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origLabel; }
-        if (!res.ok) {
-          if (globalErr) globalErr.textContent = res.error || 'Не удалось изменить пароль';
-          return;
-        }
-        var successEl = document.getElementById('passwordSuccess');
-        if (successEl) successEl.style.display = 'block';
-        ['currentPassword','newPassword','newPasswordConfirm'].forEach(function (id) {
-          var el = document.getElementById(id); if (el) el.value = '';
-        });
-        setTimeout(closePassword, 1600);
-      }).catch(function (err) {
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origLabel; }
-        if (globalErr) globalErr.textContent = (err && err.message) || 'Не удалось изменить пароль';
-      });
-    });
-  }
-
-  /* ─── Profile form submit ─── */
-  if (profileForm) {
-    profileForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      if (typeof cooldown === 'function' && !cooldown('profileSave')) return;
-      clearProfileErrors();
-      var globalErr = document.getElementById('profileGlobalErr');
-      if (globalErr) globalErr.textContent = '';
-
-      var nameVal   = (document.getElementById('profileName')   || {}).value.trim();
-      var schoolVal = (document.getElementById('profileSchool') || {}).value.trim();
-      var emailVal  = (document.getElementById('profileEmail')  || {}).value.trim().toLowerCase();
-
-      var valid = true;
-      if (!nameVal)   { profileErr('profileNameErr', 'Введите имя'); valid = false; }
-      if (!schoolVal) { profileErr('profileSchoolErr', 'Введите название школы'); valid = false; }
-      if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-        profileErr('profileEmailErr', 'Введите корректный email'); valid = false;
-      }
-      if (!valid) return;
-
-      spUpdateProfile(nameVal, schoolVal, emailVal, null).then(function (res) {
-        if (!res.ok) {
-          if (globalErr) globalErr.textContent = res.error || 'Ошибка сохранения';
-          return;
-        }
-        var successEl = document.getElementById('profileSuccess');
-        if (successEl) successEl.style.display = 'block';
-        try { __refreshHeader(); } catch (_) {}
-        setTimeout(closeProfile, 1400);
-      });
-    });
-  }
-
-  /* ─── Menu item handlers ─── */
-  var menuOpenProfile    = document.getElementById('menuOpenProfile');
-  var menuChangePassword = document.getElementById('menuChangePassword');
-  var menuLogout         = document.getElementById('menuLogout');
-
-  if (menuOpenProfile)    menuOpenProfile.addEventListener('click', openProfile);
-  if (menuChangePassword) menuChangePassword.addEventListener('click', openPassword);
-  if (menuLogout) {
-    menuLogout.addEventListener('click', function () {
-      if (typeof cooldown === 'function' && !cooldown('logout')) return;
-      setMenuOpen(false);
-      spLogout().then(function () { window.location.href = '/'; })
-        .catch(function () { window.location.href = '/'; });
-    });
-  }
-
-  if (profileOverlay) profileOverlay.addEventListener('click', closeProfile);
-  if (profileClose)   profileClose.addEventListener('click', closeProfile);
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      setMenuOpen(false);
-      closeProfile();
-    }
-  });
-}
-
 spRequireAuth(function () {
   var user = null;
-
-  /* ═══ Plan helpers (T-3.1, T-3.2) ═══ */
-  function formatPlanDate(isoString) {
-    if (!isoString) return '';
-    try {
-      var d = new Date(isoString);
-      if (isNaN(d.getTime())) return '';
-      return new Intl.DateTimeFormat('ru-RU', {
-        day: '2-digit', month: '2-digit', year: 'numeric'
-      }).format(d);
-    } catch (_) { return ''; }
-  }
-
-  function isPlanExpired(u) {
-    if (!u) return true;
-    if (!u.plan_expires_at) return u.plan !== 'paid' ? false : true; // paid without date = expired (fail-closed)
-    var t = new Date(u.plan_expires_at).getTime();
-    if (isNaN(t)) return true;
-    return t <= Date.now();
-  }
-
-  function hasPaidAccess(u) {
-    return !!u && u.plan === 'paid' && !isPlanExpired(u);
-  }
-
-  function renderPlanBadge(u) {
-    var badge = document.getElementById('planBadge');
-    if (!badge || !u) return;
-    badge.className = 'plan-badge';
-    if (u.plan === 'paid') {
-      var dateStr = formatPlanDate(u.plan_expires_at);
-      badge.textContent = dateStr ? ('Тариф активен до ' + dateStr) : 'Тариф активен';
-      badge.classList.add('plan-badge--paid');
-    } else if (u.plan === 'trial') {
-      var td = formatPlanDate(u.plan_expires_at);
-      badge.textContent = td ? ('Пробный до ' + td) : 'Пробный период';
-      badge.classList.add('plan-badge--trial');
-    } else {
-      badge.textContent = 'Тариф: Бесплатно';
-      badge.classList.add('plan-badge--free');
-    }
-    badge.hidden = false;
-  }
-
-  var LOCK_SVG = '<svg class="plan-lock" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-
-  function decorateBuildCardLock(u) {
-    var buildCard = document.getElementById('accModeBuild');
-    if (!buildCard) return;
-    var existing = buildCard.querySelector('.plan-lock');
-    if (hasPaidAccess(u)) {
-      if (existing) existing.remove();
-    } else {
-      if (!existing) {
-        var wrap = document.createElement('span');
-        wrap.innerHTML = LOCK_SVG;
-        var svg = wrap.firstChild;
-        if (svg) buildCard.appendChild(svg);
-      }
-    }
-  }
 
   /* ═══ Fill nav header ═══ */
   function refreshHeader() {
     spGetCurrentUser().then(function (u) {
       if (!u) return;
       user = u;
-      window.currentUser = u;
       var accName    = document.getElementById('accName');
       var accSchool  = document.getElementById('accSchool');
       var accAvatar  = document.getElementById('accAvatar');
@@ -410,16 +126,97 @@ spRequireAuth(function () {
           : 'Ваше расписание —<br/><span class="acc-header__title--gradient">без нарушений СанПиН</span>';
       }
       if (accWelcome) accWelcome.innerHTML = 'Привет, ' + firstName + '. Загрузите готовое расписание — найдём нарушения за минуту.<br class="hide-mobile"/>Или соберём новое из учебного плана с учётом всех норм.';
-      if (navBuyBtn)  navBuyBtn.style.display = hasPaidAccess(u) ? 'none' : '';
-
-      renderPlanBadge(u);
-      decorateBuildCardLock(u);
+      if (navBuyBtn)  navBuyBtn.style.display = u.plan === 'paid' ? 'none' : '';
     });
   }
-  // Expose to the top-level profile-save handler in initProfileUI()
-  __refreshHeader = refreshHeader;
   refreshHeader();
 
+  /* ═══ Profile modal ═══ */
+  var profileModal   = document.getElementById('profileModal');
+  var profileOverlay = document.getElementById('profileOverlay');
+  var profileClose   = document.getElementById('profileClose');
+  var profileForm    = document.getElementById('profileForm');
+  var navProfileBtn  = document.getElementById('navProfileBtn');
+
+  function openProfile() {
+    if (!profileModal) return;
+    spGetCurrentUser().then(function (u) {
+      if (!u) return;
+      var nameEl    = document.getElementById('profileName');
+      var schoolEl  = document.getElementById('profileSchool');
+      var emailEl   = document.getElementById('profileEmail');
+      var passEl    = document.getElementById('profilePassword');
+      var successEl = document.getElementById('profileSuccess');
+      var globalErr = document.getElementById('profileGlobalErr');
+      if (nameEl)    nameEl.value   = u.name;
+      if (schoolEl)  schoolEl.value = u.school;
+      if (emailEl)   emailEl.value  = u.email;
+      if (passEl)    passEl.value   = '';
+      if (successEl) successEl.style.display = 'none';
+      if (globalErr) globalErr.textContent   = '';
+      clearProfileErrors();
+      profileModal.classList.add('profile-modal--open');
+      profileOverlay.classList.add('profile-overlay--open');
+      if (nameEl) nameEl.focus();
+    });
+  }
+
+  function closeProfile() {
+    if (profileModal)   profileModal.classList.remove('profile-modal--open');
+    if (profileOverlay) profileOverlay.classList.remove('profile-overlay--open');
+  }
+
+  if (navProfileBtn)  navProfileBtn.addEventListener('click', openProfile);
+  if (profileOverlay) profileOverlay.addEventListener('click', closeProfile);
+  if (profileClose)   profileClose.addEventListener('click', closeProfile);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeProfile(); });
+
+  function clearProfileErrors() {
+    ['profileNameErr','profileSchoolErr','profileEmailErr','profilePasswordErr'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.textContent = '';
+    });
+  }
+
+  function profileErr(id, msg) {
+    var el = document.getElementById(id); if (el) el.textContent = msg;
+  }
+
+  if (profileForm) {
+    profileForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (typeof cooldown === 'function' && !cooldown('profileSave')) return;
+      clearProfileErrors();
+      var globalErr = document.getElementById('profileGlobalErr');
+      if (globalErr) globalErr.textContent = '';
+
+      var nameVal   = (document.getElementById('profileName')     || {}).value.trim();
+      var schoolVal = (document.getElementById('profileSchool')   || {}).value.trim();
+      var emailVal  = (document.getElementById('profileEmail')    || {}).value.trim().toLowerCase();
+      var passVal   = (document.getElementById('profilePassword') || {}).value;
+
+      var valid = true;
+      if (!nameVal)   { profileErr('profileNameErr', 'Введите имя'); valid = false; }
+      if (!schoolVal) { profileErr('profileSchoolErr', 'Введите название школы'); valid = false; }
+      if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+        profileErr('profileEmailErr', 'Введите корректный email'); valid = false;
+      }
+      if (passVal && passVal.length < 6) {
+        profileErr('profilePasswordErr', 'Пароль должен содержать не менее 6 символов'); valid = false;
+      }
+      if (!valid) return;
+
+      spUpdateProfile(nameVal, schoolVal, emailVal, passVal || null).then(function (res) {
+        if (!res.ok) {
+          if (globalErr) globalErr.textContent = res.error || 'Ошибка сохранения';
+          return;
+        }
+        var successEl = document.getElementById('profileSuccess');
+        if (successEl) successEl.style.display = 'block';
+        refreshHeader();
+        setTimeout(closeProfile, 1400);
+      });
+    });
+  }
 
   /* ═══ Logout ═══ */
   var profileLogout = document.getElementById('profileLogout');
@@ -468,29 +265,16 @@ spRequireAuth(function () {
   if (modeContinue) {
     modeContinue.addEventListener('click', function () {
       if (!selectedMode) return;
-
-      // T-3.2: gate schedule builder for non-paid users. Audit stays free.
-      if (selectedMode === 'build' && !hasPaidAccess(window.currentUser)) {
-        if (typeof window.openPaywall === 'function') {
-          window.openPaywall({
-            reason: 'Составление расписания доступно на тарифе «Школа». Оформите подписку, чтобы продолжить.'
-          });
-        }
+      if (selectedMode === 'build') {
+        window.location.href = './generator.html';
         return;
       }
-
       if (accStart) accStart.style.display = 'none';
       if (selectedMode === 'audit') {
         if (accUpload) accUpload.style.display = '';
         if (accBuilder) accBuilder.style.display = 'none';
         if (accIntro) accIntro.style.display = '';
         if (dropzone) dropzone.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        if (accBuilder) accBuilder.style.display = '';
-        if (accUpload) accUpload.style.display = 'none';
-        if (accIntro) accIntro.style.display = 'none';
-        initBuilderFlow();
-        if (accBuilder) accBuilder.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     });
   }
@@ -614,145 +398,15 @@ spRequireAuth(function () {
 
   if (builderGenerateBtn) {
     builderGenerateBtn.addEventListener('click', function () {
-      // T-3.2: block generator execution for non-paid users even if they
-      // bypassed the start-screen gate (e.g. cached open builder).
-      if (!hasPaidAccess(window.currentUser)) {
-        if (typeof window.openPaywall === 'function') {
-          window.openPaywall({
-            reason: 'Генерация расписания доступна на тарифе «Школа». Оформите подписку, чтобы продолжить.'
-          });
-        }
-        return;
-      }
       if (typeof cooldown === 'function' && !cooldown('generate')) return;
-      showBuilderError('');
-
-      var classes, teachers, days;
       try {
-        classes  = parseClasses((document.getElementById('builderClasses')  || {}).value);
-        teachers = parseTeachers((document.getElementById('builderTeachers') || {}).value);
-        days     = Number((document.getElementById('builderDays') || {}).value) || 5;
-        if (!classes.length)  throw new Error('Добавьте хотя бы один класс в шаге 2');
-        if (!teachers.length) throw new Error('Добавьте корректные строки учителей в шаге 3');
-      } catch (err) { showBuilderError(err.message); return; }
-
-      var curriculum = [];
-      teachers.forEach(function (t, idx) {
-        var teacherId = 'T' + (idx + 1);
-        t.classes.forEach(function (cls) {
-          if (classes.indexOf(cls) === -1) return;
-          curriculum.push({
-            classId: cls, subject: t.subject, weeklyHours: t.hours,
-            teacherId: teacherId, roomId: 'к.1',
-          });
-        });
-      });
-
-      var origLabel = builderGenerateBtn.textContent;
-      builderGenerateBtn.disabled = true;
-      builderGenerateBtn.textContent = 'Генерируется…';
-
-      var authPromise = (typeof spAuthHeaders === 'function') ? spAuthHeaders() : Promise.resolve({});
-      authPromise.then(function (authH) {
-        var headers = Object.assign({ 'Content-Type': 'application/json' }, authH || {});
-        return fetch('/api/generate', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify({ classes: classes, curriculum: curriculum, weekDays: days === 6 ? 6 : 5 }),
-        });
-      })
-        .then(function (r) { return r.json(); })
-        .then(function (resp) {
-          if (!resp || !resp.ok) {
-            var msg = (typeof spExtractError === 'function')
-              ? spExtractError(resp, 'Не удалось сгенерировать расписание')
-              : ((resp && resp.error && resp.error.message) || 'Не удалось сгенерировать расписание');
-            throw new Error(msg);
-          }
-          var sch = {};
-          Object.keys(resp.schedule).forEach(function (cls) {
-            sch[cls] = resp.schedule[cls].map(function (day) {
-              return day.map(function (subj) { return normSubj(subj) || subj; });
-            });
-          });
-          var cg = {};
-          classes.forEach(function (cls) {
-            var m = cls.match(/^(\d+)/);
-            cg[cls] = m ? parseInt(m[1], 10) : 7;
-          });
-          showResults(sch, cg);
-          switchTab('optimized');
-        })
-        .catch(function (err) {
-          showBuilderError(err.message || 'Ошибка генерации расписания');
-        })
-        .then(function () {
-          builderGenerateBtn.disabled = false;
-          builderGenerateBtn.textContent = origLabel;
-        });
-    });
-  }
-
-  /* ═══ Быстрый старт через Excel-шаблон ═══ */
-  var builderXlsxBtn   = document.getElementById('builderXlsxBtn');
-  var builderXlsxInput = document.getElementById('builderXlsxInput');
-
-  if (builderXlsxBtn && builderXlsxInput) {
-    builderXlsxBtn.addEventListener('click', function () { builderXlsxInput.click(); });
-
-    builderXlsxInput.addEventListener('change', function (e) {
-      var file = e.target.files && e.target.files[0];
-      if (!file) return;
-      if (typeof cooldown === 'function' && !cooldown('generateXlsx')) return;
-
-      showBuilderError('');
-      var origXlsxLabel = builderXlsxBtn.textContent;
-      builderXlsxBtn.disabled = true;
-      builderXlsxBtn.textContent = 'Обрабатывается…';
-
-      var fd = new FormData();
-      fd.append('file', file);
-      var daysEl = document.getElementById('builderDays');
-      var days   = daysEl ? Number(daysEl.value) : 5;
-      fd.append('weekDays', days === 6 ? '6' : '5');
-
-      var authPromiseXlsx = (typeof spAuthHeaders === 'function') ? spAuthHeaders() : Promise.resolve({});
-      authPromiseXlsx.then(function (authH) {
-        return fetch('/api/generate/from-xlsx', { method: 'POST', headers: authH || {}, body: fd });
-      })
-        .then(function (r) { return r.json(); })
-        .then(function (resp) {
-          if (!resp || !resp.ok) {
-            var msg = (typeof spExtractError === 'function')
-              ? spExtractError(resp, 'Не удалось обработать шаблон')
-              : 'Не удалось обработать шаблон';
-            throw new Error(msg);
-          }
-          var sch = {};
-          Object.keys(resp.schedule).forEach(function (cls) {
-            sch[cls] = resp.schedule[cls].map(function (day) {
-              return day.map(function (subj) { return normSubj(subj) || subj; });
-            });
-          });
-          var cg = {};
-          Object.keys(sch).forEach(function (cls) {
-            var m = cls.match(/^(\d+)/);
-            cg[cls] = m ? parseInt(m[1], 10) : 7;
-          });
-          showResults(sch, cg);
-          switchTab('optimized');
-          if (resp.warnings && resp.warnings.length) {
-            console.info('[xlsx warnings]', resp.warnings);
-          }
-        })
-        .catch(function (e) {
-          showBuilderError(e.message || 'Ошибка загрузки шаблона');
-        })
-        .then(function () {
-          builderXlsxBtn.disabled = false;
-          builderXlsxBtn.textContent = origXlsxLabel;
-          builderXlsxInput.value = '';
-        });
+        showBuilderError('');
+        var built = buildScheduleFromBuilder();
+        showResults(built.sch, built.cg);
+        switchTab('optimized');
+      } catch (err) {
+        showBuilderError(err.message || 'Ошибка генерации расписания');
+      }
     });
   }
 
