@@ -1344,32 +1344,34 @@ async function startGen(){
     lg('🚀 Запуск серверного CP-SAT генератора (mode=optimal)', 'i');
     await sl(150);
 
-    let payload;
-    if (ST._rawFile) {
-      // Excel scenario: send raw file
-      payload = { _rawFile: ST._rawFile, _rawFileName: ST._rawFileName, weekDays: ST.school.days };
-      lg(`📊 Отправляем шаблон ${ST._rawFileName} (${ST.classes.length} классов)`, 'i');
-    } else {
-      // Manual / demo scenario: build curriculum from ST.plan
-      const curriculum = [];
-      for (const cls of ST.classes) {
-        const lessons = ST.plan[cls] || [];
-        for (const l of lessons) {
-          curriculum.push({
-            classId: cls,
-            subject: l.subject || l.s || '',
-            weeklyHours: l.hours || l.h || 2,
-            teacherId: l.teacherId || l.t || '',
-            roomId: l.roomId || l.r || '',
-          });
-        }
+    // Always build JSON payload from current ST (which reflects what user sees in UI).
+    // Never send raw Excel file — that bypasses the user's class selection in step 1.
+    const curriculum = [];
+    for (const cls of ST.classes) {
+      const lessons = ST.plan[cls] || [];
+      for (const l of lessons) {
+        curriculum.push({
+          classId: cls,
+          subject: l.subject || l.s || '',
+          weeklyHours: l.hours || l.h || 2,
+          teacherId: l.teacherId || l.t || '',
+          roomId: l.roomId || l.r || '',
+        });
       }
-      const rooms = (ST.rooms || []).map(r => ({
-        id: r.id, type: r.type || 'Учебный',
-        capacity: r.cap || 25, floor: r.floor || 1
-      }));
-      payload = { classes: ST.classes, curriculum, rooms, weekDays: ST.school.days };
-      lg(`📋 ${ST.classes.length} классов, ${curriculum.length} строк учебного плана`, 'i');
+    }
+    const rooms = (ST.rooms || []).map(r => ({
+      id: r.id, type: r.type || 'Учебный',
+      capacity: r.cap || 25, floor: r.floor || 1
+    }));
+    const payload = { classes: ST.classes, curriculum, rooms, weekDays: ST.school.days };
+    lg(`📋 ${ST.classes.length} классов, ${curriculum.length} строк учебного плана, ${rooms.length} кабинетов`, 'i');
+
+    // Hard safety limit — VPS dies on too many classes.
+    // CP-SAT memory grows roughly with classes × hours-per-week.
+    if (ST.classes.length > 8) {
+      lg(`⚠ Слишком много классов (${ST.classes.length}). Сервер CP-SAT не справится.`, 'e');
+      lg(`   Сократите список классов в шаге 1 до 8 или меньше.`, 'e');
+      throw new Error(`Слишком много классов: ${ST.classes.length}. Рекомендуем не более 8 за раз. Сократите в поле «Классы» в шаге 1.`);
     }
 
     const resp = await callOptimalAPI(payload, lg, pg);
@@ -1385,24 +1387,36 @@ async function startGen(){
     showResult();
     return;
   } catch (apiErr) {
-    lg(`⚠ Сервер CP-SAT недоступен: ${apiErr.message}`, 'w');
-    // For manual mode without plan, don't silently use defPlan — that produces
-    // a schedule the user didn't ask for. Show clear error instead.
-    const hasUserPlan = ST.classes.some(cls => Array.isArray(ST.plan[cls]) && ST.plan[cls].length > 0);
-    if (!hasUserPlan) {
-      pg(0, 'Ошибка: нет данных');
-      lg(`✗ Локальный fallback требует учебный план в шаге 2 (предметы и часы по классам).`, 'e');
-      lg(`Войдите в личный кабинет на shkolaplan.ru и попробуйте снова — там есть подключение к серверному CP-SAT.`, 'e');
-      const btn2 = document.getElementById('bgen');
-      if (btn2) {
-        btn2.classList.remove('dis');
-        btn2.innerHTML='⚡ Сгенерировать расписание';
-        btn2.onclick = startGen;
-      }
-      return;
+    lg(`✗ Ошибка генерации: ${apiErr.message}`, 'e');
+    lg(`Возможные причины: соединение оборвано, превышен лимит времени, или сервер недоступен.`, 'e');
+    lg(`Попробуйте позже или сократите число классов в поле «Классы».`, 'e');
+
+    // Always go to result with EMPTY schedule + error context — DO NOT fake-build
+    // a schedule via local solver. With many classes the local solver returns empty
+    // but reports "0 violations" which is misleading.
+    pg(100, 'Ошибка');
+
+    // Show error UI — keep button enabled for retry
+    const btnX = document.getElementById('bgen');
+    if (btnX) {
+      btnX.classList.remove('dis');
+      btnX.innerHTML='⚡ Сгенерировать расписание';
+      btnX.onclick = startGen;
     }
-    lg(`↩ Падаем на локальный JS-солвер (ограничение ~5 классов)`, 'i');
-    await sl(200);
+
+    // Render an error banner in the result area instead of empty schedule
+    ST.result = null;
+    ST._lastError = apiErr.message;
+
+    // Stay on the generation step and surface the error visually
+    var errDiv = document.createElement('div');
+    errDiv.style.cssText = 'margin-top:18px;padding:16px;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.4);border-radius:10px;color:#ff453a;font-size:14px';
+    errDiv.innerHTML = '<div style="font-weight:600;margin-bottom:6px">Не удалось построить расписание</div><div style="font-size:13px;color:rgba(255,69,58,.85)">' +
+      apiErr.message.replace(/[<>]/g, '') +
+      '</div><div style="margin-top:10px;font-size:12px;color:var(--m2)">Если ошибка повторяется, попробуйте загрузить шаблон с меньшим числом классов или обратитесь в поддержку.</div>';
+    var pl = document.getElementById('plog');
+    if (pl && pl.parentNode) pl.parentNode.appendChild(errDiv);
+    return;
   }
 
   // ── FALLBACK: local JS solver ──
@@ -1730,36 +1744,19 @@ async function callOptimalAPI(payload, lg, pg) {
   pg(15, 'Отправляем данные на сервер CP-SAT...');
   lg('🌐 Подключение к серверу оптимизации (CP-SAT)', 'i');
 
-  const isFile = payload._rawFile instanceof Blob;
-  let url, fetchOpts;
-
-  if (isFile) {
-    const fd = new FormData();
-    fd.append('file', payload._rawFile, payload._rawFileName || 'template.xlsx');
-    fd.append('weekDays', String(payload.weekDays));
-    fd.append('mode', 'optimal');
-    fd.append('timeLimitSeconds', '1800');
-    url = '/api/generate/from-xlsx';
-    fetchOpts = {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token },
-      body: fd
-    };
-  } else {
-    url = '/api/generate';
-    fetchOpts = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({
-        classes: payload.classes,
-        curriculum: payload.curriculum,
-        rooms: payload.rooms,
-        weekDays: payload.weekDays,
-        mode: 'optimal',
-        timeLimitSeconds: 1800,
-      })
-    };
-  }
+  const url = '/api/generate';
+  const fetchOpts = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({
+      classes: payload.classes,
+      curriculum: payload.curriculum,
+      rooms: payload.rooms,
+      weekDays: payload.weekDays,
+      mode: 'optimal',
+      timeLimitSeconds: 600,  // 10 min — for VPS protection
+    })
+  };
 
   pg(20, 'CP-SAT решает задачу (до 30 минут)...');
   lg('⏳ CP-SAT работает, лимит 30 минут. Не закрывайте вкладку.', 'i');
@@ -1948,7 +1945,7 @@ function parseUploadedXlsx(file) {
         '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px"><div style="color:var(--tx);font-size:22px;font-weight:600;line-height:1">'+distRows.length+'</div><div style="color:var(--m1);font-size:11px;margin-top:4px">назначений</div></div>'+
         '<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px"><div style="color:var(--tx);font-size:22px;font-weight:600;line-height:1">'+constraintsRows.length+'</div><div style="color:var(--m1);font-size:11px;margin-top:4px">ограничений</div></div>'+
         '</div>'+
-        '<div style="color:var(--m2);font-size:12px;line-height:1.5">Данные подставлены в мастер. Перейдите далее, чтобы проверить и сгенерировать расписание (CP-SAT поддерживает до 50+ классов).</div>'+
+        '<div style="color:var(--m2);font-size:12px;line-height:1.5">Данные подставлены в мастер. <b style="color:#ff9f0a">Внимание:</b> CP-SAT-сервер сейчас рекомендует не более 8 классов за раз. Если в шаблоне больше — отредактируйте поле «Классы» в шаге 1, оставив нужные 4-8 классов.</div>'+
         '</div>'
       );
     } catch (err) {
