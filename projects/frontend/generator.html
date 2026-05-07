@@ -1744,7 +1744,7 @@ async function callOptimalAPI(payload, lg, pg) {
   pg(15, 'Отправляем данные на сервер CP-SAT...');
   lg('🌐 Подключение к серверу оптимизации (CP-SAT)', 'i');
 
-  const url = '/api/generate';
+  const url = '/api/generate/generate';  // Backend mounts router at /generate, route is /generate
   const fetchOpts = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -1768,12 +1768,24 @@ async function callOptimalAPI(payload, lg, pg) {
     pg(Math.round(p), 'CP-SAT решает задачу...');
   }, 3000);
 
-  let resp, body;
+  let resp, text, body;
   try {
     resp = await fetch(url, fetchOpts);
-    body = await resp.json();
+    text = await resp.text();
+    try {
+      body = JSON.parse(text);
+    } catch (parseErr) {
+      // Server returned HTML (likely 404, 502, or auth redirect) instead of JSON
+      const snippet = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 200);
+      throw new Error(`Сервер вернул HTML вместо JSON (${resp.status}): ${snippet}`);
+    }
   } finally {
     clearInterval(animTimer);
+  }
+
+  if (!resp.ok) {
+    const msg = (body && body.error && body.error.message) || `HTTP ${resp.status}`;
+    throw new Error(msg);
   }
 
   if (!body || !body.ok) {
