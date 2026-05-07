@@ -1471,14 +1471,70 @@ async function startGen(){
   }
   await sl(80);
 
-  pg(62,'Фаза 2: swap-оптимизация (E-01/E-02/E-03)...');
+  pg(62,'Фаза 2a: внутриклассовый swap...');
   await sl(150);
-  const{tchOcc,roomOcc}=buildOccupancy(schedules,numD);
+  const occMaps=buildOccupancy(schedules,numD);
+  const{tchOcc,roomOcc}=occMaps;
   for(const cls of sorted){
     optimize(schedules[cls],pgr(cls),numD,cls,tchOcc,roomOcc);
-    await sl(15);
+    await sl(10);
   }
-  lg('✓ Мягкие ограничения оптимизированы (E-01/E-02/E-03)','ok');
+  lg('✓ Внутриклассовый swap завершён','ok');
+
+  // ── Phase 2b: Cross-class swaps (multi-pass with time budget) ──
+  pg(72,'Фаза 2b: межклассовая оптимизация...');
+  await sl(150);
+  const startMs = Date.now();
+  const TIME_BUDGET = 5000;  // 5 seconds max
+  let totalScore = 0;
+  for(const cls of sorted) totalScore += penalty(schedules[cls], pgr(cls), numD);
+  const startScore = totalScore;
+  let crossSwaps = 0;
+
+  for(let outer=0; outer<10 && (Date.now()-startMs)<TIME_BUDGET; outer++){
+    let imp=false;
+    for(let i=0;i<sorted.length && (Date.now()-startMs)<TIME_BUDGET;i++){
+      const cA=sorted[i], gA=pgr(cA), schA=schedules[cA];
+      for(let j=i+1;j<sorted.length;j++){
+        const cB=sorted[j], gB=pgr(cB), schB=schedules[cB];
+        // Try swapping a lesson from cA with a lesson from cB if they share teacher+room
+        for(let d=0;d<numD;d++){
+          for(let s1=1;s1<=MAXSL;s1++){
+            const lA=schA[d][s1]; if(!lA) continue;
+            for(let s2=1;s2<=MAXSL;s2++){
+              if(s1===s2) continue;
+              const lB=schB[d][s2]; if(!lB) continue;
+              // Same teacher and room — safe swap (no conflicts created)
+              if(cTid(lA)!==cTid(lB) || cRid(lA)!==cRid(lB)) continue;
+              const before = penalty(schA,gA,numD) + penalty(schB,gB,numD);
+              schA[d][s1]=lB; schB[d][s2]=lA;
+              const after = penalty(schA,gA,numD) + penalty(schB,gB,numD);
+              if(after < before){
+                imp=true; crossSwaps++;
+                // No need to update occupancy because tid+rid+day+slot is the same after swap
+                // (slot s1 and s2 swap their classes — but as same teacher operates both, no conflict)
+              } else {
+                schA[d][s1]=lA; schB[d][s2]=lB;  // revert
+              }
+            }
+          }
+        }
+      }
+    }
+    if(!imp) break;
+    await sl(10);  // yield to UI
+  }
+
+  let endScore = 0;
+  for(const cls of sorted) endScore += penalty(schedules[cls], pgr(cls), numD);
+  const ms = Date.now()-startMs;
+  lg(`✓ Межклассовый swap: ${crossSwaps} перестановок за ${ms}мс, штраф ${startScore} → ${endScore}`,'ok');
+
+  // ── Phase 2c: Final intra-class polish (often improves after cross-swaps) ──
+  for(const cls of sorted){
+    optimize(schedules[cls],pgr(cls),numD,cls,tchOcc,roomOcc);
+  }
+  lg('✓ Финальная полировка завершена','ok');
 
   pg(80,'Фаза 3: полный аудит СанПиН...');
   await sl(180);
