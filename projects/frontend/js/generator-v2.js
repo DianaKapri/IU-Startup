@@ -1,0 +1,415 @@
+// Модуль: generator-v2.js
+// Задача: Генерация расписания по шаблону Excel (размещение по учителям)
+// Автор: Claude (ШколаПлан AI)
+// Описание: Алгоритм teacher-first placement с hard/soft constraints по СанПиН
+
+/* ═══════════════════════════════════════════════════════════════
+   ТАБЛИЦЫ ТРУДНОСТИ ПРЕДМЕТОВ ПО САНПИН
+   Источник: СанПиН 1.2.3685-21, МР 2.4.0331-23
+   ═══════════════════════════════════════════════════════════════ */
+
+var V2_DIFF_14 = {
+  'Математика':8,'Русский язык':7,'Родной язык':7,'Иностранный язык':7,
+  'Окружающий мир':6,'Окр. мир':6,'Информатика':6,'Информатика и ИКТ':6,
+  'Литературное чтение':5,'Литература':5,'ОРКСЭ':6,'ОДНКНР':6,
+  'Изобразительное искусство':3,'ИЗО':3,'Музыка':3,
+  'Технология':2,'Труд':2,'Физическая культура':1,'Физкультура':1
+};
+
+var V2_DIFF_59 = {
+  'Физика':13,'Химия':12,'Геометрия':12,'Алгебра':10,
+  'Русский язык':11,'Родной язык':11,'Иностранный язык':10,
+  'Математика':10,'Биология':7,'Информатика':4,'Информатика и ИКТ':7,
+  'Литература':7,'История':8,'Обществознание':9,'МХК':8,
+  'География':6,'Вероятность и статистика':8,
+  'ИЗО':1,'Изобразительное искусство':1,'Музыка':1,
+  'Технология':2,'Труд':2,'Черчение':5,
+  'ОБЖ':3,'Физическая культура':2,'Физкультура':2
+};
+
+var V2_DIFF_1011 = {
+  'Физика':12,'Геометрия':11,'Химия':11,'Алгебра':10,'Математика':10,
+  'Русский язык':9,'Родной язык':9,'Литература':8,'Иностранный язык':8,
+  'Биология':7,'Информатика':6,'Информатика и ИКТ':6,
+  'История':5,'Обществознание':5,'МХК':5,'Астрономия':6,
+  'География':3,'Экономика':5,'Право':5,
+  'ОБЖ':2,'Физическая культура':1,'Физкультура':1,
+  'Индивидуальный проект':4,'Вероятность и статистика':8
+};
+
+var V2_HARD_THRESHOLD = 8;
+var V2_MAX_PD = {1:4,2:5,3:5,4:5,5:6,6:6,7:7,8:7,9:7,10:7,11:7};
+var V2_MAX_WK = {1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
+
+/* ═══════════════════════════════════════════════════════════════
+   ПАРСЕР ШАБЛОНА
+   ═══════════════════════════════════════════════════════════════ */
+
+function v2ParseTemplate(wb) {
+  var result = { classes: [], plan: {}, teachers: [], rooms: [], errors: [] };
+
+  var planSheet = wb.Sheets['Учебный план'];
+  if (!planSheet) { result.errors.push('Не найден лист «Учебный план»'); return result; }
+  var planData = XLSX.utils.sheet_to_json(planSheet, {header:1, defval:''});
+
+  var headerRow = planData[0] || [];
+  var classNames = [];
+  var classColMap = {};
+  for (var ci = 1; ci < headerRow.length; ci++) {
+    var cn = String(headerRow[ci] || '').trim();
+    if (cn && cn !== 'ИТОГО часов') { classNames.push(cn); classColMap[cn] = ci; }
+  }
+  result.classes = classNames;
+
+  for (var ri = 1; ri < planData.length; ri++) {
+    var row = planData[ri];
+    var subj = String(row[0] || '').trim();
+    if (!subj || subj === 'ИТОГО часов') continue;
+    for (var ci2 = 0; ci2 < classNames.length; ci2++) {
+      var cls = classNames[ci2];
+      var hrs = parseInt(row[classColMap[cls]]) || 0;
+      if (hrs > 0) {
+        if (!result.plan[cls]) result.plan[cls] = [];
+        result.plan[cls].push({ subject: subj, hours: hrs });
+      }
+    }
+  }
+
+  var loadSheet = wb.Sheets['Нагрузка учителей'];
+  if (!loadSheet) { result.errors.push('Не найден лист «Нагрузка учителей»'); return result; }
+  var loadData = XLSX.utils.sheet_to_json(loadSheet, {header:1, defval:''});
+
+  var parallelRow = loadData[1] || [];
+  var letterRow = loadData[2] || [];
+  var loadColMap = {};
+  var currentParallel = '';
+  var lastCols = {};
+  var dataEndCol = 0;
+
+  for (var lc = 3; lc < parallelRow.length; lc++) {
+    var pv = String(parallelRow[lc] || '').trim();
+    if (pv && /^\d+$/.test(pv)) currentParallel = pv;
+    if (/Итого|кабинет|Кабинет|Недоступн/i.test(pv)) { lastCols[pv] = lc; if (!dataEndCol) dataEndCol = lc; continue; }
+    var letter = String(letterRow[lc] || '').trim().toUpperCase();
+    if (currentParallel && letter && /^[А-ЯЁA-Z]$/.test(letter)) {
+      var clsName = currentParallel + letter;
+      var mapped = classNames.find(function(c) { return c === clsName || c.toLowerCase() === clsName.toLowerCase(); });
+      if (mapped) loadColMap[lc] = mapped;
+    }
+  }
+
+  var cabinetCol = 0, unavailCol = 0;
+  Object.keys(lastCols).forEach(function(k) {
+    if (/кабинет|Кабинет/i.test(k)) cabinetCol = lastCols[k];
+    if (/Недоступн/i.test(k)) unavailCol = lastCols[k];
+  });
+
+  var currentTeacher = null;
+  for (var tr = 3; tr < loadData.length; tr++) {
+    var trow = loadData[tr];
+    var num = String(trow[0] || '').trim();
+    var name = String(trow[1] || '').trim();
+    var subj2 = String(trow[2] || '').trim();
+
+    if (/^\d+$/.test(num) && name && name !== 'ФИО учителя' && name !== 'ФИО') {
+      currentTeacher = {
+        id: 'T' + num, name: name, subjects: [],
+        cabinet: cabinetCol ? String(trow[cabinetCol] || '').trim() || null : null,
+        unavailableDays: unavailCol ? String(trow[unavailCol] || '').trim() || null : null,
+        totalHours: 0
+      };
+      result.teachers.push(currentTeacher);
+    }
+
+    if (currentTeacher && subj2 && subj2 !== 'предмет') {
+      var lessons = [];
+      for (var dc = 3; dc < (dataEndCol || parallelRow.length); dc++) {
+        if (loadColMap[dc]) {
+          var h2 = parseInt(trow[dc]) || 0;
+          if (h2 > 0) { lessons.push({ className: loadColMap[dc], subject: subj2, hours: h2 }); currentTeacher.totalHours += h2; }
+        }
+      }
+      if (lessons.length > 0) currentTeacher.subjects.push({ subject: subj2, lessons: lessons });
+    }
+  }
+
+  var roomSheet = wb.Sheets['Кабинеты'];
+  if (roomSheet) {
+    var roomData = XLSX.utils.sheet_to_json(roomSheet, {header:1, defval:''});
+    for (var rr = 1; rr < roomData.length; rr++) {
+      var rrow = roomData[rr];
+      var rnum = String(rrow[0] || '').trim();
+      if (rnum) result.rooms.push({ id: rnum, type: String(rrow[1]||'').trim(), capacity: parseInt(rrow[2])||30, floor: parseInt(rrow[3])||1 });
+    }
+  }
+
+  return result;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   УТИЛИТЫ
+   ═══════════════════════════════════════════════════════════════ */
+
+function v2GetGrade(className) { var m = String(className).match(/^(\d+)/); return m ? parseInt(m[1]) : 5; }
+function v2GetDifficulty(subject, grade) { var tbl = grade <= 4 ? V2_DIFF_14 : grade <= 9 ? V2_DIFF_59 : V2_DIFF_1011; return tbl[subject] || 5; }
+function v2IsHard(subject, grade) { return v2GetDifficulty(subject, grade) >= V2_HARD_THRESHOLD; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ГЕНЕРАТОР v2: TEACHER-FIRST PLACEMENT
+   ═══════════════════════════════════════════════════════════════ */
+
+function v2Generate(data, weekDays, onProgress) {
+  weekDays = weekDays || 5;
+  var DAYS = weekDays, MAX_SLOTS = 8;
+
+  var schedule = {};
+  data.classes.forEach(function(cls) {
+    schedule[cls] = [];
+    for (var d = 0; d < DAYS; d++) schedule[cls][d] = new Array(MAX_SLOTS).fill(null);
+  });
+
+  var teacherSlots = {};
+  var roomSlots = {};
+  data.rooms.forEach(function(r) { roomSlots[r.id] = []; for (var d = 0; d < DAYS; d++) roomSlots[r.id][d] = new Array(MAX_SLOTS).fill(false); });
+
+  var DAY_MAP = {'Пн':0,'Вт':1,'Ср':2,'Чт':3,'Пт':4,'Сб':5,'Понедельник':0,'Вторник':1,'Среда':2,'Четверг':3,'Пятница':4,'Суббота':5};
+
+  data.teachers.forEach(function(t) {
+    teacherSlots[t.id] = [];
+    for (var d = 0; d < DAYS; d++) teacherSlots[t.id][d] = new Array(MAX_SLOTS).fill(false);
+    if (t.unavailableDays) {
+      t.unavailableDays.split(/[,;\/\s]+/).forEach(function(p) {
+        var di = DAY_MAP[p.trim()];
+        if (di !== undefined && di < DAYS) for (var s = 0; s < MAX_SLOTS; s++) teacherSlots[t.id][di][s] = true;
+      });
+    }
+  });
+
+  var tasks = [];
+  data.teachers.forEach(function(t) {
+    t.subjects.forEach(function(sg) {
+      sg.lessons.forEach(function(les) {
+        var grade = v2GetGrade(les.className);
+        for (var h = 0; h < les.hours; h++) {
+          tasks.push({ teacherId: t.id, teacherName: t.name, subject: les.subject, className: les.className,
+            cabinet: t.cabinet, difficulty: v2GetDifficulty(les.subject, grade),
+            isHard: v2IsHard(les.subject, grade), grade: grade });
+        }
+      });
+    });
+  });
+
+  var teacherOrder = data.teachers.slice().sort(function(a, b) {
+    var ac = a.unavailableDays ? 1 : 0, bc = b.unavailableDays ? 1 : 0;
+    if (ac !== bc) return bc - ac;
+    return b.totalHours - a.totalHours;
+  });
+
+  var tasksByTeacher = {};
+  tasks.forEach(function(task) { if (!tasksByTeacher[task.teacherId]) tasksByTeacher[task.teacherId] = []; tasksByTeacher[task.teacherId].push(task); });
+
+  var totalPlaced = 0, totalTasks = tasks.length, errors = [];
+
+  for (var ti = 0; ti < teacherOrder.length; ti++) {
+    var teacher = teacherOrder[ti];
+    var tTasks = tasksByTeacher[teacher.id];
+    if (!tTasks || !tTasks.length) continue;
+
+    if (onProgress) onProgress({ phase: 'placing', teacher: teacher.name, progress: Math.round(ti / teacherOrder.length * 80), placed: totalPlaced, total: totalTasks });
+
+    var byClass = {};
+    tTasks.forEach(function(task) {
+      var key = task.className + '|' + task.subject;
+      if (!byClass[key]) byClass[key] = { tasks: [], className: task.className, subject: task.subject, isHard: task.isHard, grade: task.grade, cabinet: task.cabinet };
+      byClass[key].tasks.push(task);
+    });
+
+    var groups = Object.keys(byClass).map(function(k) { return byClass[k]; });
+    groups.sort(function(a, b) { return (b.isHard ? 1 : 0) - (a.isHard ? 1 : 0); });
+
+    for (var gi = 0; gi < groups.length; gi++) {
+      var group = groups[gi];
+      var cls = group.className, grade = group.grade, maxPd = V2_MAX_PD[grade] || 7;
+      var daysUsed = {};
+
+      for (var li = 0; li < group.tasks.length; li++) {
+        var task = group.tasks[li];
+        var placed = false, candidates = [];
+
+        for (var d = 0; d < DAYS; d++) {
+          if (_v2AllBlocked(teacherSlots[teacher.id], d)) continue;
+          if (daysUsed[d] && group.tasks.length <= DAYS) continue;
+
+          var slotStart = 0, slotEnd = maxPd;
+          if (task.isHard) { slotStart = 1; slotEnd = Math.min(4, maxPd); }
+          if (task.subject === 'Физическая культура' || task.subject === 'Физкультура') slotStart = 1;
+
+          for (var s = slotStart; s < slotEnd; s++) {
+            if (schedule[cls][d][s]) continue;
+            if (teacherSlots[teacher.id][d][s]) continue;
+            if (task.cabinet && roomSlots[task.cabinet] && roomSlots[task.cabinet][d][s]) continue;
+            var dayCount = 0;
+            for (var cs = 0; cs < MAX_SLOTS; cs++) if (schedule[cls][d][cs]) dayCount++;
+            if (dayCount >= maxPd) continue;
+
+            var score = 0;
+            if (task.isHard) score += Math.abs(s - 2) * 2;
+            else score += (s >= 1 && s <= 3) ? 5 : 0;
+            if (daysUsed[d]) score += 3;
+            if ((d === 2 || d === 3) && task.isHard) score += 2;
+            if (task.isHard && s > 0 && schedule[cls][d][s-1] && v2IsHard(schedule[cls][d][s-1].subject, grade)) {
+              score += 3;
+              if (s > 1 && schedule[cls][d][s-2] && v2IsHard(schedule[cls][d][s-2].subject, grade)) score += 10;
+            }
+            candidates.push({ day: d, slot: s, score: score });
+          }
+        }
+
+        candidates.sort(function(a, b) { return a.score - b.score; });
+
+        if (candidates.length > 0) {
+          var best = candidates[0];
+          schedule[cls][best.day][best.slot] = { subject: task.subject, teacherId: teacher.id, teacherName: teacher.name, cabinet: task.cabinet };
+          teacherSlots[teacher.id][best.day][best.slot] = true;
+          if (task.cabinet && roomSlots[task.cabinet]) roomSlots[task.cabinet][best.day][best.slot] = true;
+          daysUsed[best.day] = true;
+          totalPlaced++; placed = true;
+        }
+
+        if (!placed) {
+          for (var fd = 0; fd < DAYS && !placed; fd++) {
+            for (var fs = 0; fs < maxPd && !placed; fs++) {
+              if (schedule[cls][fd][fs]) continue;
+              if (teacherSlots[teacher.id][fd][fs]) continue;
+              if (task.cabinet && roomSlots[task.cabinet] && roomSlots[task.cabinet][fd][fs]) continue;
+              var fdc = 0; for (var fcs = 0; fcs < MAX_SLOTS; fcs++) if (schedule[cls][fd][fcs]) fdc++;
+              if (fdc >= maxPd) continue;
+              schedule[cls][fd][fs] = { subject: task.subject, teacherId: teacher.id, teacherName: teacher.name, cabinet: task.cabinet };
+              teacherSlots[teacher.id][fd][fs] = true;
+              if (task.cabinet && roomSlots[task.cabinet]) roomSlots[task.cabinet][fd][fs] = true;
+              totalPlaced++; placed = true;
+            }
+          }
+          if (!placed) errors.push(teacher.name + ' / ' + task.subject + ' / ' + cls + ': не удалось разместить');
+        }
+      }
+    }
+  }
+
+  /* Компактность */
+  if (onProgress) onProgress({ phase: 'compacting', progress: 85, placed: totalPlaced, total: totalTasks });
+  data.classes.forEach(function(cls) {
+    for (var d = 0; d < DAYS; d++) {
+      var filled = schedule[cls][d].filter(function(s) { return s !== null; });
+      schedule[cls][d] = filled.concat(new Array(MAX_SLOTS - filled.length).fill(null));
+    }
+  });
+
+  /* Оптимизация */
+  if (onProgress) onProgress({ phase: 'optimizing', progress: 90, placed: totalPlaced, total: totalTasks });
+  for (var pass = 0; pass < 2000; pass++) {
+    var rCls = data.classes[Math.floor(Math.random() * data.classes.length)];
+    var rDay = Math.floor(Math.random() * DAYS);
+    var grade2 = v2GetGrade(rCls), maxPd2 = V2_MAX_PD[grade2] || 7;
+    var s1 = Math.floor(Math.random() * maxPd2), s2 = Math.floor(Math.random() * maxPd2);
+    if (s1 === s2) continue;
+    var a = schedule[rCls][rDay][s1], b = schedule[rCls][rDay][s2];
+    if (!a && !b) continue;
+    var canSwap = true;
+    if (a && b && a.teacherId !== b.teacherId) {
+      if (a.teacherId && teacherSlots[a.teacherId][rDay][s2] && (!b || b.teacherId !== a.teacherId)) canSwap = false;
+      if (b.teacherId && teacherSlots[b.teacherId][rDay][s1] && (!a || a.teacherId !== b.teacherId)) canSwap = false;
+    }
+    if (!canSwap) continue;
+    var penBefore = _v2DayPenalty(schedule[rCls][rDay], grade2);
+    schedule[rCls][rDay][s1] = b; schedule[rCls][rDay][s2] = a;
+    var penAfter = _v2DayPenalty(schedule[rCls][rDay], grade2);
+    if (penAfter < penBefore) {
+      if (a && a.teacherId) { teacherSlots[a.teacherId][rDay][s1] = false; teacherSlots[a.teacherId][rDay][s2] = true; }
+      if (b && b.teacherId) { teacherSlots[b.teacherId][rDay][s2] = false; teacherSlots[b.teacherId][rDay][s1] = true; }
+    } else { schedule[rCls][rDay][s1] = a; schedule[rCls][rDay][s2] = b; }
+  }
+
+  if (onProgress) onProgress({ phase: 'done', progress: 100, placed: totalPlaced, total: totalTasks });
+  return { schedule: schedule, classes: data.classes, placed: totalPlaced, total: totalTasks, errors: errors };
+}
+
+function _v2AllBlocked(daySlots, d) {
+  if (!daySlots || !daySlots[d]) return false;
+  for (var i = 0; i < daySlots[d].length; i++) if (!daySlots[d][i]) return false;
+  return true;
+}
+
+function _v2DayPenalty(daySchedule, grade) {
+  var pen = 0;
+  for (var i = 0; i < daySchedule.length; i++) {
+    var s = daySchedule[i];
+    if (!s) continue;
+    var isH = v2GetDifficulty(s.subject, grade) >= V2_HARD_THRESHOLD;
+    if (isH && (i < 1 || i > 3)) pen += 3;
+    if (!isH && i >= 1 && i <= 3) pen += 1;
+    if (i === 0 && (s.subject === 'Физическая культура' || s.subject === 'Физкультура')) pen += 4;
+    if (isH && i > 0 && daySchedule[i-1]) {
+      if (v2GetDifficulty(daySchedule[i-1].subject, grade) >= V2_HARD_THRESHOLD) {
+        pen += 2;
+        if (i > 1 && daySchedule[i-2] && v2GetDifficulty(daySchedule[i-2].subject, grade) >= V2_HARD_THRESHOLD) pen += 5;
+      }
+    }
+  }
+  var lastFilled = -1;
+  for (var j = 0; j < daySchedule.length; j++) {
+    if (daySchedule[j]) { if (lastFilled >= 0 && j - lastFilled > 1) pen += 20; lastFilled = j; }
+  }
+  return pen;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   АУДИТ
+   ═══════════════════════════════════════════════════════════════ */
+
+function v2Audit(result) {
+  var violations = [], warnings = [], DN = ['Пн','Вт','Ср','Чт','Пт','Сб'];
+  result.classes.forEach(function(cls) {
+    var grade = v2GetGrade(cls), maxPd = V2_MAX_PD[grade] || 7, maxWk = V2_MAX_WK[grade] || 34, weekTotal = 0;
+    for (var d = 0; d < result.schedule[cls].length; d++) {
+      var dayCount = 0, day = result.schedule[cls][d];
+      for (var s = 0; s < day.length; s++) {
+        if (day[s]) {
+          dayCount++;
+          if (v2IsHard(day[s].subject, grade) && (s < 1 || s > 3))
+            warnings.push({ cls: cls, id: 'E-01', desc: cls + ' ' + DN[d] + ': ' + day[s].subject + ' на ' + (s+1) + '-м уроке' });
+        }
+      }
+      weekTotal += dayCount;
+      if (dayCount > maxPd) violations.push({ cls: cls, id: 'C-01', desc: cls + ' ' + DN[d] + ': ' + dayCount + ' ур. (макс. ' + maxPd + ')' });
+    }
+    if (weekTotal > maxWk) violations.push({ cls: cls, id: 'C-02', desc: cls + ': ' + weekTotal + ' ч/нед (макс. ' + maxWk + ')' });
+  });
+  return { score: Math.max(0, 100 - violations.length * 10 - warnings.length), violations: violations, warnings: warnings, placed: result.placed, total: result.total, unplaced: result.errors };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ЭКСПОРТ
+   ═══════════════════════════════════════════════════════════════ */
+
+function v2ExportXlsx(result) {
+  var sch = result.schedule;
+  var classes = result.classes.sort(function(a, b) { var na = parseInt(a), nb = parseInt(b); return na !== nb ? na - nb : a.localeCompare(b, 'ru'); });
+  var DAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница'];
+  var wb = XLSX.utils.book_new();
+  DAYS.forEach(function(dayName, di) {
+    var maxL = 0;
+    classes.forEach(function(cls) { var c = (sch[cls][di]||[]).filter(function(s){return s;}).length; if (c > maxL) maxL = c; });
+    if (maxL < 1) maxL = 7;
+    var rows = [['Урок'].concat(classes)];
+    for (var li = 0; li < maxL; li++) {
+      var row = [li + 1];
+      classes.forEach(function(cls) { var f = (sch[cls][di]||[]).filter(function(s){return s;}); row.push(f[li] ? f[li].subject : ''); });
+      rows.push(row);
+    }
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:8}].concat(classes.map(function(){return{wch:18};}));
+    XLSX.utils.book_append_sheet(wb, ws, dayName);
+  });
+  XLSX.writeFile(wb, 'raspisanie-v2.xlsx');
+}
