@@ -52,6 +52,11 @@
         <span class="acc-start-card__title">Составить расписание</span>
         <span class="acc-start-card__text">Алгоритм соберет улучшенную сетку уроков и сразу проверит ее на соответствие.</span>
       </button>
+      <button class="acc-start-card" type="button" data-mode="gen2" id="accModeGen2">
+        <span class="acc-start-card__badge" style="background:rgba(48,209,88,.12);color:#30d158">2.0</span>
+        <span class="acc-start-card__title">Генератор 2.0</span>
+        <span class="acc-start-card__text">Загрузите шаблон — расписание за секунды. Работает в браузере, без ожидания сервера.</span>
+      </button>
     </div>
     <button class="btn btn--primary" type="button" id="accModeContinue" disabled>Продолжить →</button>
   </section>
@@ -127,6 +132,53 @@
       <button type="button" class="btn btn--primary btn--sm" id="builderGenerateBtn" style="display:none">Сгенерировать и проверить</button>
     </div>
     <p class="acc-error" id="builderError"></p>
+  </section>
+
+  <!-- ═══ GENERATOR v2 ═══ -->
+  <section class="acc-gen2" id="accGen2" style="display:none">
+    <div class="acc-gen2__head">
+      <h2 class="acc-gen2__title">Генератор 2.0</h2>
+      <p class="acc-gen2__sub">Загрузите заполненный шаблон — расписание будет готово за секунды.</p>
+    </div>
+
+    <div class="acc-gen2__upload">
+      <div class="acc-dropzone" id="gen2Dropzone">
+        <input type="file" id="gen2FileInput" accept=".xlsx,.xls" hidden/>
+        <svg class="acc-dropzone__icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        <p class="acc-dropzone__title">Загрузите шаблон (.xlsx)</p>
+        <p class="acc-dropzone__sub">или <a href="https://docs.google.com/spreadsheets/d/1QuuRiug3dHQSGesT1db8EzVmtkKTSSGQ/export?format=xlsx" class="acc-dropzone__btn" download>Скачать пустой шаблон</a></p>
+      </div>
+    </div>
+
+    <div class="acc-gen2__info" id="gen2Info" style="display:none">
+      <div class="acc-gen2__stats">
+        <span class="acc-gen2__stat"><strong id="gen2Classes">0</strong> классов</span>
+        <span class="acc-gen2__stat"><strong id="gen2Teachers">0</strong> учителей</span>
+        <span class="acc-gen2__stat"><strong id="gen2Lessons">0</strong> уроков</span>
+      </div>
+      <p class="acc-gen2__errs" id="gen2ParseErrors" style="display:none"></p>
+      <button class="btn btn--primary" type="button" id="gen2RunBtn">Сгенерировать расписание</button>
+    </div>
+
+    <div class="acc-gen2__progress" id="gen2Progress" style="display:none">
+      <div class="acc-gen2__bar-wrap"><div class="acc-gen2__bar" id="gen2Bar" style="width:0"></div></div>
+      <p class="acc-gen2__status" id="gen2Status">Подготовка…</p>
+    </div>
+
+    <div class="acc-gen2__result" id="gen2Result" style="display:none">
+      <div class="acc-gen2__score-row">
+        <span class="acc-gen2__score" id="gen2Score">—</span>
+        <span class="acc-gen2__placed" id="gen2Placed">0/0 уроков</span>
+      </div>
+      <div class="acc-gen2__violations" id="gen2Violations"></div>
+      <div class="acc-gen2__actions">
+        <button class="btn btn--primary btn--sm" type="button" id="gen2DownloadBtn">Скачать .xlsx</button>
+        <button class="btn btn--ghost btn--sm" type="button" id="gen2ResetBtn">← Загрузить другой файл</button>
+      </div>
+      <div class="acc-gen2__grid" id="gen2Grid"></div>
+    </div>
+
+    <p class="acc-error" id="gen2Error"></p>
   </section>
 
   <section class="acc-intro" id="accIntro" style="display:none">
@@ -301,5 +353,157 @@
 spInitNav();
 </script>
 <script src="./js/account.js?v=20260503"></script>
+<script src="./js/generator-v2.js"></script>
+<script>
+(function() {
+  /* ─── Card click: show gen2 section ─── */
+  var gen2Card = document.getElementById('accModeGen2');
+  if (gen2Card) {
+    gen2Card.addEventListener('click', function() {
+      document.getElementById('accStart').style.display = 'none';
+      document.getElementById('accGen2').style.display = '';
+    });
+  }
+
+  /* ─── File upload ─── */
+  var dropzone = document.getElementById('gen2Dropzone');
+  var fileInput = document.getElementById('gen2FileInput');
+  var gen2Data = null;
+  var gen2Result = null;
+
+  if (dropzone) {
+    dropzone.addEventListener('click', function() { fileInput.click(); });
+    dropzone.addEventListener('dragover', function(e) { e.preventDefault(); dropzone.classList.add('acc-dropzone--hover'); });
+    dropzone.addEventListener('dragleave', function() { dropzone.classList.remove('acc-dropzone--hover'); });
+    dropzone.addEventListener('drop', function(e) { e.preventDefault(); dropzone.classList.remove('acc-dropzone--hover'); if (e.dataTransfer.files[0]) handleGen2File(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', function() { if (fileInput.files[0]) handleGen2File(fileInput.files[0]); });
+  }
+
+  function handleGen2File(file) {
+    var errEl = document.getElementById('gen2Error');
+    errEl.textContent = '';
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var wb = XLSX.read(e.target.result, { type: 'array' });
+        gen2Data = v2ParseTemplate(wb);
+        if (gen2Data.errors.length) {
+          errEl.textContent = gen2Data.errors.join(' | ');
+          return;
+        }
+        // Count total lessons
+        var totalLessons = 0;
+        gen2Data.teachers.forEach(function(t) { totalLessons += t.totalHours; });
+
+        document.getElementById('gen2Classes').textContent = gen2Data.classes.length;
+        document.getElementById('gen2Teachers').textContent = gen2Data.teachers.length;
+        document.getElementById('gen2Lessons').textContent = totalLessons;
+        document.getElementById('gen2Info').style.display = '';
+        dropzone.style.display = 'none';
+      } catch (err) {
+        errEl.textContent = 'Ошибка чтения файла: ' + err.message;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  /* ─── Generate ─── */
+  var runBtn = document.getElementById('gen2RunBtn');
+  if (runBtn) {
+    runBtn.addEventListener('click', function() {
+      if (!gen2Data) return;
+      runBtn.disabled = true;
+      document.getElementById('gen2Progress').style.display = '';
+      document.getElementById('gen2Result').style.display = 'none';
+
+      setTimeout(function() {
+        var t0 = Date.now();
+        gen2Result = v2Generate(gen2Data, 5, function(p) {
+          document.getElementById('gen2Bar').style.width = p.progress + '%';
+          if (p.phase === 'placing') document.getElementById('gen2Status').textContent = 'Размещаю: ' + p.teacher + '…';
+          if (p.phase === 'compacting') document.getElementById('gen2Status').textContent = 'Убираю окна…';
+          if (p.phase === 'optimizing') document.getElementById('gen2Status').textContent = 'Оптимизация…';
+        });
+        var elapsed = Date.now() - t0;
+
+        var audit = v2Audit(gen2Result);
+        document.getElementById('gen2Bar').style.width = '100%';
+        document.getElementById('gen2Status').textContent = 'Готово за ' + (elapsed / 1000).toFixed(1) + ' сек';
+        document.getElementById('gen2Score').textContent = 'Score ' + audit.score;
+        document.getElementById('gen2Placed').textContent = gen2Result.placed + '/' + gen2Result.total + ' уроков';
+
+        var violHtml = '';
+        if (audit.violations.length) {
+          violHtml += '<p style="color:#ff453a;font-weight:600">Нарушения (' + audit.violations.length + '):</p>';
+          audit.violations.forEach(function(v) { violHtml += '<p style="color:#ff453a;font-size:.85rem">❌ ' + v.desc + '</p>'; });
+        }
+        if (gen2Result.errors.length) {
+          violHtml += '<p style="color:#ff9f0a;font-weight:600;margin-top:8px">Не удалось разместить (' + gen2Result.errors.length + '):</p>';
+          gen2Result.errors.forEach(function(e) { violHtml += '<p style="color:#ff9f0a;font-size:.85rem">⚠ ' + e + '</p>'; });
+        }
+        if (audit.warnings.length) {
+          violHtml += '<p style="color:#86868b;font-weight:600;margin-top:8px">Рекомендации (' + audit.warnings.length + '):</p>';
+          audit.warnings.slice(0, 10).forEach(function(w) { violHtml += '<p style="color:#86868b;font-size:.85rem">' + w.desc + '</p>'; });
+          if (audit.warnings.length > 10) violHtml += '<p style="color:#86868b;font-size:.85rem">…и ещё ' + (audit.warnings.length - 10) + '</p>';
+        }
+        document.getElementById('gen2Violations').innerHTML = violHtml;
+
+        // Build schedule grid preview
+        var gridHtml = '';
+        var DN = ['Пн','Вт','Ср','Чт','Пт'];
+        var sortedClasses = gen2Result.classes.slice().sort(function(a,b) {
+          var na = parseInt(a), nb = parseInt(b);
+          return na !== nb ? na - nb : a.localeCompare(b, 'ru');
+        });
+        sortedClasses.forEach(function(cls) {
+          gridHtml += '<div class="gen2-class"><h4>' + cls + '</h4><table class="gen2-tbl"><tr><th></th>';
+          DN.forEach(function(d) { gridHtml += '<th>' + d + '</th>'; });
+          gridHtml += '</tr>';
+          var maxL = 0;
+          for (var d2 = 0; d2 < 5; d2++) {
+            var c2 = (gen2Result.schedule[cls][d2] || []).filter(function(s) { return s; }).length;
+            if (c2 > maxL) maxL = c2;
+          }
+          for (var li = 0; li < maxL; li++) {
+            gridHtml += '<tr><td class="gen2-ln">' + (li+1) + '</td>';
+            for (var di = 0; di < 5; di++) {
+              var filled = (gen2Result.schedule[cls][di] || []).filter(function(s) { return s; });
+              var les = filled[li];
+              if (les) {
+                var isH = v2IsHard(les.subject, v2GetGrade(cls));
+                gridHtml += '<td class="gen2-cell' + (isH ? ' gen2-cell--hard' : '') + '" title="' + les.teacherName + '">' + les.subject + '</td>';
+              } else {
+                gridHtml += '<td class="gen2-cell gen2-cell--empty"></td>';
+              }
+            }
+            gridHtml += '</tr>';
+          }
+          gridHtml += '</table></div>';
+        });
+        document.getElementById('gen2Grid').innerHTML = gridHtml;
+
+        document.getElementById('gen2Result').style.display = '';
+        runBtn.disabled = false;
+      }, 50);
+    });
+  }
+
+  /* ─── Download ─── */
+  var dlBtn = document.getElementById('gen2DownloadBtn');
+  if (dlBtn) dlBtn.addEventListener('click', function() { if (gen2Result) v2ExportXlsx(gen2Result); });
+
+  /* ─── Reset ─── */
+  var resetBtn = document.getElementById('gen2ResetBtn');
+  if (resetBtn) resetBtn.addEventListener('click', function() {
+    gen2Data = null; gen2Result = null;
+    document.getElementById('gen2Info').style.display = 'none';
+    document.getElementById('gen2Progress').style.display = 'none';
+    document.getElementById('gen2Result').style.display = 'none';
+    document.getElementById('gen2Dropzone').style.display = '';
+    document.getElementById('gen2Error').textContent = '';
+    document.getElementById('gen2FileInput').value = '';
+  });
+})();
+</script>
 </body>
 </html>

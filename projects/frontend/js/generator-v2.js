@@ -122,14 +122,44 @@ function v2ParseTemplate(wb) {
     }
 
     if (currentTeacher && subj2 && subj2 !== 'предмет') {
-      var lessons = [];
+      // Find classes where this teacher has hours
+      var teacherClasses = [];
       for (var dc = 3; dc < (dataEndCol || parallelRow.length); dc++) {
         if (loadColMap[dc]) {
           var h2 = parseInt(trow[dc]) || 0;
-          if (h2 > 0) { lessons.push({ className: loadColMap[dc], subject: subj2, hours: h2 }); currentTeacher.totalHours += h2; }
+          if (h2 > 0) teacherClasses.push(loadColMap[dc]);
         }
       }
-      if (lessons.length > 0) currentTeacher.subjects.push({ subject: subj2, lessons: lessons });
+
+      if (teacherClasses.length > 0) {
+        // Handle combined subjects: "Русский язык / Литература" → split
+        var subjectParts = subj2.indexOf('/') >= 0
+          ? subj2.split('/').map(function(s) { return s.trim(); }).filter(function(s) { return s; })
+          : [subj2];
+
+        subjectParts.forEach(function(sp) {
+          var lessons = [];
+          teacherClasses.forEach(function(cls) {
+            // Look up hours from учебный план
+            var planEntry = (result.plan[cls] || []).find(function(p) { return p.subject === sp; });
+            var hrs = planEntry ? planEntry.hours : 0;
+            // Fallback: if not found in plan, try partial match
+            if (!hrs) {
+              planEntry = (result.plan[cls] || []).find(function(p) { return p.subject.indexOf(sp) >= 0 || sp.indexOf(p.subject) >= 0; });
+              hrs = planEntry ? planEntry.hours : 0;
+            }
+            // Last fallback for "нач. классы": sum all plan hours
+            if (!hrs && /нач|начальн/i.test(sp)) {
+              hrs = (result.plan[cls] || []).reduce(function(sum, p) { return sum + p.hours; }, 0);
+              // For нач. классы teacher, create one combined entry
+              if (hrs > 0) { lessons.push({ className: cls, subject: 'начальные классы', hours: hrs }); currentTeacher.totalHours += hrs; }
+              return;
+            }
+            if (hrs > 0) { lessons.push({ className: cls, subject: sp, hours: hrs }); currentTeacher.totalHours += hrs; }
+          });
+          if (lessons.length > 0) currentTeacher.subjects.push({ subject: lessons[0].subject, lessons: lessons });
+        });
+      }
     }
   }
 

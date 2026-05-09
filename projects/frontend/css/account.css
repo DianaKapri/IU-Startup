@@ -1377,3 +1377,37 @@ body.acc-page .field__input:focus { border-color: var(--blue); }
 .acc-builder__xlsx-sub { font-size: .84rem; color: #86868b; line-height: 1.5; margin-bottom: 16px; }
 .acc-builder__xlsx-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .acc-builder__xlsx-or { font-size: .78rem; color: #6e6e73; text-align: center; margin: 16px 0 0; font-style: italic; }
+
+/* ═══ Generator v2 section ═══ */
+.acc-gen2 { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+.acc-gen2__head { margin-bottom: 24px; }
+.acc-gen2__title { font-size: 1.4rem; font-weight: 700; color: #f5f5f7; margin-bottom: 6px; }
+.acc-gen2__sub { font-size: .9rem; color: #86868b; }
+
+.acc-gen2__info { margin-top: 20px; }
+.acc-gen2__stats { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+.acc-gen2__stat { font-size: .9rem; color: #ccc; }
+.acc-gen2__stat strong { color: #30d158; font-size: 1.1rem; margin-right: 4px; }
+.acc-gen2__errs { color: #ff9f0a; font-size: .85rem; margin-bottom: 12px; }
+
+.acc-gen2__progress { margin-top: 20px; }
+.acc-gen2__bar-wrap { height: 6px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+.acc-gen2__bar { height: 100%; background: #30d158; border-radius: 4px; transition: width .2s; }
+.acc-gen2__status { font-size: .85rem; color: #86868b; }
+
+.acc-gen2__result { margin-top: 24px; }
+.acc-gen2__score-row { display: flex; align-items: baseline; gap: 16px; margin-bottom: 12px; }
+.acc-gen2__score { font-size: 1.6rem; font-weight: 800; color: #30d158; }
+.acc-gen2__placed { font-size: .9rem; color: #86868b; }
+.acc-gen2__violations { margin-bottom: 16px; }
+.acc-gen2__actions { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+/* Schedule grid */
+.acc-gen2__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.gen2-class h4 { font-size: .9rem; font-weight: 700; color: #f5f5f7; margin-bottom: 6px; }
+.gen2-tbl { width: 100%; border-collapse: collapse; font-size: .75rem; }
+.gen2-tbl th { padding: 4px 6px; color: #666; font-weight: 600; text-align: center; }
+.gen2-ln { color: #555; text-align: center; width: 24px; }
+.gen2-cell { padding: 5px 4px; text-align: center; border: 1px solid rgba(255,255,255,.04); color: #ccc; border-radius: 4px; }
+.gen2-cell--hard { background: rgba(59,130,246,.1); color: #6db3f8; }
+.gen2-cell--empty { background: none; border-color: transparent; }
