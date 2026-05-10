@@ -148,11 +148,17 @@ function v2ParseTemplate(wb) {
               planEntry = (result.plan[cls] || []).find(function(p) { return p.subject.indexOf(sp) >= 0 || sp.indexOf(p.subject) >= 0; });
               hrs = planEntry ? planEntry.hours : 0;
             }
-            // Last fallback for "нач. классы": sum all plan hours
+            // "нач. классы" → expand into specific subjects from plan
             if (!hrs && /нач|начальн/i.test(sp)) {
-              hrs = (result.plan[cls] || []).reduce(function(sum, p) { return sum + p.hours; }, 0);
-              // For нач. классы teacher, create one combined entry
-              if (hrs > 0) { lessons.push({ className: cls, subject: 'начальные классы', hours: hrs }); currentTeacher.totalHours += hrs; }
+              var NACH_SUBJECTS = ['Русский язык','Литературное чтение','Литература','Математика','Окружающий мир','Окр. мир','Технология','Труд','Изобразительное искусство','ИЗО'];
+              (result.plan[cls] || []).forEach(function(p) {
+                var isNach = NACH_SUBJECTS.some(function(ns) { return p.subject === ns || p.subject.indexOf(ns) >= 0 || ns.indexOf(p.subject) >= 0; });
+                if (isNach && p.hours > 0) {
+                  var nachLessons = [{ className: cls, subject: p.subject, hours: p.hours }];
+                  currentTeacher.subjects.push({ subject: p.subject, lessons: nachLessons });
+                  currentTeacher.totalHours += p.hours;
+                }
+              });
               return;
             }
             if (hrs > 0) { lessons.push({ className: cls, subject: sp, hours: hrs }); currentTeacher.totalHours += hrs; }
