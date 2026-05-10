@@ -448,38 +448,103 @@ spInitNav();
         }
         document.getElementById('gen2Violations').innerHTML = violHtml;
 
-        // Build schedule grid preview
-        var gridHtml = '';
-        var DN = ['Пн','Вт','Ср','Чт','Пт'];
+        // Build violation map: key = "cls|day|slot" → description
         var sortedClasses = gen2Result.classes.slice().sort(function(a,b) {
           var na = parseInt(a), nb = parseInt(b);
           return na !== nb ? na - nb : a.localeCompare(b, 'ru');
         });
-        sortedClasses.forEach(function(cls) {
-          gridHtml += '<div class="gen2-class"><h4>' + cls + '</h4><table class="gen2-tbl"><tr><th></th>';
-          DN.forEach(function(d) { gridHtml += '<th>' + d + '</th>'; });
-          gridHtml += '</tr>';
-          var maxL = 0;
-          for (var d2 = 0; d2 < 5; d2++) {
-            var c2 = (gen2Result.schedule[cls][d2] || []).filter(function(s) { return s; }).length;
-            if (c2 > maxL) maxL = c2;
+        var violMap = {};
+        audit.violations.forEach(function(v) { /* C-01/C-02 are per-day/week, not per-slot */ });
+        audit.warnings.forEach(function(w) {
+          // Parse "5А Пн: Русский язык на 1-м уроке" → find slot
+          var m = w.desc.match(/^(\S+)\s+(Пн|Вт|Ср|Чт|Пт|Сб):\s+(.+)\s+на\s+(\d+)-м/);
+          if (m) {
+            var vc = m[1], vdn = {'Пн':0,'Вт':1,'Ср':2,'Чт':3,'Пт':4,'Сб':5}[m[2]], vs = parseInt(m[4]) - 1;
+            violMap[vc + '|' + vdn + '|' + vs] = '⚠ ' + w.id + ': ' + m[3] + ' — сложный предмет на ' + m[4] + '-м уроке (рекомендуется 2-4)';
           }
-          for (var li = 0; li < maxL; li++) {
-            gridHtml += '<tr><td class="gen2-ln">' + (li+1) + '</td>';
-            for (var di = 0; di < 5; di++) {
+        });
+        // Add E-03 check (consecutive hard)
+        sortedClasses.forEach(function(cls) {
+          var grade = v2GetGrade(cls);
+          for (var d = 0; d < 5; d++) {
+            var filled = (gen2Result.schedule[cls][d] || []).filter(function(s) { return s; });
+            for (var si = 1; si < filled.length; si++) {
+              if (filled[si] && filled[si-1] && v2IsHard(filled[si].subject, grade) && v2IsHard(filled[si-1].subject, grade)) {
+                var key = cls + '|' + d + '|' + si;
+                if (!violMap[key]) violMap[key] = '⚠ E-03: ' + filled[si].subject + ' после ' + filled[si-1].subject + ' — два сложных подряд';
+              }
+            }
+          }
+        });
+        // Add ФК on 1st lesson
+        sortedClasses.forEach(function(cls) {
+          for (var d = 0; d < 5; d++) {
+            var filled = (gen2Result.schedule[cls][d] || []).filter(function(s) { return s; });
+            if (filled[0] && (filled[0].subject === 'Физическая культура' || filled[0].subject === 'Физкультура')) {
+              violMap[cls + '|' + d + '|0'] = '⚠ ФК на 1-м уроке — не рекомендуется';
+            }
+          }
+        });
+
+        // Build unified schedule table: days × lessons as rows, classes as columns
+        var gridHtml = '';
+        var DN = ['Пн','Вт','Ср','Чт','Пт'];
+
+        // Filter classes with actual lessons
+        var activeClasses = sortedClasses.filter(function(cls) {
+          for (var d = 0; d < 5; d++) {
+            if ((gen2Result.schedule[cls][d] || []).some(function(s) { return s; })) return true;
+          }
+          return false;
+        });
+
+        // Find max lessons per day across all classes
+        var maxPerDay = [];
+        for (var md = 0; md < 5; md++) {
+          var mx = 0;
+          activeClasses.forEach(function(cls) {
+            var c = (gen2Result.schedule[cls][md] || []).filter(function(s) { return s; }).length;
+            if (c > mx) mx = c;
+          });
+          maxPerDay.push(mx);
+        }
+
+        gridHtml += '<table class="gen2-tbl"><thead><tr><th class="gen2-corner">День</th><th class="gen2-corner">№</th>';
+        activeClasses.forEach(function(cls) { gridHtml += '<th class="gen2-cls-hdr">' + cls + '</th>'; });
+        gridHtml += '</tr></thead><tbody>';
+
+        for (var di = 0; di < 5; di++) {
+          var dayLessons = maxPerDay[di];
+          if (dayLessons < 1) continue;
+          for (var li = 0; li < dayLessons; li++) {
+            gridHtml += '<tr>';
+            if (li === 0) {
+              gridHtml += '<td class="gen2-day" rowspan="' + dayLessons + '">' + DN[di] + '</td>';
+            }
+            gridHtml += '<td class="gen2-ln">' + (li + 1) + '</td>';
+            activeClasses.forEach(function(cls) {
               var filled = (gen2Result.schedule[cls][di] || []).filter(function(s) { return s; });
               var les = filled[li];
               if (les) {
-                var isH = v2IsHard(les.subject, v2GetGrade(cls));
-                gridHtml += '<td class="gen2-cell' + (isH ? ' gen2-cell--hard' : '') + '" title="' + les.teacherName + '">' + les.subject + '</td>';
+                var grade = v2GetGrade(cls);
+                var isH = v2IsHard(les.subject, grade);
+                var vKey = cls + '|' + di + '|' + li;
+                var hasViol = violMap[vKey];
+                var cellClass = 'gen2-cell';
+                if (hasViol) cellClass += ' gen2-cell--warn';
+                else if (isH) cellClass += ' gen2-cell--hard';
+                var tooltip = les.teacherName;
+                if (hasViol) tooltip = hasViol + '\n👤 ' + les.teacherName;
+                gridHtml += '<td class="' + cellClass + '" title="' + tooltip.replace(/"/g, '&quot;') + '">' + les.subject + '</td>';
               } else {
                 gridHtml += '<td class="gen2-cell gen2-cell--empty"></td>';
               }
-            }
+            });
             gridHtml += '</tr>';
           }
-          gridHtml += '</table></div>';
-        });
+        }
+
+        gridHtml += '</tbody></table>';
         document.getElementById('gen2Grid').innerHTML = gridHtml;
 
         document.getElementById('gen2Result').style.display = '';
