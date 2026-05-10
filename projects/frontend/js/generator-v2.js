@@ -414,7 +414,51 @@ function v2Generate(data, weekDays, onProgress) {
     }
   });
 
-  /* Оптимизация */
+  /* Targeted fix: move hard subjects to slots 1-3, swap with easy subjects */
+  if (onProgress) onProgress({ phase: 'optimizing', progress: 87, placed: totalPlaced, total: totalTasks });
+  for (var fixPass = 0; fixPass < 3; fixPass++) {
+    data.classes.forEach(function(cls) {
+      var grade3 = v2GetGrade(cls);
+      for (var d3 = 0; d3 < DAYS; d3++) {
+        var day3 = schedule[cls][d3];
+        // Find hard subjects outside slots 1-3
+        for (var badSlot = 0; badSlot < day3.length; badSlot++) {
+          if (badSlot >= 1 && badSlot <= 3) continue; // already optimal
+          var badLesson = day3[badSlot];
+          if (!badLesson) continue;
+          if (!v2IsHard(badLesson.subject, grade3)) continue;
+          // Find easy subject at slots 1-3 to swap with
+          for (var goodSlot = 1; goodSlot <= 3; goodSlot++) {
+            var goodLesson = day3[goodSlot];
+            if (!goodLesson) continue;
+            if (v2IsHard(goodLesson.subject, grade3)) continue; // don't swap hard with hard
+            // Check teacher conflicts for the swap
+            var canFix = true;
+            // badLesson teacher must be free at goodSlot (in other classes)
+            if (badLesson.teacherId && teacherSlots[badLesson.teacherId][d3][goodSlot] && day3[goodSlot].teacherId !== badLesson.teacherId) canFix = false;
+            // goodLesson teacher must be free at badSlot (in other classes)
+            if (goodLesson.teacherId && teacherSlots[goodLesson.teacherId][d3][badSlot] && day3[badSlot].teacherId !== goodLesson.teacherId) canFix = false;
+            // Check cabinets
+            if (badLesson.cabinet && roomSlots[badLesson.cabinet] && roomSlots[badLesson.cabinet][d3][goodSlot] && !(goodLesson.cabinet === badLesson.cabinet)) canFix = false;
+            if (goodLesson.cabinet && roomSlots[goodLesson.cabinet] && roomSlots[goodLesson.cabinet][d3][badSlot] && !(badLesson.cabinet === goodLesson.cabinet)) canFix = false;
+            if (!canFix) continue;
+            // Do the swap
+            day3[badSlot] = goodLesson;
+            day3[goodSlot] = badLesson;
+            // Update teacher slots
+            if (badLesson.teacherId) { teacherSlots[badLesson.teacherId][d3][badSlot] = false; teacherSlots[badLesson.teacherId][d3][goodSlot] = true; }
+            if (goodLesson.teacherId) { teacherSlots[goodLesson.teacherId][d3][goodSlot] = false; teacherSlots[goodLesson.teacherId][d3][badSlot] = true; }
+            // Update room slots
+            if (badLesson.cabinet && roomSlots[badLesson.cabinet]) { roomSlots[badLesson.cabinet][d3][badSlot] = false; roomSlots[badLesson.cabinet][d3][goodSlot] = true; }
+            if (goodLesson.cabinet && roomSlots[goodLesson.cabinet]) { roomSlots[goodLesson.cabinet][d3][goodSlot] = false; roomSlots[goodLesson.cabinet][d3][badSlot] = true; }
+            break; // fixed this one, move to next
+          }
+        }
+      }
+    });
+  }
+
+  /* Random optimization */
   if (onProgress) onProgress({ phase: 'optimizing', progress: 90, placed: totalPlaced, total: totalTasks });
   for (var pass = 0; pass < 2000; pass++) {
     var rCls = data.classes[Math.floor(Math.random() * data.classes.length)];
