@@ -338,8 +338,11 @@ function v2Generate(data, weekDays, onProgress) {
             if (daysUsed[d]) score += 3;
             if ((d === 2 || d === 3) && task.isHard) score += 2;
             if (task.isHard && s > 0 && schedule[cls][d][s-1] && v2IsHard(schedule[cls][d][s-1].subject, grade)) {
-              score += 3;
-              if (s > 1 && schedule[cls][d][s-2] && v2IsHard(schedule[cls][d][s-2].subject, grade)) score += 10;
+              // Only penalize if outside optimal range (slots 1-3)
+              if (s < 1 || s > 3 || (s-1) < 1 || (s-1) > 3) {
+                score += 3;
+                if (s > 1 && schedule[cls][d][s-2] && v2IsHard(schedule[cls][d][s-2].subject, grade)) score += 10;
+              }
             }
             candidates.push({ day: d, slot: s, score: score });
           }
@@ -457,8 +460,11 @@ function _v2DayPenalty(daySchedule, grade) {
     if (i === 0 && (s.subject === 'Физическая культура' || s.subject === 'Физкультура')) pen += 4;
     if (isH && i > 0 && daySchedule[i-1]) {
       if (v2GetDifficulty(daySchedule[i-1].subject, grade) >= V2_HARD_THRESHOLD) {
-        pen += 2;
-        if (i > 1 && daySchedule[i-2] && v2GetDifficulty(daySchedule[i-2].subject, grade) >= V2_HARD_THRESHOLD) pen += 5;
+        // Only penalize if at least one is outside optimal range (slots 1-3 = lessons 2-4)
+        if (i < 1 || i > 3 || (i-1) < 1 || (i-1) > 3) {
+          pen += 2;
+          if (i > 1 && daySchedule[i-2] && v2GetDifficulty(daySchedule[i-2].subject, grade) >= V2_HARD_THRESHOLD) pen += 5;
+        }
       }
     }
   }

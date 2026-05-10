@@ -463,13 +463,15 @@ spInitNav();
             violMap[vc + '|' + vdn + '|' + vs] = '⚠ ' + w.id + ': ' + m[3] + ' — сложный предмет на ' + m[4] + '-м уроке (рекомендуется 2-4)';
           }
         });
-        // Add E-03 check (consecutive hard)
+        // Add E-03 check (consecutive hard) — only outside optimal slots 1-3
         sortedClasses.forEach(function(cls) {
           var grade = v2GetGrade(cls);
           for (var d = 0; d < 5; d++) {
             var filled = (gen2Result.schedule[cls][d] || []).filter(function(s) { return s; });
             for (var si = 1; si < filled.length; si++) {
               if (filled[si] && filled[si-1] && v2IsHard(filled[si].subject, grade) && v2IsHard(filled[si-1].subject, grade)) {
+                // Skip if both are at slots 1-3 (lessons 2-4) — that's fine
+                if (si >= 1 && si <= 3 && (si-1) >= 1 && (si-1) <= 3) continue;
                 var key = cls + '|' + d + '|' + si;
                 if (!violMap[key]) violMap[key] = '⚠ E-03: ' + filled[si].subject + ' после ' + filled[si-1].subject + ' — два сложных подряд';
               }
