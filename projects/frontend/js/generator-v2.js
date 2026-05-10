@@ -222,14 +222,49 @@ function v2Generate(data, weekDays, onProgress) {
   });
 
   var tasks = [];
+
+  /* ─── Detect group splits: same (class, subject) by multiple teachers ─── */
+  var groupSplitMap = {}; // key "class|subject" → [{teacherId, teacherName, cabinet}]
+  data.teachers.forEach(function(t) {
+    t.subjects.forEach(function(sg) {
+      sg.lessons.forEach(function(les) {
+        var key = les.className + '|' + les.subject;
+        if (!groupSplitMap[key]) groupSplitMap[key] = [];
+        groupSplitMap[key].push({ teacherId: t.id, teacherName: t.name, cabinet: t.cabinet });
+      });
+    });
+  });
+
+  /* ─── Build tasks: group splits share slots ─── */
+  var groupSplitProcessed = {}; // track which splits already created tasks
   data.teachers.forEach(function(t) {
     t.subjects.forEach(function(sg) {
       sg.lessons.forEach(function(les) {
         var grade = v2GetGrade(les.className);
-        for (var h = 0; h < les.hours; h++) {
-          tasks.push({ teacherId: t.id, teacherName: t.name, subject: les.subject, className: les.className,
-            cabinet: t.cabinet, difficulty: v2GetDifficulty(les.subject, grade),
-            isHard: v2IsHard(les.subject, grade), grade: grade });
+        var key = les.className + '|' + les.subject;
+        var splitGroup = groupSplitMap[key];
+
+        if (splitGroup && splitGroup.length > 1) {
+          // Group split — only create tasks for the FIRST teacher in the group
+          if (groupSplitProcessed[key]) return; // skip second+ teacher
+          groupSplitProcessed[key] = true;
+          // Create tasks with hours from plan (not doubled)
+          var allTeachers = splitGroup.map(function(g) { return { id: g.teacherId, name: g.teacherName, cabinet: g.cabinet }; });
+          for (var h = 0; h < les.hours; h++) {
+            tasks.push({ teacherId: allTeachers[0].id, teacherName: allTeachers[0].name,
+              subject: les.subject, className: les.className,
+              cabinet: allTeachers[0].cabinet, difficulty: v2GetDifficulty(les.subject, grade),
+              isHard: v2IsHard(les.subject, grade), grade: grade,
+              isGroupSplit: true, groupTeachers: allTeachers });
+          }
+        } else {
+          // Normal subject — one teacher
+          for (var h2 = 0; h2 < les.hours; h2++) {
+            tasks.push({ teacherId: t.id, teacherName: t.name, subject: les.subject, className: les.className,
+              cabinet: t.cabinet, difficulty: v2GetDifficulty(les.subject, grade),
+              isHard: v2IsHard(les.subject, grade), grade: grade,
+              isGroupSplit: false, groupTeachers: null });
+          }
         }
       });
     });
@@ -283,6 +318,15 @@ function v2Generate(data, weekDays, onProgress) {
           for (var s = slotStart; s < slotEnd; s++) {
             if (schedule[cls][d][s]) continue;
             if (teacherSlots[teacher.id][d][s]) continue;
+            // For group splits, check ALL teachers are free
+            var groupBlocked = false;
+            if (task.isGroupSplit && task.groupTeachers) {
+              for (var gti = 0; gti < task.groupTeachers.length; gti++) {
+                var gtId = task.groupTeachers[gti].id;
+                if (teacherSlots[gtId] && teacherSlots[gtId][d][s]) { groupBlocked = true; break; }
+              }
+            }
+            if (groupBlocked) continue;
             if (task.cabinet && roomSlots[task.cabinet] && roomSlots[task.cabinet][d][s]) continue;
             var dayCount = 0;
             for (var cs = 0; cs < MAX_SLOTS; cs++) if (schedule[cls][d][cs]) dayCount++;
@@ -305,8 +349,20 @@ function v2Generate(data, weekDays, onProgress) {
 
         if (candidates.length > 0) {
           var best = candidates[0];
-          schedule[cls][best.day][best.slot] = { subject: task.subject, teacherId: teacher.id, teacherName: teacher.name, cabinet: task.cabinet };
+          var teacherLabel = task.teacherName;
+          if (task.isGroupSplit && task.groupTeachers) {
+            teacherLabel = task.groupTeachers.map(function(g) { return g.name; }).join(' / ');
+          }
+          schedule[cls][best.day][best.slot] = { subject: task.subject, teacherId: teacher.id, teacherName: teacherLabel, cabinet: task.cabinet };
           teacherSlots[teacher.id][best.day][best.slot] = true;
+          // Block ALL teachers in group split
+          if (task.isGroupSplit && task.groupTeachers) {
+            task.groupTeachers.forEach(function(gt) {
+              if (gt.id !== teacher.id && teacherSlots[gt.id]) {
+                teacherSlots[gt.id][best.day][best.slot] = true;
+              }
+            });
+          }
           if (task.cabinet && roomSlots[task.cabinet]) roomSlots[task.cabinet][best.day][best.slot] = true;
           daysUsed[best.day] = true;
           totalPlaced++; placed = true;
@@ -317,11 +373,25 @@ function v2Generate(data, weekDays, onProgress) {
             for (var fs = 0; fs < maxPd && !placed; fs++) {
               if (schedule[cls][fd][fs]) continue;
               if (teacherSlots[teacher.id][fd][fs]) continue;
+              // Check group split teachers
+              var fbBlocked = false;
+              if (task.isGroupSplit && task.groupTeachers) {
+                for (var fgi = 0; fgi < task.groupTeachers.length; fgi++) {
+                  var fgtId = task.groupTeachers[fgi].id;
+                  if (teacherSlots[fgtId] && teacherSlots[fgtId][fd][fs]) { fbBlocked = true; break; }
+                }
+              }
+              if (fbBlocked) continue;
               if (task.cabinet && roomSlots[task.cabinet] && roomSlots[task.cabinet][fd][fs]) continue;
               var fdc = 0; for (var fcs = 0; fcs < MAX_SLOTS; fcs++) if (schedule[cls][fd][fcs]) fdc++;
               if (fdc >= maxPd) continue;
-              schedule[cls][fd][fs] = { subject: task.subject, teacherId: teacher.id, teacherName: teacher.name, cabinet: task.cabinet };
+              var fbLabel = task.teacherName;
+              if (task.isGroupSplit && task.groupTeachers) fbLabel = task.groupTeachers.map(function(g){return g.name;}).join(' / ');
+              schedule[cls][fd][fs] = { subject: task.subject, teacherId: teacher.id, teacherName: fbLabel, cabinet: task.cabinet };
               teacherSlots[teacher.id][fd][fs] = true;
+              if (task.isGroupSplit && task.groupTeachers) {
+                task.groupTeachers.forEach(function(gt) { if (gt.id !== teacher.id && teacherSlots[gt.id]) teacherSlots[gt.id][fd][fs] = true; });
+              }
               if (task.cabinet && roomSlots[task.cabinet]) roomSlots[task.cabinet][fd][fs] = true;
               totalPlaced++; placed = true;
             }
