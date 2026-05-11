@@ -673,6 +673,7 @@ spInitNav();
 (function () {
   var overlay = document.getElementById('indexPayOverlay');
   var modal   = document.getElementById('indexPayModal');
+  if (!overlay || !modal) return; // elements removed — skip
 
   function openPayModal() {
     modal.classList.add('pay-modal--open');
@@ -683,7 +684,8 @@ spInitNav();
     overlay.classList.remove('pay-overlay--open');
   }
 
-  document.getElementById('indexPayClose').addEventListener('click', closePayModal);
+  var closeBtn = document.getElementById('indexPayClose');
+  if (closeBtn) closeBtn.addEventListener('click', closePayModal);
   overlay.addEventListener('click', closePayModal);
 
   document.getElementById('trialBtn').addEventListener('click', function (e) {
@@ -697,7 +699,8 @@ spInitNav();
     });
   });
 
-  document.getElementById('indexPaySubmit').addEventListener('click', async function () {
+  var paySubmitBtn = document.getElementById('indexPaySubmit');
+  if (paySubmitBtn) paySubmitBtn.addEventListener('click', async function () {
     var org   = document.getElementById('indexPayOrg').value.trim();
     var inn   = document.getElementById('indexPayInn').value.trim();
     var email = document.getElementById('indexPayEmail').value.trim();
