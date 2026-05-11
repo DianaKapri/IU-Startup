@@ -953,7 +953,6 @@ document.addEventListener('DOMContentLoaded', function() {
       var file = e.target.files[0];
       if (!file) return;
       if (!cooldown('upload')) return;
-      requireHuman(function() {
         var btn = document.querySelector('.audit-upload-btn span');
         if (btn) btn.textContent = 'Загрузка...';
       parseXls(file).then(function(result) {
@@ -1025,7 +1024,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (btn) btn.textContent = 'Загрузить своё расписание (.xlsx)';
         alert('Ошибка: ' + err);
       });
-      }); /* end requireHuman */
       fileInput.value = '';
     });
   }
