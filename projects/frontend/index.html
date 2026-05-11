@@ -953,10 +953,14 @@ document.addEventListener('DOMContentLoaded', function() {
       var file = e.target.files[0];
       if (!file) return;
       if (!cooldown('upload')) return;
-        var btn = document.querySelector('.audit-upload-btn span');
-        if (btn) btn.textContent = 'Загрузка...';
+      var btn = document.querySelector('.audit-upload-btn span');
+      if (btn) btn.textContent = '⏳ Анализ ' + file.name + '…';
       parseXls(file).then(function(result) {
         if (btn) btn.textContent = 'Загрузить своё расписание (.xlsx)';
+        if (!result || !result.sch || Object.keys(result.sch).length === 0) {
+          alert('Файл прочитан, но расписание не распознано. Проверьте формат.');
+          return;
+        }
         /* Show inline demo panel with user's data */
         var panel = document.getElementById('inlineDemo');
         if (panel) panel.style.display = 'block';
@@ -1022,7 +1026,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('inlineDemoTabRecs').style.display = 'none';
       }).catch(function(err) {
         if (btn) btn.textContent = 'Загрузить своё расписание (.xlsx)';
-        alert('Ошибка: ' + err);
+        alert('Не удалось проанализировать файл:\n' + (err && err.message ? err.message : err));
       });
       fileInput.value = '';
     });
