@@ -655,22 +655,91 @@ function v2Audit(result) {
 
 function v2ExportXlsx(result) {
   var sch = result.schedule;
-  var classes = result.classes.sort(function(a, b) { var na = parseInt(a), nb = parseInt(b); return na !== nb ? na - nb : a.localeCompare(b, 'ru'); });
-  var DAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница'];
-  var wb = XLSX.utils.book_new();
-  DAYS.forEach(function(dayName, di) {
-    var maxL = 0;
-    classes.forEach(function(cls) { var c = (sch[cls][di]||[]).filter(function(s){return s;}).length; if (c > maxL) maxL = c; });
-    if (maxL < 1) maxL = 7;
-    var rows = [['Урок'].concat(classes)];
-    for (var li = 0; li < maxL; li++) {
-      var row = [li + 1];
-      classes.forEach(function(cls) { var f = (sch[cls][di]||[]).filter(function(s){return s;}); row.push(f[li] ? f[li].subject : ''); });
-      rows.push(row);
+  var DN = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница'];
+
+  // Filter only classes with lessons, sort
+  var classes = result.classes.filter(function(cls) {
+    for (var d = 0; d < 5; d++) {
+      if ((sch[cls][d] || []).some(function(s) { return s; })) return true;
     }
-    var ws = XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols'] = [{wch:8}].concat(classes.map(function(){return{wch:18};}));
-    XLSX.utils.book_append_sheet(wb, ws, dayName);
+    return false;
+  }).sort(function(a, b) {
+    var na = parseInt(a), nb = parseInt(b);
+    return na !== nb ? na - nb : a.localeCompare(b, 'ru');
   });
+
+  // Find max lessons per day
+  var maxPerDay = [];
+  for (var md = 0; md < 5; md++) {
+    var mx = 0;
+    classes.forEach(function(cls) {
+      var c = (sch[cls][md] || []).filter(function(s) { return s; }).length;
+      if (c > mx) mx = c;
+    });
+    maxPerDay.push(mx || 1);
+  }
+
+  var wb = XLSX.utils.book_new();
+
+  // === Лист 1: Предметы ===
+  var rows1 = [['День', '№'].concat(classes)];
+  for (var di = 0; di < 5; di++) {
+    for (var li = 0; li < maxPerDay[di]; li++) {
+      var row = [li === 0 ? DN[di] : '', li + 1];
+      classes.forEach(function(cls) {
+        var filled = (sch[cls][di] || []).filter(function(s) { return s; });
+        row.push(filled[li] ? filled[li].subject : '');
+      });
+      rows1.push(row);
+    }
+  }
+  var ws1 = XLSX.utils.aoa_to_sheet(rows1);
+  ws1['!cols'] = [{ wch: 14 }, { wch: 4 }].concat(classes.map(function() { return { wch: 22 }; }));
+  // Merge day cells
+  ws1['!merges'] = [];
+  var rowIdx = 1;
+  for (var mi = 0; mi < 5; mi++) {
+    if (maxPerDay[mi] > 1) {
+      ws1['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx + maxPerDay[mi] - 1, c: 0 } });
+    }
+    rowIdx += maxPerDay[mi];
+  }
+  XLSX.utils.book_append_sheet(wb, ws1, 'Расписание');
+
+  // === Лист 2: Учителя ===
+  var rows2 = [['День', '№'].concat(classes)];
+  for (var di2 = 0; di2 < 5; di2++) {
+    for (var li2 = 0; li2 < maxPerDay[di2]; li2++) {
+      var row2 = [li2 === 0 ? DN[di2] : '', li2 + 1];
+      classes.forEach(function(cls) {
+        var filled = (sch[cls][di2] || []).filter(function(s) { return s; });
+        row2.push(filled[li2] ? filled[li2].teacherName : '');
+      });
+      rows2.push(row2);
+    }
+  }
+  var ws2 = XLSX.utils.aoa_to_sheet(rows2);
+  ws2['!cols'] = [{ wch: 14 }, { wch: 4 }].concat(classes.map(function() { return { wch: 28 }; }));
+  ws2['!merges'] = ws1['!merges'];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Учителя');
+
+  // === Лист 3: Предмет + Учитель ===
+  var rows3 = [['День', '№'].concat(classes)];
+  for (var di3 = 0; di3 < 5; di3++) {
+    for (var li3 = 0; li3 < maxPerDay[di3]; li3++) {
+      var row3 = [li3 === 0 ? DN[di3] : '', li3 + 1];
+      classes.forEach(function(cls) {
+        var filled = (sch[cls][di3] || []).filter(function(s) { return s; });
+        var les = filled[li3];
+        row3.push(les ? les.subject + ' (' + les.teacherName + ')' : '');
+      });
+      rows3.push(row3);
+    }
+  }
+  var ws3 = XLSX.utils.aoa_to_sheet(rows3);
+  ws3['!cols'] = [{ wch: 14 }, { wch: 4 }].concat(classes.map(function() { return { wch: 36 }; }));
+  ws3['!merges'] = ws1['!merges'];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Полное');
+
   XLSX.writeFile(wb, 'raspisanie-v2.xlsx');
 }
