@@ -398,6 +398,9 @@ spInitNav();
         document.getElementById('gen2Classes').textContent = gen2Data.classes.length;
         document.getElementById('gen2Teachers').textContent = gen2Data.teachers.length;
         document.getElementById('gen2Lessons').textContent = totalLessons;
+        if (gen2Data.streams && gen2Data.streams.length) {
+          document.getElementById('gen2Lessons').textContent = totalLessons + ' (потоков: ' + gen2Data.streams.length + ')';
+        }
         document.getElementById('gen2Info').style.display = '';
         dropzone.style.display = 'none';
       } catch (err) {
@@ -534,9 +537,11 @@ spInitNav();
                 var hasViol = violMap[vKey];
                 var cellClass = 'gen2-cell';
                 if (hasViol) cellClass += ' gen2-cell--warn';
+                else if (les.isStream) cellClass += ' gen2-cell--stream';
                 else if (isH) cellClass += ' gen2-cell--hard';
                 var tooltip = les.teacherName;
                 if (hasViol) tooltip = hasViol + '\n👤 ' + les.teacherName;
+                if (les.isStream) tooltip = '🔀 Поток: ' + les.subject + '\n👤 ' + les.teacherName;
                 gridHtml += '<td class="' + cellClass + '" title="' + tooltip.replace(/"/g, '&quot;') + '">' + les.subject + '</td>';
               } else {
                 gridHtml += '<td class="gen2-cell gen2-cell--empty"></td>';

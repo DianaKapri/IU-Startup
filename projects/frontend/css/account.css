@@ -1416,5 +1416,7 @@ body.acc-page .field__input:focus { border-color: var(--blue); }
 .gen2-cell--hard:hover { background: rgba(59,130,246,.15); }
 .gen2-cell--warn { background: rgba(255,159,10,.1); color: #ffb84d; outline: 1px solid rgba(255,159,10,.25); }
 .gen2-cell--warn:hover { background: rgba(255,159,10,.18); }
+.gen2-cell--stream { background: rgba(167,139,250,.1); color: #a78bfa; }
+.gen2-cell--stream:hover { background: rgba(167,139,250,.18); }
 .gen2-cell--empty { background: none; border-color: rgba(255,255,255,.02); }
 .gen2-tbl tr:last-child td { border-bottom: 1px solid rgba(255,255,255,.06); }

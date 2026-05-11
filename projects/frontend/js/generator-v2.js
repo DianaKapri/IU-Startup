@@ -179,6 +179,24 @@ function v2ParseTemplate(wb) {
     }
   }
 
+  /* ─── Потоки (параллельные элективы) ─── */
+  result.streams = []; // [{name, subjects: ['Мат_Профиль1','Мат_База1',...]}]
+  var streamSheet = wb.Sheets['Потоки'];
+  if (streamSheet) {
+    var streamData = XLSX.utils.sheet_to_json(streamSheet, {header:1, defval:''});
+    for (var sr = 1; sr < streamData.length; sr++) {
+      var srow = streamData[sr];
+      var sname = String(srow[0] || '').trim();
+      if (!sname) continue;
+      var subjects = [];
+      for (var sc = 1; sc < srow.length; sc++) {
+        var sv = String(srow[sc] || '').trim();
+        if (sv) subjects.push(sv);
+      }
+      if (subjects.length > 1) result.streams.push({ name: sname, subjects: subjects });
+    }
+  }
+
   return result;
 }
 
@@ -223,8 +241,29 @@ function v2Generate(data, weekDays, onProgress) {
 
   var tasks = [];
 
+  /* ─── Build stream lookup: subject → streamName ─── */
+  var subjectToStream = {}; // "subjectName" → streamName
+  var streamDef = {};       // streamName → [subject1, subject2, ...]
+  (data.streams || []).forEach(function(st) {
+    streamDef[st.name] = st.subjects;
+    st.subjects.forEach(function(subj) { subjectToStream[subj] = st.name; });
+  });
+
+  /* ─── Build teacher-subject-class lookup ─── */
+  // teacherForSubjClass["subject|class"] = [{teacherId, teacherName, cabinet, hours}]
+  var teacherForSubjClass = {};
+  data.teachers.forEach(function(t) {
+    t.subjects.forEach(function(sg) {
+      sg.lessons.forEach(function(les) {
+        var key = les.subject + '|' + les.className;
+        if (!teacherForSubjClass[key]) teacherForSubjClass[key] = [];
+        teacherForSubjClass[key].push({ teacherId: t.id, teacherName: t.name, cabinet: t.cabinet, hours: les.hours });
+      });
+    });
+  });
+
   /* ─── Detect group splits: same (class, subject) by multiple teachers ─── */
-  var groupSplitMap = {}; // key "class|subject" → [{teacherId, teacherName, cabinet}]
+  var groupSplitMap = {};
   data.teachers.forEach(function(t) {
     t.subjects.forEach(function(sg) {
       sg.lessons.forEach(function(les) {
@@ -235,35 +274,101 @@ function v2Generate(data, weekDays, onProgress) {
     });
   });
 
-  /* ─── Build tasks: group splits share slots ─── */
-  var groupSplitProcessed = {}; // track which splits already created tasks
+  /* ─── Build stream tasks: subjects in same stream+class share slots ─── */
+  var streamProcessed = {}; // "streamName|class" → true
+  var subjectProcessedByStream = {}; // "subject|class" → true (skip in normal task creation)
+
+  (data.streams || []).forEach(function(st) {
+    // For each class, find which stream subjects have hours
+    data.classes.forEach(function(cls) {
+      var streamEntries = []; // [{subject, teachers:[{id,name,cabinet}], hours}]
+      st.subjects.forEach(function(subj) {
+        var key = subj + '|' + cls;
+        var teachers = teacherForSubjClass[key];
+        if (teachers && teachers.length > 0) {
+          streamEntries.push({ subject: subj, teachers: teachers, hours: teachers[0].hours });
+          subjectProcessedByStream[subj + '|' + cls] = true;
+        }
+      });
+
+      if (streamEntries.length < 2) {
+        // Only 1 or 0 subjects in this stream for this class — not a real stream here
+        streamEntries.forEach(function(e) { delete subjectProcessedByStream[e.subject + '|' + cls]; });
+        return;
+      }
+
+      var sKey = st.name + '|' + cls;
+      if (streamProcessed[sKey]) return;
+      streamProcessed[sKey] = true;
+
+      // Number of slots = max hours among stream subjects
+      var maxHours = 0;
+      streamEntries.forEach(function(e) { if (e.hours > maxHours) maxHours = e.hours; });
+
+      // Collect ALL teachers across all subjects in this stream
+      var allTeachers = [];
+      var allNames = [];
+      streamEntries.forEach(function(e) {
+        e.teachers.forEach(function(t) {
+          if (!allTeachers.some(function(at) { return at.id === t.teacherId; })) {
+            allTeachers.push({ id: t.teacherId, name: t.teacherName, cabinet: t.cabinet });
+            allNames.push(t.teacherName);
+          }
+        });
+      });
+
+      var grade = v2GetGrade(cls);
+      // Check if any subject in stream is hard
+      var anyHard = streamEntries.some(function(e) { return v2GetDifficulty(e.subject, grade) >= V2_HARD_THRESHOLD; });
+
+      for (var sh = 0; sh < maxHours; sh++) {
+        tasks.push({
+          teacherId: allTeachers[0].id,
+          teacherName: allNames.join(' / '),
+          subject: st.name,
+          className: cls,
+          cabinet: null,
+          difficulty: anyHard ? V2_HARD_THRESHOLD : 5,
+          isHard: anyHard,
+          grade: grade,
+          isGroupSplit: true,
+          groupTeachers: allTeachers,
+          isStream: true,
+          streamName: st.name
+        });
+      }
+    });
+  });
+
+  /* ─── Build normal tasks (non-stream, non-duplicate) ─── */
+  var groupSplitProcessed = {};
   data.teachers.forEach(function(t) {
     t.subjects.forEach(function(sg) {
       sg.lessons.forEach(function(les) {
+        // Skip if already handled by stream
+        if (subjectProcessedByStream[les.subject + '|' + les.className]) return;
+
         var grade = v2GetGrade(les.className);
         var key = les.className + '|' + les.subject;
         var splitGroup = groupSplitMap[key];
 
         if (splitGroup && splitGroup.length > 1) {
-          // Group split — only create tasks for the FIRST teacher in the group
-          if (groupSplitProcessed[key]) return; // skip second+ teacher
+          if (groupSplitProcessed[key]) return;
           groupSplitProcessed[key] = true;
-          // Create tasks with hours from plan (not doubled)
           var allTeachers = splitGroup.map(function(g) { return { id: g.teacherId, name: g.teacherName, cabinet: g.cabinet }; });
           for (var h = 0; h < les.hours; h++) {
-            tasks.push({ teacherId: allTeachers[0].id, teacherName: allTeachers[0].name,
+            tasks.push({ teacherId: allTeachers[0].id, teacherName: allTeachers.map(function(t){return t.name;}).join(' / '),
               subject: les.subject, className: les.className,
               cabinet: allTeachers[0].cabinet, difficulty: v2GetDifficulty(les.subject, grade),
               isHard: v2IsHard(les.subject, grade), grade: grade,
-              isGroupSplit: true, groupTeachers: allTeachers });
+              isGroupSplit: true, groupTeachers: allTeachers, isStream: false });
           }
         } else {
-          // Normal subject — one teacher
           for (var h2 = 0; h2 < les.hours; h2++) {
             tasks.push({ teacherId: t.id, teacherName: t.name, subject: les.subject, className: les.className,
               cabinet: t.cabinet, difficulty: v2GetDifficulty(les.subject, grade),
               isHard: v2IsHard(les.subject, grade), grade: grade,
-              isGroupSplit: false, groupTeachers: null });
+              isGroupSplit: false, groupTeachers: null, isStream: false });
           }
         }
       });
@@ -356,7 +461,7 @@ function v2Generate(data, weekDays, onProgress) {
           if (task.isGroupSplit && task.groupTeachers) {
             teacherLabel = task.groupTeachers.map(function(g) { return g.name; }).join(' / ');
           }
-          schedule[cls][best.day][best.slot] = { subject: task.subject, teacherId: teacher.id, teacherName: teacherLabel, cabinet: task.cabinet };
+          schedule[cls][best.day][best.slot] = { subject: task.subject, teacherId: teacher.id, teacherName: teacherLabel, cabinet: task.cabinet, isStream: task.isStream || false };
           teacherSlots[teacher.id][best.day][best.slot] = true;
           // Block ALL teachers in group split
           if (task.isGroupSplit && task.groupTeachers) {
@@ -390,7 +495,7 @@ function v2Generate(data, weekDays, onProgress) {
               if (fdc >= maxPd) continue;
               var fbLabel = task.teacherName;
               if (task.isGroupSplit && task.groupTeachers) fbLabel = task.groupTeachers.map(function(g){return g.name;}).join(' / ');
-              schedule[cls][fd][fs] = { subject: task.subject, teacherId: teacher.id, teacherName: fbLabel, cabinet: task.cabinet };
+              schedule[cls][fd][fs] = { subject: task.subject, teacherId: teacher.id, teacherName: fbLabel, cabinet: task.cabinet, isStream: task.isStream || false };
               teacherSlots[teacher.id][fd][fs] = true;
               if (task.isGroupSplit && task.groupTeachers) {
                 task.groupTeachers.forEach(function(gt) { if (gt.id !== teacher.id && teacherSlots[gt.id]) teacherSlots[gt.id][fd][fs] = true; });
