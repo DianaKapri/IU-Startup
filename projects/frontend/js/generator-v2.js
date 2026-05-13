@@ -699,11 +699,24 @@ function v2Generate(data, weekDays, onProgress) {
     }
   }
 
-  /* Компактность */
+  /* Компактность: убираем окна, но сложные не на 1-й урок */
   if (onProgress) onProgress({ phase: 'compacting', progress: 85, placed: totalPlaced, total: totalTasks });
   data.classes.forEach(function(cls) {
+    var grade = v2GetGrade(cls);
     for (var d = 0; d < DAYS; d++) {
       var filled = schedule[cls][d].filter(function(s) { return s !== null; });
+      if (filled.length === 0) { schedule[cls][d] = new Array(MAX_SLOTS).fill(null); return; }
+
+      // If first lesson is hard, find first non-hard and swap
+      if (filled[0] && v2IsHard(filled[0].subject, grade)) {
+        for (var sw = 1; sw < filled.length; sw++) {
+          if (filled[sw] && !v2IsHard(filled[sw].subject, grade)) {
+            var tmp = filled[0]; filled[0] = filled[sw]; filled[sw] = tmp;
+            break;
+          }
+        }
+      }
+
       schedule[cls][d] = filled.concat(new Array(MAX_SLOTS - filled.length).fill(null));
     }
   });
