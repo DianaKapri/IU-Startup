@@ -707,12 +707,24 @@ spInitNav();
     setTimeout(function() {
       var sch = gen2Result.schedule;
       var srcLesson = _getFilledSlot(sch, _dragSrc.cls, _dragSrc.day, _dragSrc.slot);
+      var grade = v2GetGrade(_dragSrc.cls);
+      var maxPd = V2_MAX_PD[grade] || 7;
       var cells = grid.querySelectorAll('[data-cls="' + _dragSrc.cls + '"]');
       cells.forEach(function(c) {
         var td = +c.dataset.day, ts = +c.dataset.slot;
         if (td === _dragSrc.day && ts === _dragSrc.slot) return;
         var targetLesson = _getFilledSlot(sch, _dragSrc.cls, td, ts);
-        // Check: can srcLesson go to (td, ts) AND can targetLesson go to src position?
+
+        // Check: slot index within maxPd
+        if (ts >= maxPd) { c.classList.add('gen2-cell--drop-no'); return; }
+
+        // Check: if moving filled→empty on different day, target day must not be full
+        if (srcLesson && !targetLesson && td !== _dragSrc.day) {
+          var dayCount = (sch[_dragSrc.cls][td] || []).filter(function(s) { return s; }).length;
+          if (dayCount >= maxPd) { c.classList.add('gen2-cell--drop-no'); return; }
+        }
+
+        // Check teacher/room conflicts
         var srcOk = _canPlace(sch, srcLesson, _dragSrc.cls, td, ts, _dragSrc.cls, _dragSrc.day, _dragSrc.slot);
         var tgtOk = _canPlace(sch, targetLesson, _dragSrc.cls, _dragSrc.day, _dragSrc.slot, _dragSrc.cls, td, ts);
         if (srcOk && tgtOk) {
