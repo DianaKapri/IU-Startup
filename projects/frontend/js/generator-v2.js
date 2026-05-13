@@ -448,7 +448,7 @@ function v2Generate(data, weekDays, onProgress) {
     for (var gi = 0; gi < groups.length; gi++) {
       var group = groups[gi];
       var cls = group.className, grade = group.grade, maxPd = V2_MAX_PD[grade] || 7;
-      var daysUsed = {};
+      var daysUsed = {}; // day → count of this subject placed
 
       for (var li = 0; li < group.tasks.length; li++) {
         var task = group.tasks[li];
@@ -456,7 +456,10 @@ function v2Generate(data, weekDays, onProgress) {
 
         for (var d = 0; d < DAYS; d++) {
           if (_v2AllBlocked(teacherSlots[teacher.id], d)) continue;
+          // Prefer spreading: skip day if already used AND we have enough days
           if (daysUsed[d] && group.tasks.length <= DAYS) continue;
+          // Hard limit: max 2 of same subject per day
+          if ((daysUsed[d] || 0) >= 2) continue;
 
           var slotStart = 0, slotEnd = maxPd;
           if (task.isHard) { slotStart = 1; slotEnd = Math.min(4, maxPd); }
@@ -475,14 +478,27 @@ function v2Generate(data, weekDays, onProgress) {
             if (groupBlocked) continue;
             if (task.cabinet && roomSlots[task.cabinet] && roomSlots[task.cabinet][d][s]) continue;
             var dayCount = 0;
-            for (var cs = 0; cs < MAX_SLOTS; cs++) if (schedule[cls][d][cs]) dayCount++;
+            var sameSubjCount = 0;
+            for (var cs = 0; cs < MAX_SLOTS; cs++) {
+              if (schedule[cls][d][cs]) {
+                dayCount++;
+                if (schedule[cls][d][cs].subject === task.subject) sameSubjCount++;
+              }
+            }
             if (dayCount >= maxPd) continue;
+            // Max 2 of same subject per day
+            if (sameSubjCount >= 2) continue;
+            // No 3 consecutive same subject
+            if (s > 0 && schedule[cls][d][s-1] && schedule[cls][d][s-1].subject === task.subject &&
+                s > 1 && schedule[cls][d][s-2] && schedule[cls][d][s-2].subject === task.subject) continue;
 
             var score = 0;
             if (task.isHard) score += Math.abs(s - 2) * 2;
             else score += (s >= 1 && s <= 3) ? 5 : 0;
             if (daysUsed[d]) score += 3;
             if ((d === 2 || d === 3) && task.isHard) score += 2;
+            // Penalize consecutive same subject
+            if (s > 0 && schedule[cls][d][s-1] && schedule[cls][d][s-1].subject === task.subject) score += 15;
             if (task.isHard && s > 0 && schedule[cls][d][s-1] && v2IsHard(schedule[cls][d][s-1].subject, grade)) {
               // Only penalize if outside optimal range (slots 1-3)
               if (s < 1 || s > 3 || (s-1) < 1 || (s-1) > 3) {
@@ -513,7 +529,7 @@ function v2Generate(data, weekDays, onProgress) {
             });
           }
           if (task.cabinet && roomSlots[task.cabinet]) roomSlots[task.cabinet][best.day][best.slot] = true;
-          daysUsed[best.day] = true;
+          daysUsed[best.day] = (daysUsed[best.day] || 0) + 1;
           totalPlaced++; placed = true;
         }
 
@@ -531,8 +547,15 @@ function v2Generate(data, weekDays, onProgress) {
               }
               if (fbBlocked) continue;
               if (task.cabinet && roomSlots[task.cabinet] && roomSlots[task.cabinet][fd][fs]) continue;
-              var fdc = 0; for (var fcs = 0; fcs < MAX_SLOTS; fcs++) if (schedule[cls][fd][fcs]) fdc++;
+              var fdc = 0; var fSubjCnt = 0;
+              for (var fcs = 0; fcs < MAX_SLOTS; fcs++) {
+                if (schedule[cls][fd][fcs]) {
+                  fdc++;
+                  if (schedule[cls][fd][fcs].subject === task.subject) fSubjCnt++;
+                }
+              }
               if (fdc >= maxPd) continue;
+              if (fSubjCnt >= 2) continue;
               var fbLabel = task.teacherName;
               if (task.isGroupSplit && task.groupTeachers) fbLabel = task.groupTeachers.map(function(g){return g.name;}).join(' / ');
               schedule[cls][fd][fs] = { subject: task.subject, teacherId: teacher.id, teacherName: fbLabel, cabinet: task.cabinet, isStream: task.isStream || false };
@@ -777,7 +800,20 @@ function _v2DayPenalty(daySchedule, grade) {
         }
       }
     }
+    // Same subject consecutive
+    if (i > 0 && daySchedule[i-1] && daySchedule[i-1].subject === s.subject) {
+      pen += 8;
+      if (i > 1 && daySchedule[i-2] && daySchedule[i-2].subject === s.subject) pen += 30;
+    }
   }
+  // 3+ same subject in one day
+  var subjCount = {};
+  for (var k = 0; k < daySchedule.length; k++) {
+    if (daySchedule[k]) {
+      subjCount[daySchedule[k].subject] = (subjCount[daySchedule[k].subject] || 0) + 1;
+    }
+  }
+  Object.keys(subjCount).forEach(function(subj) { if (subjCount[subj] >= 3) pen += 30; });
   var lastFilled = -1;
   for (var j = 0; j < daySchedule.length; j++) {
     if (daySchedule[j]) { if (lastFilled >= 0 && j - lastFilled > 1) pen += 20; lastFilled = j; }
