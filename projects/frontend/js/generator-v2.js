@@ -126,49 +126,87 @@ function v2ParseTemplate(wb) {
     }
 
     if (currentTeacher && subj2 && subj2 !== 'предмет') {
-      // Find classes where this teacher has hours
-      var teacherClasses = [];
+      // Collect actual cell values per class (not plan values!)
+      var cellHours = {}; // className → hours from grid cell
       for (var dc = 3; dc < (dataEndCol || parallelRow.length); dc++) {
         if (loadColMap[dc]) {
           var h2 = parseInt(trow[dc]) || 0;
-          if (h2 > 0) teacherClasses.push(loadColMap[dc]);
+          if (h2 > 0) cellHours[loadColMap[dc]] = h2;
         }
       }
+      var teacherClasses = Object.keys(cellHours);
 
       if (teacherClasses.length > 0) {
-        // Handle combined subjects: "Русский язык / Литература" → split
-        var subjectParts = subj2.indexOf('/') >= 0
-          ? subj2.split('/').map(function(s) { return s.trim(); }).filter(function(s) { return s; })
-          : [subj2];
+        // Check: is this a combined subject ("Русский язык / Литература")?
+        var isCombined = subj2.indexOf('/') >= 0;
+        // Check: is this "нач. классы"?
+        var isNach = /нач|начальн/i.test(subj2);
 
-        subjectParts.forEach(function(sp) {
-          var lessons = [];
+        if (isNach) {
+          // "нач. классы" → expand into specific subjects from plan
+          var NACH_SUBJECTS = ['Русский язык','Литературное чтение','Литература','Математика','Окружающий мир','Окр. мир','Технология','Труд','Изобразительное искусство','ИЗО'];
           teacherClasses.forEach(function(cls) {
-            // Look up hours from учебный план
-            var planEntry = (result.plan[cls] || []).find(function(p) { return p.subject === sp; });
-            var hrs = planEntry ? planEntry.hours : 0;
-            // Fallback: if not found in plan, try partial match
-            if (!hrs) {
-              planEntry = (result.plan[cls] || []).find(function(p) { return p.subject.indexOf(sp) >= 0 || sp.indexOf(p.subject) >= 0; });
-              hrs = planEntry ? planEntry.hours : 0;
-            }
-            // "нач. классы" → expand into specific subjects from plan
-            if (!hrs && /нач|начальн/i.test(sp)) {
-              var NACH_SUBJECTS = ['Русский язык','Литературное чтение','Литература','Математика','Окружающий мир','Окр. мир','Технология','Труд','Изобразительное искусство','ИЗО'];
-              (result.plan[cls] || []).forEach(function(p) {
-                var isNach = NACH_SUBJECTS.some(function(ns) { return p.subject === ns || p.subject.indexOf(ns) >= 0 || ns.indexOf(p.subject) >= 0; });
-                if (isNach && p.hours > 0) {
-                  var nachLessons = [{ className: cls, subject: p.subject, hours: p.hours }];
-                  currentTeacher.subjects.push({ subject: p.subject, lessons: nachLessons });
-                  currentTeacher.totalHours += p.hours;
+            (result.plan[cls] || []).forEach(function(p) {
+              var isNachSubj = NACH_SUBJECTS.some(function(ns) { return p.subject === ns || p.subject.indexOf(ns) >= 0 || ns.indexOf(p.subject) >= 0; });
+              if (isNachSubj && p.hours > 0) {
+                currentTeacher.subjects.push({ subject: p.subject, lessons: [{ className: cls, subject: p.subject, hours: p.hours }] });
+                currentTeacher.totalHours += p.hours;
+              }
+            });
+          });
+        } else if (isCombined) {
+          // Combined: "Русский язык / Литература" → split proportionally using cell value
+          var parts = subj2.split('/').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+
+          teacherClasses.forEach(function(cls) {
+            var total = cellHours[cls]; // actual hours from grid cell
+
+            // Get plan hours for each part to calculate proportions
+            var planHours = parts.map(function(sp) {
+              var pe = (result.plan[cls] || []).find(function(p) { return p.subject === sp; });
+              if (!pe) pe = (result.plan[cls] || []).find(function(p) { return p.subject.indexOf(sp) >= 0 || sp.indexOf(p.subject) >= 0; });
+              return pe ? pe.hours : 0;
+            });
+            var planTotal = planHours.reduce(function(s, h) { return s + h; }, 0);
+
+            if (planTotal > 0) {
+              // Distribute cell value proportionally
+              var remaining = total;
+              parts.forEach(function(sp, idx) {
+                var hrs;
+                if (idx === parts.length - 1) {
+                  hrs = remaining; // last part gets remainder
+                } else {
+                  hrs = Math.round(total * planHours[idx] / planTotal);
+                  remaining -= hrs;
+                }
+                if (hrs > 0) {
+                  currentTeacher.subjects.push({ subject: sp, lessons: [{ className: cls, subject: sp, hours: hrs }] });
+                  currentTeacher.totalHours += hrs;
                 }
               });
-              return;
+            } else {
+              // No plan data — split equally
+              var perPart = Math.floor(total / parts.length);
+              var leftover = total - perPart * parts.length;
+              parts.forEach(function(sp, idx) {
+                var hrs = perPart + (idx < leftover ? 1 : 0);
+                if (hrs > 0) {
+                  currentTeacher.subjects.push({ subject: sp, lessons: [{ className: cls, subject: sp, hours: hrs }] });
+                  currentTeacher.totalHours += hrs;
+                }
+              });
             }
-            if (hrs > 0) { lessons.push({ className: cls, subject: sp, hours: hrs }); currentTeacher.totalHours += hrs; }
           });
-          if (lessons.length > 0) currentTeacher.subjects.push({ subject: lessons[0].subject, lessons: lessons });
-        });
+        } else {
+          // Single subject — use cell value directly
+          var lessons = [];
+          teacherClasses.forEach(function(cls) {
+            lessons.push({ className: cls, subject: subj2, hours: cellHours[cls] });
+            currentTeacher.totalHours += cellHours[cls];
+          });
+          if (lessons.length > 0) currentTeacher.subjects.push({ subject: subj2, lessons: lessons });
+        }
       }
     }
   }
