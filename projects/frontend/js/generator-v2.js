@@ -481,7 +481,6 @@ function v2Generate(data, weekDays, onProgress) {
             for (var fs = 0; fs < maxPd && !placed; fs++) {
               if (schedule[cls][fd][fs]) continue;
               if (teacherSlots[teacher.id][fd][fs]) continue;
-              // Check group split teachers
               var fbBlocked = false;
               if (task.isGroupSplit && task.groupTeachers) {
                 for (var fgi = 0; fgi < task.groupTeachers.length; fgi++) {
@@ -504,6 +503,96 @@ function v2Generate(data, weekDays, onProgress) {
               totalPlaced++; placed = true;
             }
           }
+
+          /* ─── BACKTRACKING: displace existing lesson to free a slot ─── */
+          if (!placed) {
+            // Build list of candidate displacements, scored
+            var bCandidates = [];
+
+            for (var bd = 0; bd < DAYS && !placed; bd++) {
+              if (_v2AllBlocked(teacherSlots[teacher.id], bd)) continue;
+              for (var bs = 0; bs < maxPd; bs++) {
+                // New teacher must be free here
+                if (teacherSlots[teacher.id][bd][bs]) continue;
+                if (task.isGroupSplit && task.groupTeachers) {
+                  var bgb = false;
+                  for (var bgi = 0; bgi < task.groupTeachers.length; bgi++) {
+                    if (teacherSlots[task.groupTeachers[bgi].id] && teacherSlots[task.groupTeachers[bgi].id][bd][bs]) { bgb = true; break; }
+                  }
+                  if (bgb) continue;
+                }
+                // Must have an existing lesson to displace
+                var victim = schedule[cls][bd][bs];
+                if (!victim || !victim.teacherId) continue;
+                // Don't displace streams — too complex
+                if (victim.isStream) continue;
+                // Cabinet check for new lesson
+                if (task.cabinet && roomSlots[task.cabinet] && roomSlots[task.cabinet][bd][bs]) continue;
+
+                // Find where victim can go in the SAME class, different slot
+                for (var td = 0; td < DAYS; td++) {
+                  for (var ts = 0; ts < maxPd; ts++) {
+                    if (td === bd && ts === bs) continue;
+                    if (schedule[cls][td][ts]) continue;
+                    // Victim's teacher must be free at target
+                    if (teacherSlots[victim.teacherId][td][ts]) continue;
+                    // Victim's cabinet must be free at target
+                    if (victim.cabinet && roomSlots[victim.cabinet] && roomSlots[victim.cabinet][td][ts]) continue;
+                    // Class day must not be over limit
+                    var tdc = 0;
+                    for (var tcs = 0; tcs < MAX_SLOTS; tcs++) if (schedule[cls][td][tcs]) tdc++;
+                    if (td !== bd && tdc >= maxPd) continue; // moving to another day that's full
+
+                    // Score: prioritize moving hard subjects to better positions
+                    var bScore = 0;
+                    var victimIsHard = v2IsHard(victim.subject, grade);
+                    // If victim is hard and moving from bad slot to good slot — big bonus
+                    if (victimIsHard && (bs < 1 || bs > 3) && ts >= 1 && ts <= 3) bScore -= 10; // great: hard moves to optimal
+                    if (victimIsHard && bs >= 1 && bs <= 3 && (ts < 1 || ts > 3)) bScore += 20; // bad: hard leaves optimal
+                    if (victimIsHard && ts >= 1 && ts <= 3) bScore -= 5; // good: hard ends up in optimal
+                    // Prefer same day (less disruption)
+                    if (td === bd) bScore -= 2;
+
+                    bCandidates.push({ victimDay: bd, victimSlot: bs, targetDay: td, targetSlot: ts, score: bScore, victim: victim });
+                  }
+                }
+              }
+            }
+
+            // Sort: best displacements first (lowest score)
+            bCandidates.sort(function(a, b) { return a.score - b.score; });
+
+            // Try first valid candidate
+            for (var bci = 0; bci < bCandidates.length && !placed; bci++) {
+              var bc = bCandidates[bci];
+              var v = bc.victim;
+
+              // Move victim from (victimDay, victimSlot) to (targetDay, targetSlot)
+              schedule[cls][bc.targetDay][bc.targetSlot] = v;
+              schedule[cls][bc.victimDay][bc.victimSlot] = null;
+
+              // Update victim teacher slots
+              teacherSlots[v.teacherId][bc.victimDay][bc.victimSlot] = false;
+              teacherSlots[v.teacherId][bc.targetDay][bc.targetSlot] = true;
+              // Update victim room slots
+              if (v.cabinet && roomSlots[v.cabinet]) {
+                roomSlots[v.cabinet][bc.victimDay][bc.victimSlot] = false;
+                roomSlots[v.cabinet][bc.targetDay][bc.targetSlot] = true;
+              }
+
+              // Place new lesson at freed slot
+              var btLabel = task.teacherName;
+              if (task.isGroupSplit && task.groupTeachers) btLabel = task.groupTeachers.map(function(g){return g.name;}).join(' / ');
+              schedule[cls][bc.victimDay][bc.victimSlot] = { subject: task.subject, teacherId: teacher.id, teacherName: btLabel, cabinet: task.cabinet, isStream: task.isStream || false };
+              teacherSlots[teacher.id][bc.victimDay][bc.victimSlot] = true;
+              if (task.isGroupSplit && task.groupTeachers) {
+                task.groupTeachers.forEach(function(gt) { if (gt.id !== teacher.id && teacherSlots[gt.id]) teacherSlots[gt.id][bc.victimDay][bc.victimSlot] = true; });
+              }
+              if (task.cabinet && roomSlots[task.cabinet]) roomSlots[task.cabinet][bc.victimDay][bc.victimSlot] = true;
+              totalPlaced++; placed = true;
+            }
+          }
+
           if (!placed) {
             // Diagnose WHY: check every slot and count reasons
             var diag = { teacherBusy: 0, classFull: 0, classSlotTaken: 0, cabinetBusy: 0, groupBlocked: 0, noSlots: 0 };
