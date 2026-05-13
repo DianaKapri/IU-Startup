@@ -516,7 +516,7 @@ spInitNav();
     for (var di = 0; di < 5; di++) {
       if (maxPerDay[di] < 1) continue;
       for (var li = 0; li < maxPerDay[di]; li++) {
-        h += '<tr>';
+        h += '<tr' + (li === 0 ? ' class="gen2-tr--day-start"' : '') + '>';
         if (li === 0) h += '<td class="gen2-day" rowspan="' + maxPerDay[di] + '">' + DN[di] + '</td>';
         h += '<td class="gen2-ln">' + (li+1) + '</td>';
         activeClasses.forEach(function(cls) {
@@ -591,7 +591,7 @@ spInitNav();
     for (var di = 0; di < 5; di++) {
       if (maxPerDay[di] < 1) continue;
       for (var li = 0; li < maxPerDay[di]; li++) {
-        h += '<tr>';
+        h += '<tr' + (li === 0 ? ' class="gen2-tr--day-start"' : '') + '>';
         if (li === 0) h += '<td class="gen2-day" rowspan="' + maxPerDay[di] + '">' + DN[di] + '</td>';
         h += '<td class="gen2-ln">' + (li+1) + '</td>';
         teacherNames.forEach(function(tn) {

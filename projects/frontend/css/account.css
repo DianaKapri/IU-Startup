@@ -1424,3 +1424,4 @@ body.acc-page .field__input:focus { border-color: var(--blue); }
 .gen2-cell--stream:hover { background: rgba(167,139,250,.18); }
 .gen2-cell--empty { background: none; border-color: rgba(255,255,255,.02); }
 .gen2-tbl tr:last-child td { border-bottom: 1px solid rgba(255,255,255,.06); }
+.gen2-tr--day-start td { border-top: 8px solid #111 !important; }
