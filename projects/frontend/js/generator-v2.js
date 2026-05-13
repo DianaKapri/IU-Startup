@@ -798,7 +798,7 @@ function _v2DayPenalty(daySchedule, grade) {
     var isH = v2GetDifficulty(s.subject, grade) >= v2HardThreshold(grade);
     if (isH && (i < 1 || i > 3)) pen += 3;
     if (!isH && i >= 1 && i <= 3) pen += 1;
-    if (i === 0 && isH) pen += 20; // hard on 1st lesson = strongly avoid
+    if (i === 0 && isH) pen += 5; // hard on 1st lesson = strongly avoid
     if (isH && i > 0 && daySchedule[i-1]) {
       if (v2GetDifficulty(daySchedule[i-1].subject, grade) >= v2HardThreshold(grade)) {
         // Only penalize if at least one is outside optimal range (slots 1-3 = lessons 2-4)
