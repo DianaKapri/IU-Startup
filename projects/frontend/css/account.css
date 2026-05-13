@@ -1423,5 +1423,10 @@ body.acc-page .field__input:focus { border-color: var(--blue); }
 .gen2-cell--stream { background: rgba(167,139,250,.1); color: #a78bfa; }
 .gen2-cell--stream:hover { background: rgba(167,139,250,.18); }
 .gen2-cell--empty { background: none; border-color: rgba(255,255,255,.02); }
+.gen2-cell--drop-ok { outline: 2px dashed #30d158 !important; background: rgba(48,209,88,.06) !important; }
+.gen2-cell--drop-no { outline: 2px dashed #ff453a !important; background: rgba(255,69,58,.06) !important; opacity: .5; }
+.gen2-cell--drop-hover { background: rgba(48,209,88,.15) !important; outline-color: #30d158 !important; }
+.gen2-cell[draggable="true"] { cursor: grab; }
+.gen2-cell[draggable="true"]:active { cursor: grabbing; }
 .gen2-tbl tr:last-child td { border-bottom: 1px solid rgba(255,255,255,.06); }
 .gen2-tr--day-start td { border-top: 8px solid #111 !important; }

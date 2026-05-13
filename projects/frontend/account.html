@@ -456,38 +456,15 @@ spInitNav();
         }
         document.getElementById('gen2Violations').innerHTML = violHtml;
 
-        // Build violation map
+        // Build sorted classes and store for view toggle
         var sortedClasses = gen2Result.classes.slice().sort(function(a,b) {
           var na = parseInt(a), nb = parseInt(b);
           return na !== nb ? na - nb : a.localeCompare(b, 'ru');
         });
-        var violMap = {};
-        audit.warnings.forEach(function(w) {
-          var m = w.desc.match(/^(\S+)\s+(Пн|Вт|Ср|Чт|Пт|Сб):\s+(.+)\s+на\s+(\d+)-м/);
-          if (m) {
-            var vc = m[1], vdn = {'Пн':0,'Вт':1,'Ср':2,'Чт':3,'Пт':4,'Сб':5}[m[2]], vs = parseInt(m[4]) - 1;
-            violMap[vc + '|' + vdn + '|' + vs] = '⚠ ' + w.id + ': ' + m[3] + ' — сложный предмет на ' + m[4] + '-м уроке (рекомендуется 2-4)';
-          }
-        });
-        sortedClasses.forEach(function(cls) {
-          var grade = v2GetGrade(cls);
-          for (var d = 0; d < 5; d++) {
-            var filled = (gen2Result.schedule[cls][d] || []).filter(function(s) { return s; });
-            for (var si = 1; si < filled.length; si++) {
-              if (filled[si] && filled[si-1] && v2IsHard(filled[si].subject, grade) && v2IsHard(filled[si-1].subject, grade)) {
-                if (si >= 1 && si <= 3 && (si-1) >= 1 && (si-1) <= 3) continue;
-                var key = cls + '|' + d + '|' + si;
-                if (!violMap[key]) violMap[key] = '⚠ E-03: ' + filled[si].subject + ' после ' + filled[si-1].subject + ' — два сложных подряд';
-              }
-            }
-            if (filled[0] && v2IsHard(filled[0].subject, grade)) {
-              violMap[cls + '|' + d + '|0'] = '⚠ ' + filled[0].subject + ' на 1-м уроке — сложный предмет не рекомендуется первым';
-            }
-          }
-        });
 
         // Store for view toggle
-        window._gen2View = { schedule: gen2Result.schedule, sortedClasses: sortedClasses, violMap: violMap, data: gen2Data };
+        window._gen2View = { schedule: gen2Result.schedule, sortedClasses: sortedClasses, data: gen2Data, violMap: {} };
+        _rebuildViolMap();
         renderGen2ClassView();
         document.getElementById('gen2ViewToggle').style.display = '';
 
@@ -495,6 +472,38 @@ spInitNav();
         runBtn.disabled = false;
       }, 50);
     });
+  }
+
+  /* ─── Rebuild violation map ─── */
+  function _rebuildViolMap() {
+    if (!window._gen2View || !gen2Result) return;
+    var v = window._gen2View;
+    var audit = v2Audit(gen2Result);
+    var violMap = {};
+    audit.warnings.forEach(function(w) {
+      var m = w.desc.match(/^(\S+)\s+(Пн|Вт|Ср|Чт|Пт|Сб):\s+(.+)\s+на\s+(\d+)-м/);
+      if (m) {
+        var vc = m[1], vdn = {'Пн':0,'Вт':1,'Ср':2,'Чт':3,'Пт':4,'Сб':5}[m[2]], vs = parseInt(m[4]) - 1;
+        violMap[vc + '|' + vdn + '|' + vs] = '⚠ ' + w.id + ': ' + m[3] + ' — сложный предмет на ' + m[4] + '-м уроке (рекомендуется 2-4)';
+      }
+    });
+    v.sortedClasses.forEach(function(cls) {
+      var grade = v2GetGrade(cls);
+      for (var d = 0; d < 5; d++) {
+        var filled = (gen2Result.schedule[cls][d] || []).filter(function(s) { return s; });
+        for (var si = 1; si < filled.length; si++) {
+          if (filled[si] && filled[si-1] && v2IsHard(filled[si].subject, grade) && v2IsHard(filled[si-1].subject, grade)) {
+            if (si >= 1 && si <= 3 && (si-1) >= 1 && (si-1) <= 3) continue;
+            var key = cls + '|' + d + '|' + si;
+            if (!violMap[key]) violMap[key] = '⚠ E-03: ' + filled[si].subject + ' после ' + filled[si-1].subject + ' — два сложных подряд';
+          }
+        }
+        if (filled[0] && v2IsHard(filled[0].subject, grade)) {
+          violMap[cls + '|' + d + '|0'] = '⚠ ' + filled[0].subject + ' на 1-м уроке — сложный предмет не рекомендуется первым';
+        }
+      }
+    });
+    v.violMap = violMap;
   }
 
   /* ─── View renderers ─── */
@@ -523,6 +532,7 @@ spInitNav();
         activeClasses.forEach(function(cls) {
           var filled = (sch[cls][di]||[]).filter(function(s){return s;});
           var les = filled[li];
+          var dattr = ' data-cls="' + cls + '" data-day="' + di + '" data-slot="' + li + '"';
           if (les) {
             var grade = v2GetGrade(cls), isH = v2IsHard(les.subject, grade);
             var vKey = cls+'|'+di+'|'+li, hasViol = violMap[vKey];
@@ -533,9 +543,9 @@ spInitNav();
             var tip = les.teacherName;
             if (hasViol) tip = hasViol + '\n👤 ' + les.teacherName;
             if (les.isStream) tip = '🔀 Поток: ' + les.subject + '\n👤 ' + les.teacherName;
-            h += '<td class="' + cc + '" title="' + tip.replace(/"/g,'&quot;') + '">' + les.subject + '</td>';
+            h += '<td class="' + cc + '" draggable="true"' + dattr + ' title="' + tip.replace(/"/g,'&quot;') + '">' + les.subject + '</td>';
           } else {
-            h += '<td class="gen2-cell gen2-cell--empty"></td>';
+            h += '<td class="gen2-cell gen2-cell--empty"' + dattr + '></td>';
           }
         });
         h += '</tr>';
@@ -646,6 +656,140 @@ spInitNav();
     document.getElementById('gen2Dropzone').style.display = '';
     document.getElementById('gen2Error').textContent = '';
     document.getElementById('gen2FileInput').value = '';
+  });
+
+  /* ─── DRAG & DROP: swap lessons within a class ─── */
+  var _dragSrc = null; // {cls, day, slot}
+  var grid = document.getElementById('gen2Grid');
+
+  function _getFilledSlot(sch, cls, day, slot) {
+    var filled = (sch[cls][day] || []).filter(function(s) { return s; });
+    return filled[slot] || null;
+  }
+
+  function _canPlace(sch, lesson, cls, day, slot, excludeCls, excludeDay, excludeSlot) {
+    if (!lesson) return true; // empty slot — always OK
+    // Check teacher conflict: is this teacher busy in ANY other class at (day, slot)?
+    var allClasses = Object.keys(sch);
+    for (var ci = 0; ci < allClasses.length; ci++) {
+      var c = allClasses[ci];
+      if (c === excludeCls) continue; // skip the class we're swapping within
+      var filled = (sch[c][day] || []).filter(function(s) { return s; });
+      var other = filled[slot];
+      if (other && other.teacherId === lesson.teacherId) return false;
+      // Check group teachers
+      if (other && lesson.teacherName && lesson.teacherName.indexOf('/') >= 0) {
+        var names = lesson.teacherName.split(' / ');
+        if (other.teacherName && names.some(function(n) { return other.teacherName.indexOf(n.trim()) >= 0; })) return false;
+      }
+    }
+    // Check room conflict
+    if (lesson.cabinet) {
+      for (var ri = 0; ri < allClasses.length; ri++) {
+        var rc = allClasses[ri];
+        if (rc === excludeCls) continue;
+        var rfilled = (sch[rc][day] || []).filter(function(s) { return s; });
+        var rother = rfilled[slot];
+        if (rother && rother.cabinet === lesson.cabinet) return false;
+      }
+    }
+    return true;
+  }
+
+  grid.addEventListener('dragstart', function(e) {
+    var cell = e.target.closest('[data-cls]');
+    if (!cell || !gen2Result) return;
+    _dragSrc = { cls: cell.dataset.cls, day: +cell.dataset.day, slot: +cell.dataset.slot };
+    cell.style.opacity = '0.4';
+    e.dataTransfer.effectAllowed = 'move';
+
+    // Highlight valid/invalid drop targets in same class
+    setTimeout(function() {
+      var sch = gen2Result.schedule;
+      var srcLesson = _getFilledSlot(sch, _dragSrc.cls, _dragSrc.day, _dragSrc.slot);
+      var cells = grid.querySelectorAll('[data-cls="' + _dragSrc.cls + '"]');
+      cells.forEach(function(c) {
+        var td = +c.dataset.day, ts = +c.dataset.slot;
+        if (td === _dragSrc.day && ts === _dragSrc.slot) return;
+        var targetLesson = _getFilledSlot(sch, _dragSrc.cls, td, ts);
+        // Check: can srcLesson go to (td, ts) AND can targetLesson go to src position?
+        var srcOk = _canPlace(sch, srcLesson, _dragSrc.cls, td, ts, _dragSrc.cls, _dragSrc.day, _dragSrc.slot);
+        var tgtOk = _canPlace(sch, targetLesson, _dragSrc.cls, _dragSrc.day, _dragSrc.slot, _dragSrc.cls, td, ts);
+        if (srcOk && tgtOk) {
+          c.classList.add('gen2-cell--drop-ok');
+        } else {
+          c.classList.add('gen2-cell--drop-no');
+        }
+      });
+    }, 0);
+  });
+
+  grid.addEventListener('dragover', function(e) {
+    var cell = e.target.closest('[data-cls]');
+    if (!cell || !_dragSrc) return;
+    if (cell.dataset.cls !== _dragSrc.cls) return; // only within same class
+    if (cell.classList.contains('gen2-cell--drop-no')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  });
+
+  grid.addEventListener('dragenter', function(e) {
+    var cell = e.target.closest('[data-cls]');
+    if (cell && cell.classList.contains('gen2-cell--drop-ok')) {
+      cell.classList.add('gen2-cell--drop-hover');
+    }
+  });
+
+  grid.addEventListener('dragleave', function(e) {
+    var cell = e.target.closest('[data-cls]');
+    if (cell) cell.classList.remove('gen2-cell--drop-hover');
+  });
+
+  grid.addEventListener('drop', function(e) {
+    e.preventDefault();
+    var cell = e.target.closest('[data-cls]');
+    if (!cell || !_dragSrc || !gen2Result) return;
+    if (cell.dataset.cls !== _dragSrc.cls) return;
+    if (cell.classList.contains('gen2-cell--drop-no')) return;
+
+    var tDay = +cell.dataset.day, tSlot = +cell.dataset.slot;
+    var sCls = _dragSrc.cls, sDay = _dragSrc.day, sSlot = _dragSrc.slot;
+    if (tDay === sDay && tSlot === sSlot) return;
+
+    // Swap in schedule
+    var sch = gen2Result.schedule;
+    var srcFilled = sch[sCls][sDay].filter(function(s) { return s; });
+    var tgtFilled = sch[sCls][tDay].filter(function(s) { return s; });
+    var srcLesson = srcFilled[sSlot] || null;
+    var tgtLesson = tgtFilled[tSlot] || null;
+
+    // Write back: reconstruct day arrays
+    srcFilled[sSlot] = tgtLesson;
+    tgtFilled[tSlot] = srcLesson;
+
+    // Pad with nulls
+    while (srcFilled.length < 8) srcFilled.push(null);
+    while (tgtFilled.length < 8) tgtFilled.push(null);
+    sch[sCls][sDay] = srcFilled;
+    if (sDay !== tDay) sch[sCls][tDay] = tgtFilled;
+
+    // Recalculate audit and violations
+    var audit = v2Audit(gen2Result);
+    document.getElementById('gen2Score').textContent = 'Score ' + audit.score;
+    _rebuildViolMap();
+
+    // Re-render
+    _dragSrc = null;
+    renderGen2ClassView();
+  });
+
+  grid.addEventListener('dragend', function() {
+    // Clear all highlights
+    grid.querySelectorAll('.gen2-cell--drop-ok,.gen2-cell--drop-no,.gen2-cell--drop-hover').forEach(function(c) {
+      c.classList.remove('gen2-cell--drop-ok', 'gen2-cell--drop-no', 'gen2-cell--drop-hover');
+    });
+    grid.querySelectorAll('[style*="opacity"]').forEach(function(c) { c.style.opacity = ''; });
+    _dragSrc = null;
   });
 })();
 </script>
