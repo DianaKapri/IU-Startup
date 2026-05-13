@@ -418,7 +418,6 @@ function v2Generate(data, weekDays, onProgress) {
 
           var slotStart = 0, slotEnd = maxPd;
           if (task.isHard) { slotStart = 1; slotEnd = Math.min(4, maxPd); }
-          if (task.subject === 'Физическая культура' || task.subject === 'Физкультура') slotStart = 1;
 
           for (var s = slotStart; s < slotEnd; s++) {
             if (schedule[cls][d][s]) continue;
@@ -726,7 +725,7 @@ function _v2DayPenalty(daySchedule, grade) {
     var isH = v2GetDifficulty(s.subject, grade) >= V2_HARD_THRESHOLD;
     if (isH && (i < 1 || i > 3)) pen += 3;
     if (!isH && i >= 1 && i <= 3) pen += 1;
-    if (i === 0 && (s.subject === 'Физическая культура' || s.subject === 'Физкультура')) pen += 4;
+    if (i === 0 && isH) pen += 5;
     if (isH && i > 0 && daySchedule[i-1]) {
       if (v2GetDifficulty(daySchedule[i-1].subject, grade) >= V2_HARD_THRESHOLD) {
         // Only penalize if at least one is outside optimal range (slots 1-3 = lessons 2-4)

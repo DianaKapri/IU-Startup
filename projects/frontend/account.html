@@ -479,8 +479,8 @@ spInitNav();
                 if (!violMap[key]) violMap[key] = '⚠ E-03: ' + filled[si].subject + ' после ' + filled[si-1].subject + ' — два сложных подряд';
               }
             }
-            if (filled[0] && (filled[0].subject === 'Физическая культура' || filled[0].subject === 'Физкультура')) {
-              violMap[cls + '|' + d + '|0'] = '⚠ ФК на 1-м уроке — не рекомендуется';
+            if (filled[0] && v2IsHard(filled[0].subject, grade)) {
+              violMap[cls + '|' + d + '|0'] = '⚠ ' + filled[0].subject + ' на 1-м уроке — сложный предмет не рекомендуется первым';
             }
           }
         });
