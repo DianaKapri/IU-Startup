@@ -37,7 +37,11 @@ var V2_DIFF_1011 = {
   'Индивидуальный проект':4,'Вероятность и статистика':8
 };
 
-var V2_HARD_THRESHOLD = 8;
+/* Порог «сложного» предмета: верхняя треть шкалы трудности для класса.
+   Формула: ceil(max_difficulty(grade) × 2/3)
+   Источник: табл. 6.9–6.11 СанПиН 1.2.3685-21 */
+var V2_HARD_THRESHOLD_BY_GRADE = {1:6,2:6,3:6,4:6,5:7,6:9,7:8,8:7,9:9,10:8,11:8};
+function v2HardThreshold(grade) { return V2_HARD_THRESHOLD_BY_GRADE[grade] || 8; }
 var V2_MAX_PD = {1:4,2:5,3:5,4:5,5:6,6:6,7:7,8:7,9:7,10:7,11:7};
 var V2_MAX_WK = {1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
 
@@ -206,7 +210,7 @@ function v2ParseTemplate(wb) {
 
 function v2GetGrade(className) { var m = String(className).match(/^(\d+)/); return m ? parseInt(m[1]) : 5; }
 function v2GetDifficulty(subject, grade) { var tbl = grade <= 4 ? V2_DIFF_14 : grade <= 9 ? V2_DIFF_59 : V2_DIFF_1011; return tbl[subject] || 5; }
-function v2IsHard(subject, grade) { return v2GetDifficulty(subject, grade) >= V2_HARD_THRESHOLD; }
+function v2IsHard(subject, grade) { return v2GetDifficulty(subject, grade) >= v2HardThreshold(grade); }
 
 /* ═══════════════════════════════════════════════════════════════
    ГЕНЕРАТОР v2: TEACHER-FIRST PLACEMENT
@@ -319,7 +323,7 @@ function v2Generate(data, weekDays, onProgress) {
 
       var grade = v2GetGrade(cls);
       // Check if any subject in stream is hard
-      var anyHard = streamEntries.some(function(e) { return v2GetDifficulty(e.subject, grade) >= V2_HARD_THRESHOLD; });
+      var anyHard = streamEntries.some(function(e) { return v2GetDifficulty(e.subject, grade) >= v2HardThreshold(grade); });
 
       for (var sh = 0; sh < maxHours; sh++) {
         tasks.push({
@@ -328,7 +332,7 @@ function v2Generate(data, weekDays, onProgress) {
           subject: st.name,
           className: cls,
           cabinet: null,
-          difficulty: anyHard ? V2_HARD_THRESHOLD : 5,
+          difficulty: anyHard ? v2HardThreshold(grade) : 5,
           isHard: anyHard,
           grade: grade,
           isGroupSplit: true,
@@ -722,16 +726,16 @@ function _v2DayPenalty(daySchedule, grade) {
   for (var i = 0; i < daySchedule.length; i++) {
     var s = daySchedule[i];
     if (!s) continue;
-    var isH = v2GetDifficulty(s.subject, grade) >= V2_HARD_THRESHOLD;
+    var isH = v2GetDifficulty(s.subject, grade) >= v2HardThreshold(grade);
     if (isH && (i < 1 || i > 3)) pen += 3;
     if (!isH && i >= 1 && i <= 3) pen += 1;
     if (i === 0 && isH) pen += 5;
     if (isH && i > 0 && daySchedule[i-1]) {
-      if (v2GetDifficulty(daySchedule[i-1].subject, grade) >= V2_HARD_THRESHOLD) {
+      if (v2GetDifficulty(daySchedule[i-1].subject, grade) >= v2HardThreshold(grade)) {
         // Only penalize if at least one is outside optimal range (slots 1-3 = lessons 2-4)
         if (i < 1 || i > 3 || (i-1) < 1 || (i-1) > 3) {
           pen += 2;
-          if (i > 1 && daySchedule[i-2] && v2GetDifficulty(daySchedule[i-2].subject, grade) >= V2_HARD_THRESHOLD) pen += 5;
+          if (i > 1 && daySchedule[i-2] && v2GetDifficulty(daySchedule[i-2].subject, grade) >= v2HardThreshold(grade)) pen += 5;
         }
       }
     }
