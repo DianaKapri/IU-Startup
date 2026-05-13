@@ -448,7 +448,7 @@ function v2Generate(data, weekDays, onProgress) {
                 if (s > 1 && schedule[cls][d][s-2] && v2IsHard(schedule[cls][d][s-2].subject, grade)) score += 10;
               }
             }
-            candidates.push({ day: d, slot: s, score: score });
+            candidates.push({ day: d, slot: s, score: score + Math.random() * 2 });
           }
         }
 

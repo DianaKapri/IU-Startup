@@ -173,6 +173,7 @@
       <div class="acc-gen2__violations" id="gen2Violations"></div>
       <div class="acc-gen2__actions">
         <button class="btn btn--primary btn--sm" type="button" id="gen2DownloadBtn">Скачать .xlsx</button>
+        <button class="btn btn--ghost btn--sm" type="button" id="gen2RegenBtn">🔄 Перегенерировать</button>
         <button class="btn btn--ghost btn--sm" type="button" id="gen2ResetBtn">← Загрузить другой файл</button>
       </div>
       <div class="acc-gen2__view-toggle" id="gen2ViewToggle" style="display:none">
@@ -627,6 +628,12 @@ spInitNav();
   /* ─── Download ─── */
   var dlBtn = document.getElementById('gen2DownloadBtn');
   if (dlBtn) dlBtn.addEventListener('click', function() { if (gen2Result) v2ExportXlsx(gen2Result); });
+
+  /* ─── Regenerate ─── */
+  var regenBtn = document.getElementById('gen2RegenBtn');
+  if (regenBtn) regenBtn.addEventListener('click', function() {
+    if (gen2Data) document.getElementById('gen2RunBtn').click();
+  });
 
   /* ─── Reset ─── */
   var resetBtn = document.getElementById('gen2ResetBtn');
