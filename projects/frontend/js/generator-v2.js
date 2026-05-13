@@ -504,7 +504,38 @@ function v2Generate(data, weekDays, onProgress) {
               totalPlaced++; placed = true;
             }
           }
-          if (!placed) errors.push(teacher.name + ' / ' + task.subject + ' / ' + cls + ': не удалось разместить');
+          if (!placed) {
+            // Diagnose WHY: check every slot and count reasons
+            var diag = { teacherBusy: 0, classFull: 0, classSlotTaken: 0, cabinetBusy: 0, groupBlocked: 0, noSlots: 0 };
+            var teacherFreeDays = 0;
+            for (var dd = 0; dd < DAYS; dd++) {
+              if (_v2AllBlocked(teacherSlots[teacher.id], dd)) continue;
+              teacherFreeDays++;
+              for (var ds = 0; ds < maxPd; ds++) {
+                if (teacherSlots[teacher.id][dd][ds]) { diag.teacherBusy++; continue; }
+                if (schedule[cls][dd][ds]) { diag.classSlotTaken++; continue; }
+                var gb = false;
+                if (task.isGroupSplit && task.groupTeachers) {
+                  for (var ggi = 0; ggi < task.groupTeachers.length; ggi++) {
+                    if (teacherSlots[task.groupTeachers[ggi].id] && teacherSlots[task.groupTeachers[ggi].id][dd][ds]) { gb = true; break; }
+                  }
+                }
+                if (gb) { diag.groupBlocked++; continue; }
+                if (task.cabinet && roomSlots[task.cabinet] && roomSlots[task.cabinet][dd][ds]) { diag.cabinetBusy++; continue; }
+                var ddc = 0; for (var dcs = 0; dcs < MAX_SLOTS; dcs++) if (schedule[cls][dd][dcs]) ddc++;
+                if (ddc >= maxPd) { diag.classFull++; continue; }
+              }
+            }
+            var reasons = [];
+            if (teacherFreeDays === 0) reasons.push('учитель занят все дни');
+            if (diag.classFull > 0) reasons.push('класс ' + cls + ' переполнен (' + diag.classFull + ' дн. по ' + maxPd + ' ур.)');
+            if (diag.teacherBusy > 0) reasons.push('учитель занят ' + diag.teacherBusy + ' слотов');
+            if (diag.classSlotTaken > 0) reasons.push('слоты класса заняты: ' + diag.classSlotTaken);
+            if (diag.cabinetBusy > 0) reasons.push('каб. ' + task.cabinet + ' занят ' + diag.cabinetBusy + ' слотов');
+            if (diag.groupBlocked > 0) reasons.push('другой учитель группы занят ' + diag.groupBlocked + ' слотов');
+            if (reasons.length === 0) reasons.push('нет свободных слотов');
+            errors.push(teacher.name + ' / ' + task.subject + ' / ' + cls + ': ' + reasons.join('; '));
+          }
         }
       }
     }
