@@ -1432,3 +1432,4 @@ body.acc-page .field__input:focus { border-color: var(--blue); }
 .gen2-cell[draggable="true"]:active { cursor: grabbing; }
 .gen2-tbl tr:last-child td { border-bottom: 1px solid rgba(255,255,255,.06); }
 .gen2-tr--day-start td { border-top: 8px solid #111 !important; }
+.acc-gen2__actions--bottom { margin-top: 20px; margin-bottom: 0; }
