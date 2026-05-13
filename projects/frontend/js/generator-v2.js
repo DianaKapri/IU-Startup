@@ -40,7 +40,7 @@ var V2_DIFF_1011 = {
 /* Порог «сложного» предмета: верхняя треть шкалы трудности для класса.
    Формула: ceil(max_difficulty(grade) × 2/3)
    Источник: табл. 6.9–6.11 СанПиН 1.2.3685-21 */
-var V2_HARD_THRESHOLD_BY_GRADE = {1:7,2:7,3:7,4:7,5:8,6:10,7:10,8:8,9:10,10:10,11:10};
+var V2_HARD_THRESHOLD_BY_GRADE = {1:7,2:7,3:7,4:7,5:9,6:10,7:10,8:9,9:10,10:10,11:10};
 function v2HardThreshold(grade) { return V2_HARD_THRESHOLD_BY_GRADE[grade] || 8; }
 var V2_MAX_PD = {1:4,2:5,3:5,4:5,5:6,6:6,7:7,8:7,9:7,10:7,11:7};
 var V2_MAX_WK = {1:21,2:23,3:23,4:23,5:29,6:30,7:32,8:33,9:33,10:34,11:34};
@@ -578,6 +578,8 @@ function v2Generate(data, weekDays, onProgress) {
               for (var bs = 0; bs < maxPd; bs++) {
                 // New teacher must be free here
                 if (teacherSlots[teacher.id][bd][bs]) continue;
+                // Hard subject cannot go to slot 0
+                if (task.isHard && bs === 0) continue;
                 if (task.isGroupSplit && task.groupTeachers) {
                   var bgb = false;
                   for (var bgi = 0; bgi < task.groupTeachers.length; bgi++) {
@@ -598,6 +600,9 @@ function v2Generate(data, weekDays, onProgress) {
                   for (var ts = 0; ts < maxPd; ts++) {
                     if (td === bd && ts === bs) continue;
                     if (schedule[cls][td][ts]) continue;
+                    // Hard victim cannot go to slot 0
+                    var victimIsHardB = v2IsHard(victim.subject, grade);
+                    if (victimIsHardB && ts === 0) continue;
                     // Victim's teacher must be free at target
                     if (teacherSlots[victim.teacherId][td][ts]) continue;
                     // Victim's cabinet must be free at target
@@ -763,6 +768,9 @@ function v2Generate(data, weekDays, onProgress) {
       if (b.teacherId && teacherSlots[b.teacherId][rDay][s1] && (!a || a.teacherId !== b.teacherId)) canSwap = false;
     }
     if (!canSwap) continue;
+    // Block hard subjects at slot 0 (first lesson)
+    if (a && s2 === 0 && v2IsHard(a.subject, grade2)) continue;
+    if (b && s1 === 0 && v2IsHard(b.subject, grade2)) continue;
     var penBefore = _v2DayPenalty(schedule[rCls][rDay], grade2);
     schedule[rCls][rDay][s1] = b; schedule[rCls][rDay][s2] = a;
     var penAfter = _v2DayPenalty(schedule[rCls][rDay], grade2);
@@ -790,7 +798,7 @@ function _v2DayPenalty(daySchedule, grade) {
     var isH = v2GetDifficulty(s.subject, grade) >= v2HardThreshold(grade);
     if (isH && (i < 1 || i > 3)) pen += 3;
     if (!isH && i >= 1 && i <= 3) pen += 1;
-    if (i === 0 && isH) pen += 5;
+    if (i === 0 && isH) pen += 20; // hard on 1st lesson = strongly avoid
     if (isH && i > 0 && daySchedule[i-1]) {
       if (v2GetDifficulty(daySchedule[i-1].subject, grade) >= v2HardThreshold(grade)) {
         // Only penalize if at least one is outside optimal range (slots 1-3 = lessons 2-4)
