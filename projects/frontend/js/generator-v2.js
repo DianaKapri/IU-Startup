@@ -495,10 +495,10 @@ function v2Generate(data, weekDays, onProgress) {
             var score = 0;
             if (task.isHard) score += Math.abs(s - 2) * 2;
             else score += (s >= 1 && s <= 3) ? 5 : 0;
-            if (daysUsed[d]) score += 3;
+            if (daysUsed[d]) score += (grade <= 9) ? 3 : 0; // 1-9: prefer spreading; 10-11: don't care
             if ((d === 2 || d === 3) && task.isHard) score += 2;
-            // Penalize consecutive same subject
-            if (s > 0 && schedule[cls][d][s-1] && schedule[cls][d][s-1].subject === task.subject) score += 15;
+            // Consecutive same subject = bonus (prefer pairing)
+            if (s > 0 && schedule[cls][d][s-1] && schedule[cls][d][s-1].subject === task.subject) score -= 3;
             if (task.isHard && s > 0 && schedule[cls][d][s-1] && v2IsHard(schedule[cls][d][s-1].subject, grade)) {
               // Only penalize if outside optimal range (slots 1-3)
               if (s < 1 || s > 3 || (s-1) < 1 || (s-1) > 3) {
@@ -800,20 +800,24 @@ function _v2DayPenalty(daySchedule, grade) {
         }
       }
     }
-    // Same subject consecutive
+    // Same subject consecutive: pairing is GOOD, 3+ is banned
     if (i > 0 && daySchedule[i-1] && daySchedule[i-1].subject === s.subject) {
-      pen += 8;
-      if (i > 1 && daySchedule[i-2] && daySchedule[i-2].subject === s.subject) pen += 30;
+      pen -= 2; // bonus: consecutive pair better than split
+      if (i > 1 && daySchedule[i-2] && daySchedule[i-2].subject === s.subject) pen += 30; // 3 consecutive = forbidden
     }
   }
-  // 3+ same subject in one day
+  // Count same subject per day
   var subjCount = {};
   for (var k = 0; k < daySchedule.length; k++) {
     if (daySchedule[k]) {
       subjCount[daySchedule[k].subject] = (subjCount[daySchedule[k].subject] || 0) + 1;
     }
   }
-  Object.keys(subjCount).forEach(function(subj) { if (subjCount[subj] >= 3) pen += 30; });
+  // 3+ same per day = forbidden; 2 same in 1-9 grade = soft penalty
+  Object.keys(subjCount).forEach(function(subj) {
+    if (subjCount[subj] >= 3) pen += 30;
+    if (subjCount[subj] >= 2 && grade <= 9) pen += 4;
+  });
   var lastFilled = -1;
   for (var j = 0; j < daySchedule.length; j++) {
     if (daySchedule[j]) { if (lastFilled >= 0 && j - lastFilled > 1) pen += 20; lastFilled = j; }
