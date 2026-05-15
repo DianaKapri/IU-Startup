@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { Resend } = require('resend');
 const db = require('../config/database');
+const yokassa = require('../services/payment/yokassa');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@shkolaplan.ru';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 // Basic RFC-5322 email format check (does not allow arbitrary strings through).
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/;
@@ -58,7 +60,43 @@ router.post('/', async (req, res) => {
       [organization_name, inn, email, user_id || null, user_name || null, user_school || null]
     );
 
-    await resend.emails.send({
+    const requestId = result.rows[0].id;
+
+    // Автоматически создаём платёж в ЮKassa
+    let paymentId, paymentUrl;
+    try {
+      const returnUrl = `${process.env.FRONTEND_URL || 'https://shkolaplan.ru'}/account.html`;
+      const payment = await yokassa.createPayment({
+        amount: 12000,
+        description: `Подписка ШколаПлан — ${organization_name}`,
+        returnUrl,
+        metadata: { subscription_request_id: requestId },
+      });
+      paymentId = payment.id;
+      paymentUrl = payment.confirmationUrl;
+    } catch (err) {
+      console.error('[Subscriptions] yokassa error:', err.message);
+      // Платёж не создался — заявка остаётся в pending, но пользователю сообщаем об ошибке
+      return res.status(502).json({
+        success: false,
+        error: { code: 'PAYMENT_ERROR', message: 'Не удалось создать платёж. Попробуйте позже.' },
+      });
+    }
+
+    await db.query(
+      `UPDATE subscription_requests
+          SET status = 'awaiting_payment',
+              processed_at = NOW(),
+              payment_id = $1,
+              payment_url = $2
+        WHERE id = $3`,
+      [paymentId, paymentUrl, requestId]
+    );
+
+    const safePaymentUrl = escapeHtml(paymentUrl);
+
+    // Письмо 1: Заявка создана
+    resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: 'Заявка на подписку ШколаПлан принята',
@@ -71,14 +109,58 @@ router.post('/', async (req, res) => {
             <tr><td style="padding:8px 0;color:#555">ИНН</td><td style="padding:8px 0"><strong>${safeInn}</strong></td></tr>
             <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>12 000 ₽/год</strong></td></tr>
           </table>
-          <p>Счёт будет выставлен в течение <strong>1 рабочего дня</strong> на адрес <strong>${safeEmail}</strong>.</p>
+          <p style="color:#888;font-size:13px">Счёт на оплату отправлен отдельным письмом.</p>
           <p style="color:#888;font-size:13px">Если у вас есть вопросы — ответьте на это письмо.</p>
           <p style="color:#888;font-size:13px">— Команда ШколаПлан</p>
         </div>
       `,
-    });
+    }).catch(err => console.error('[Subscriptions] resend confirmation email error:', err.message));
 
-    res.json({ success: true, data: { id: result.rows[0].id } });
+    // Письмо 2: Счёт на оплату
+    resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: 'Счёт на оплату — ШколаПлан',
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
+          <h2 style="margin-bottom:8px">Счёт на оплату</h2>
+          <p>Организация: <strong>${safeOrgName}</strong></p>
+          <p>Тариф: <strong>Школа</strong> &mdash; <strong>12 000 ₽/год</strong></p>
+          <p style="margin:24px 0">
+            <a href="${safePaymentUrl}"
+               style="background:#0071e3;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">
+              Оплатить →
+            </a>
+          </p>
+          <p style="color:#888;font-size:13px">Ссылка действительна 24 часа. Если возникнут вопросы — ответьте на это письмо.</p>
+          <p style="color:#888;font-size:13px">— Команда ШколаПлан</p>
+        </div>
+      `,
+    }).catch(err => console.error('[Subscriptions] resend payment email error:', err.message));
+
+    // Уведомление админу о новой заявке
+    if (ADMIN_EMAIL) {
+      resend.emails.send({
+        from: FROM_EMAIL,
+        to: ADMIN_EMAIL,
+        subject: `Новая заявка — ${organization_name}`,
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
+            <h2 style="margin-bottom:8px">Новая заявка на подписку</h2>
+            <table style="border-collapse:collapse;width:100%;margin:16px 0">
+              <tr><td style="padding:8px 0;color:#555">Организация</td><td style="padding:8px 0"><strong>${safeOrgName}</strong></td></tr>
+              <tr><td style="padding:8px 0;color:#555">ИНН</td><td style="padding:8px 0"><strong>${safeInn}</strong></td></tr>
+              <tr><td style="padding:8px 0;color:#555">Email</td><td style="padding:8px 0"><strong>${safeEmail}</strong></td></tr>
+              <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>12 000 ₽/год</strong></td></tr>
+              <tr><td style="padding:8px 0;color:#555">Статус</td><td style="padding:8px 0"><strong>Ожидает оплаты</strong></td></tr>
+            </table>
+            <p style="color:#888;font-size:13px">Платёж создан автоматически. Ссылка на оплату отправлена пользователю.</p>
+          </div>
+        `,
+      }).catch(err => console.error('[Subscriptions] resend admin email error:', err.message));
+    }
+
+    res.json({ success: true, data: { id: requestId } });
   } catch (err) {
     console.error('[Subscriptions] Error:', err.message);
     res.status(500).json({

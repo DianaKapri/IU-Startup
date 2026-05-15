@@ -17,6 +17,7 @@ const yokassa = require('../services/payment/yokassa');
 const router = express.Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@shkolaplan.ru';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 // Webhook требует сырое тело для проверки подписи.
 // express.json() уже примонтирован глобально — нам нужно поймать rawBody.
@@ -140,6 +141,28 @@ router.post(
           `,
         }).catch(err => {
           console.error('[payments webhook] resend error:', err.message);
+        });
+      }
+
+      // Уведомление админу об оплате
+      if (ADMIN_EMAIL) {
+        resend.emails.send({
+          from: FROM_EMAIL,
+          to: ADMIN_EMAIL,
+          subject: `Оплата получена — ${row.organization_name || row.email}`,
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
+              <h2 style="margin-bottom:8px">Оплата подтверждена</h2>
+              <table style="border-collapse:collapse;width:100%;margin:16px 0">
+                <tr><td style="padding:8px 0;color:#555">Организация</td><td style="padding:8px 0"><strong>${row.organization_name || '—'}</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#555">Email</td><td style="padding:8px 0"><strong>${row.email}</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>${Number(row.price).toLocaleString('ru-RU')} ₽</strong></td></tr>
+                <tr><td style="padding:8px 0;color:#555">Статус</td><td style="padding:8px 0"><strong style="color:#30d158">Оплачено ✓</strong></td></tr>
+              </table>
+            </div>
+          `,
+        }).catch(err => {
+          console.error('[payments webhook] resend admin error:', err.message);
         });
       }
 

@@ -165,46 +165,6 @@
   color: #30d158;
 }
 
-.admin-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.admin-btn {
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.12);
-  color: #f5f5f7;
-  padding: 4px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.76rem;
-  transition: background 0.15s;
-}
-
-.admin-btn:hover {
-  background: rgba(255,255,255,.12);
-}
-
-.admin-btn--approve {
-  background: rgba(48, 209, 88, 0.2);
-  border-color: rgba(48, 209, 88, 0.3);
-  color: #30d158;
-}
-
-.admin-btn--approve:hover {
-  background: rgba(48, 209, 88, 0.3);
-}
-
-.admin-btn--reject {
-  background: rgba(255, 69, 58, 0.2);
-  border-color: rgba(255, 69, 58, 0.3);
-  color: #ff453a;
-}
-
-.admin-btn--reject:hover {
-  background: rgba(255, 69, 58, 0.3);
-}
-
 .loading {
   text-align: center;
   padding: 40px;
@@ -237,7 +197,7 @@
 <div class="admin-container">
   <header class="admin-header">
     <h1 class="admin-header__title">Админ-панель</h1>
-    <p class="admin-header__sub">Управление запросами на подписку</p>
+    <p class="admin-header__sub">Мониторинг заявок и оплат</p>
   </header>
 
   <div class="admin-stats" id="adminStats">
@@ -362,7 +322,6 @@ function displayRequests(requests) {
           <th>Тариф</th>
           <th>Цена</th>
           <th>Статус</th>
-          <th>Действия</th>
         </tr>
       </thead>
       <tbody>
@@ -375,17 +334,6 @@ function displayRequests(requests) {
             <td>${req.plan === 'school' ? 'Школа' : req.plan}</td>
             <td>${req.price} ₽</td>
             <td><span class="status-badge status-badge--${req.status}">${getStatusText(req.status)}</span></td>
-            <td>
-              <div class="admin-actions">
-                ${req.status === 'pending' ? `
-                  <button class="admin-btn admin-btn--approve" onclick="updateRequestStatus('${req.id}', 'awaiting_payment')">Одобрить</button>
-                  <button class="admin-btn admin-btn--reject" onclick="updateRequestStatus('${req.id}', 'rejected')">Отклонить</button>
-                ` : req.status === 'awaiting_payment' ? `
-                  <button class="admin-btn" onclick="copyPaymentLink('${req.payment_url || ''}')">Скопировать ссылку</button>
-                  <button class="admin-btn admin-btn--approve" onclick="checkPayment('${req.payment_id || ''}')">Проверить оплату</button>
-                ` : '—'}
-              </div>
-            </td>
           </tr>
         `).join('')}
       </tbody>
@@ -412,34 +360,6 @@ function updateStats(requests) {
   document.getElementById('revenue').textContent = revenue.toLocaleString('ru-RU') + ' ₽';
 }
 
-// Обновление статуса запроса
-async function updateRequestStatus(requestId, newStatus) {
-  try {
-    const response = await adminFetch(`/api/subscription-requests/${requestId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ status: newStatus })
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      // Перезагружаем данные
-      loadRequests();
-      alert(`Статус успешно обновлен на "${getStatusText(newStatus)}"`);
-    } else {
-      console.error('Ошибка обновления статуса:', result.error);
-      alert('Ошибка при обновлении статуса: ' + (result.error?.message || 'Неизвестная ошибка'));
-    }
-  } catch (err) {
-    if (err && err.message === 'UNAUTHORIZED') return;
-    console.error('Ошибка:', err);
-    alert('Произошла ошибка при обновлении статуса');
-  }
-}
-
 // Получение текста статуса
 function getStatusText(status) {
   switch (status) {
@@ -448,38 +368,6 @@ function getStatusText(status) {
     case 'paid':             return 'Оплачено';
     case 'rejected':         return 'Отклонено';
     default:                 return status;
-  }
-}
-
-// Копирование ссылки на оплату в буфер обмена
-function copyPaymentLink(url) {
-  if (!url) { alert('Ссылка недоступна'); return; }
-  navigator.clipboard.writeText(url).then(function() {
-    alert('Ссылка скопирована в буфер обмена');
-  }).catch(function() {
-    prompt('Скопируйте ссылку:', url);
-  });
-}
-
-// Ручная проверка оплаты через ЮKassa API (fallback к webhook)
-async function checkPayment(paymentId) {
-  if (!paymentId) { alert('ID платежа недоступен'); return; }
-  try {
-    const response = await adminFetch(`/api/payments/check/${paymentId}`, { method: 'POST' });
-    const result = await response.json();
-    if (!result.success) {
-      alert('Ошибка: ' + (result.error?.message || 'Неизвестная ошибка'));
-      return;
-    }
-    if (result.data.paid) {
-      alert('Оплата подтверждена! Подписка активирована.');
-      loadRequests();
-    } else {
-      alert('Платёж ещё не оплачен (статус: ' + result.data.status + ')');
-    }
-  } catch (err) {
-    if (err && err.message === 'UNAUTHORIZED') return;
-    alert('Произошла ошибка при проверке оплаты');
   }
 }
 
