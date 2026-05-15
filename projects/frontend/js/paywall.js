@@ -9,8 +9,13 @@
   'use strict';
 
   var SUBSCRIPTION_URL = '/subscription.html';
-  var PLAN_PRICE_LABEL = '12 000 ₽/год';
   var TITLE = 'Функция доступна на тарифе «Школа»';
+
+  function getPriceLabel() {
+    var p = window.__spPricing;
+    var year = (p && p.year) || 29000;
+    return year.toLocaleString('ru-RU') + ' ₽/год';
+  }
   var DEFAULT_TEXT = 'Оформите подписку, чтобы получить доступ к составлению расписания и другим премиум-возможностям.';
 
   var overlayEl = null;
@@ -40,8 +45,8 @@
       '<div class="paywall-modal__body">' +
         '<p class="paywall-modal__text" id="paywallText"></p>' +
         '<div class="paywall-modal__price">' +
-          '<span class="paywall-modal__price-value">12 000 ₽</span>' +
-          '<span class="paywall-modal__price-period">/год</span>' +
+          '<span class="paywall-modal__price-value" data-price="school-year-label"></span>' +
+          '<span class="paywall-modal__price-period"></span>' +
         '</div>' +
       '</div>' +
       '<div class="paywall-modal__actions">' +
@@ -52,9 +57,11 @@
     document.body.appendChild(overlayEl);
     document.body.appendChild(modalEl);
 
-    // Set the title (kept out of innerHTML to avoid quoting pain if it changes).
     var titleEl = modalEl.querySelector('#paywallTitle');
     if (titleEl) titleEl.textContent = TITLE;
+
+    var priceEl = modalEl.querySelector('.paywall-modal__price-value');
+    if (priceEl) priceEl.textContent = getPriceLabel();
 
     // Wire close interactions.
     overlayEl.addEventListener('click', closePaywall);
@@ -90,7 +97,7 @@
     }
 
     // Expose price label for debugging / tests.
-    modalEl.dataset.priceLabel = PLAN_PRICE_LABEL;
+    modalEl.dataset.priceLabel = getPriceLabel();
   }
 
   function closePaywall() {

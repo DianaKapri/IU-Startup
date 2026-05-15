@@ -4,6 +4,8 @@ const { Resend } = require('resend');
 const db = require('../config/database');
 const yokassa = require('../services/payment/yokassa');
 
+const { SCHOOL_PRICE_YEAR, formatPrice } = require('../config/pricing');
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@shkolaplan.ru';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
@@ -55,7 +57,7 @@ router.post('/', async (req, res) => {
     const result = await db.query(
       `INSERT INTO subscription_requests
          (organization_name, inn, email, plan, price, status, user_id, user_name, user_school, created_at)
-       VALUES ($1, $2, $3, 'school', 12000, 'pending', $4, $5, $6, NOW())
+       VALUES ($1, $2, $3, 'school', ${SCHOOL_PRICE_YEAR}, 'pending', $4, $5, $6, NOW())
        RETURNING id`,
       [organization_name, inn, email, user_id || null, user_name || null, user_school || null]
     );
@@ -67,7 +69,7 @@ router.post('/', async (req, res) => {
     try {
       const returnUrl = `${process.env.FRONTEND_URL || 'https://shkolaplan.ru'}/account.html`;
       const payment = await yokassa.createPayment({
-        amount: 12000,
+        amount: SCHOOL_PRICE_YEAR,
         description: `Подписка ШколаПлан — ${organization_name}`,
         returnUrl,
         metadata: { subscription_request_id: requestId },
@@ -108,7 +110,7 @@ router.post('/', async (req, res) => {
             <table style="border-collapse:collapse;width:100%;margin:16px 0">
               <tr><td style="padding:8px 0;color:#555">Организация</td><td style="padding:8px 0"><strong>${safeOrgName}</strong></td></tr>
               <tr><td style="padding:8px 0;color:#555">ИНН</td><td style="padding:8px 0"><strong>${safeInn}</strong></td></tr>
-              <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>12 000 ₽/год</strong></td></tr>
+              <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>${formatPrice(SCHOOL_PRICE_YEAR)} ₽/год</strong></td></tr>
             </table>
             <p style="color:#888;font-size:13px">Счёт на оплату отправлен отдельным письмом.</p>
             <p style="color:#888;font-size:13px">Если у вас есть вопросы — ответьте на это письмо.</p>
@@ -130,7 +132,7 @@ router.post('/', async (req, res) => {
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
             <h2 style="margin-bottom:8px">Счёт на оплату</h2>
             <p>Организация: <strong>${safeOrgName}</strong></p>
-            <p>Тариф: <strong>Школа</strong> &mdash; <strong>12 000 ₽/год</strong></p>
+            <p>Тариф: <strong>Школа</strong> &mdash; <strong>${formatPrice(SCHOOL_PRICE_YEAR)} ₽/год</strong></p>
             <p style="margin:24px 0">
               <a href="${safePaymentUrl}"
                  style="background:#0071e3;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">
@@ -159,7 +161,7 @@ router.post('/', async (req, res) => {
               <tr><td style="padding:8px 0;color:#555">Организация</td><td style="padding:8px 0"><strong>${safeOrgName}</strong></td></tr>
               <tr><td style="padding:8px 0;color:#555">ИНН</td><td style="padding:8px 0"><strong>${safeInn}</strong></td></tr>
               <tr><td style="padding:8px 0;color:#555">Email</td><td style="padding:8px 0"><strong>${safeEmail}</strong></td></tr>
-              <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>12 000 ₽/год</strong></td></tr>
+              <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>${formatPrice(SCHOOL_PRICE_YEAR)} ₽/год</strong></td></tr>
               <tr><td style="padding:8px 0;color:#555">Статус</td><td style="padding:8px 0"><strong>Ожидает оплаты</strong></td></tr>
             </table>
             <p style="color:#888;font-size:13px">Платёж создан автоматически. Ссылка на оплату отправлена пользователю.</p>

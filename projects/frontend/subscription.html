@@ -65,8 +65,8 @@
       <div class="sub-plan__badge">Рекомендуется</div>
       <div class="sub-plan__top">
         <p class="sub-plan__name">Школа</p>
-        <p class="sub-plan__price">12 000 <span>₽</span></p>
-        <p class="sub-plan__period">в год · 1 000 ₽/месяц</p>
+        <p class="sub-plan__price"><span data-price="school-year">29 000</span> <span>₽</span></p>
+        <p class="sub-plan__period" data-price="school-month-note">в год · 2 400 ₽/месяц</p>
       </div>
       <ul class="sub-plan__features">
         <li class="sub-plan__feature sub-plan__feature--ok">Всё из бесплатного тарифа</li>
@@ -102,7 +102,7 @@
     <h2 class="pay-modal__title">Оформить подписку</h2>
     <button class="pay-modal__close" id="payClose">✕</button>
   </div>
-  <p class="pay-modal__plan">Тариф «Школа» — 12 000 ₽/год</p>
+  <p class="pay-modal__plan" data-price="school-modal">Тариф «Школа» — 29 000 ₽/год</p>
   <div class="field"><label class="field__label" for="payOrg">Название организации</label><input class="field__input" id="payOrg" type="text" placeholder="МБОУ СОШ №42"/></div>
   <div class="field"><label class="field__label" for="payInn">ИНН</label><input class="field__input" id="payInn" type="text" placeholder="1234567890"/></div>
   <div class="field"><label class="field__label" for="payEmail">Email для счёта</label><input class="field__input" id="payEmail" type="email" placeholder="buh@school.ru"/></div>
@@ -119,6 +119,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/pricing.js"></script>
 <script src="/js/scripts.js"></script>
 <script>
 // Инициализация навигации с аватаром пользователя

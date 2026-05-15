@@ -42,6 +42,17 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ─── Pricing ────────────────────────────────────────────────
+const pricing = require('./config/pricing');
+app.get('/pricing', (_req, res) => {
+  res.json({
+    school: {
+      year: pricing.SCHOOL_PRICE_YEAR,
+      month: pricing.SCHOOL_PRICE_MONTH,
+    },
+  });
+});
+
 // ─── Routes ─────────────────────────────────────────────────
 const schedulesRouter = require('./routes/schedules');     // EP-04
 app.use('/schedules', schedulesRouter);
