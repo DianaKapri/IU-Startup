@@ -660,6 +660,20 @@
 </section>
 
 <!-- Payment Modal (for authenticated users) -->
+<div class="pay-overlay" id="indexPayOverlay"></div>
+<div class="pay-modal" id="indexPayModal">
+  <div class="pay-modal__header">
+    <h2 class="pay-modal__title">Оформить подписку</h2>
+    <button class="pay-modal__close" id="indexPayClose">✕</button>
+  </div>
+  <p class="pay-modal__plan">Тариф «Школа» — 12 000 ₽/год</p>
+  <div class="field"><label class="field__label" for="indexPayOrg">Название организации</label><input class="field__input" id="indexPayOrg" type="text" placeholder="МБОУ СОШ №42"/></div>
+  <div class="field"><label class="field__label" for="indexPayInn">ИНН</label><input class="field__input" id="indexPayInn" type="text" placeholder="1234567890"/></div>
+  <div class="field"><label class="field__label" for="indexPayEmail">Email для счёта</label><input class="field__input" id="indexPayEmail" type="email" placeholder="buh@school.ru"/></div>
+  <p class="pay-modal__err" id="indexPayErr"></p>
+  <p class="pay-modal__ok" id="indexPayOk"></p>
+  <button class="btn btn--primary btn--full" id="indexPaySubmit" type="button">Запросить счёт</button>
+</div>
 
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>

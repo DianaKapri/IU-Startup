@@ -137,7 +137,12 @@ spInitNav();
   const modal=document.getElementById('payModal');
   function openModal(){modal.classList.add('pay-modal--open');overlay.classList.add('pay-overlay--open');}
   function closeModal(){modal.classList.remove('pay-modal--open');overlay.classList.remove('pay-overlay--open');}
-  document.getElementById('buyBtn').addEventListener('click',openModal);
+  document.getElementById('buyBtn').addEventListener('click', function() {
+    spIsLoggedIn().then(function(loggedIn) {
+      if (loggedIn) { openModal(); }
+      else { window.location.href = '/login.html?tab=register'; }
+    });
+  });
   document.getElementById('payClose').addEventListener('click',closeModal);
   overlay.addEventListener('click',closeModal);
   document.getElementById('paySubmit').addEventListener('click', async function() {
