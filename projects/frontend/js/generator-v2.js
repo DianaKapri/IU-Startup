@@ -596,12 +596,27 @@ function v2Generate(data, weekDays, onProgress) {
     }
   });
 
+  /* Двухфазное размещение:
+       phase 0 — все stream-задачи всех учителей (когда слоты ещё свободны),
+       phase 1 — обычные задачи.
+     Это решает проблему: stream-задача требует одновременной свободы 4+
+     учителей; если они уже забиты обычными уроками, поток не разместится. */
+  for (var phase = 0; phase < 2; phase++) {
   for (var ti = 0; ti < teacherOrder.length; ti++) {
     var teacher = teacherOrder[ti];
-    var tTasks = tasksByTeacher[teacher.id];
-    if (!tTasks || !tTasks.length) continue;
+    var allTTasks = tasksByTeacher[teacher.id];
+    if (!allTTasks || !allTTasks.length) continue;
+    var tTasks = allTTasks.filter(function(t) {
+      return phase === 0 ? t.isStream : !t.isStream;
+    });
+    if (!tTasks.length) continue;
 
-    if (onProgress) onProgress({ phase: 'placing', teacher: teacher.name, progress: Math.round(ti / teacherOrder.length * 80), placed: totalPlaced, total: totalTasks });
+    if (onProgress) {
+      var phaseBase = phase * 40;
+      onProgress({ phase: 'placing', teacher: teacher.name,
+        progress: phaseBase + Math.round(ti / teacherOrder.length * 40),
+        placed: totalPlaced, total: totalTasks });
+    }
 
     var byClass = {};
     tTasks.forEach(function(task) {
@@ -896,6 +911,7 @@ function v2Generate(data, weekDays, onProgress) {
       }
     }
   }
+  } /* end phase loop */
 
   /* Компактность: убираем окна, но сложные не на 1-й урок.
      ВАЖНО: потоковые записи нельзя перемещать — они стоят синхронно во всей
