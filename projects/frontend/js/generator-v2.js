@@ -1,7 +1,12 @@
 // Модуль: generator-v2.js
 // Задача: Генерация расписания по шаблону Excel (размещение по учителям)
 // Автор: Claude (ШколаПлан AI)
-// Описание: Алгоритм teacher-first placement с hard/soft constraints по СанПиН
+// Описание:
+//   Алгоритм teacher-first placement с hard/soft constraints по СанПиН.
+//   Потоки (МАТ-11, ЕГЭ-11, ОГЭ-9) размещаются как единый блок на всю
+//   параллель: одна task ставится одновременно во всех классах параллели,
+//   у которых этот поток есть. Часы предметов одного потока внутри одной
+//   параллели не суммируются ни в нагрузке учителя, ни в нагрузке класса.
 
 /* ═══════════════════════════════════════════════════════════════
    ТАБЛИЦЫ ТРУДНОСТИ ПРЕДМЕТОВ ПО САНПИН
@@ -281,6 +286,9 @@ function v2ParseTemplate(wb) {
    ═══════════════════════════════════════════════════════════════ */
 
 function v2GetGrade(className) { var m = String(className).match(/^(\d+)/); return m ? parseInt(m[1]) : 5; }
+/* Параллель = просто номер класса (1..11). Используется для группировки
+   stream-задач: все 11А, 11Б, 11В, 11Г, 11Э образуют одну параллель «11». */
+function v2GetParallel(className) { return v2GetGrade(className); }
 var V2_DIFF_BY_GRADE = {1:V2_DIFF_14,2:V2_DIFF_14,3:V2_DIFF_14,4:V2_DIFF_14,5:V2_DIFF_5,6:V2_DIFF_6,7:V2_DIFF_7,8:V2_DIFF_8,9:V2_DIFF_9,10:V2_DIFF_1011,11:V2_DIFF_1011};
 function v2GetDifficulty(subject, grade) { var tbl = V2_DIFF_BY_GRADE[grade] || V2_DIFF_8; return tbl[subject] || 5; }
 function v2IsHard(subject, grade) { return v2GetDifficulty(subject, grade) >= v2HardThreshold(grade); }
@@ -351,67 +359,108 @@ function v2Generate(data, weekDays, onProgress) {
     });
   });
 
-  /* ─── Build stream tasks: subjects in same stream+class share slots ─── */
-  var streamProcessed = {}; // "streamName|class" → true
+  /* ─── Build stream tasks: один блок task'ов на (поток, параллель) ───
+     Раньше: для МАТ-11 создавалось 5 классов × 6 часов = 30 task'ов,
+     каждый блокировал всех учителей потока. Учителя ложно «занимали»
+     30 слотов, генератор выдавал «учитель занят 35 слотов» и не мог
+     разместить остальные уроки.
+     Теперь: для МАТ-11 создаётся 6 task'ов (по числу часов потока),
+     каждый размещается ОДНОВРЕМЕННО во всех классах параллели
+     (parallelClasses = ['11А','11Б','11В','11Г','11Э']). Учителя
+     потока заняты ровно 6 слотов в неделю — как в реальности. */
+  var streamProcessed = {}; // "streamName|parallel" → true
   var subjectProcessedByStream = {}; // "subject|class" → true (skip in normal task creation)
 
   (data.streams || []).forEach(function(st) {
-    // For each class, find which stream subjects have hours
+    /* Сгруппировать классы по параллели */
+    var classesByParallel = {}; // parallel → [className, ...]
     data.classes.forEach(function(cls) {
-      var streamEntries = []; // [{subject, teachers:[{id,name,cabinet}], hours}]
+      var p = v2GetParallel(cls);
+      if (!classesByParallel[p]) classesByParallel[p] = [];
+      classesByParallel[p].push(cls);
+    });
+
+    Object.keys(classesByParallel).forEach(function(pStr) {
+      var parallel = parseInt(pStr);
+      var parallelAllClasses = classesByParallel[pStr];
+
+      /* Для каждой пары (subject, class) в этой параллели — есть ли учитель?
+         Запоминаем именно те классы, где поток реально идёт. */
+      var entriesBySubject = {}; // subject → [{className, teachers, hours}, ...]
       st.subjects.forEach(function(subj) {
-        var key = subj + '|' + cls;
-        var teachers = teacherForSubjClass[key];
-        if (teachers && teachers.length > 0) {
-          streamEntries.push({ subject: subj, teachers: teachers, hours: teachers[0].hours });
-          subjectProcessedByStream[subj + '|' + cls] = true;
-        }
-      });
-
-      if (streamEntries.length < 2) {
-        // Only 1 or 0 subjects in this stream for this class — not a real stream here
-        streamEntries.forEach(function(e) { delete subjectProcessedByStream[e.subject + '|' + cls]; });
-        return;
-      }
-
-      var sKey = st.name + '|' + cls;
-      if (streamProcessed[sKey]) return;
-      streamProcessed[sKey] = true;
-
-      // Number of slots = max hours among stream subjects
-      var maxHours = 0;
-      streamEntries.forEach(function(e) { if (e.hours > maxHours) maxHours = e.hours; });
-
-      // Collect ALL teachers across all subjects in this stream
-      var allTeachers = [];
-      var allNames = [];
-      streamEntries.forEach(function(e) {
-        e.teachers.forEach(function(t) {
-          if (!allTeachers.some(function(at) { return at.id === t.teacherId; })) {
-            allTeachers.push({ id: t.teacherId, name: t.teacherName, cabinet: t.cabinet });
-            allNames.push(t.teacherName);
+        parallelAllClasses.forEach(function(cls) {
+          var key = subj + '|' + cls;
+          var teachers = teacherForSubjClass[key];
+          if (teachers && teachers.length > 0) {
+            if (!entriesBySubject[subj]) entriesBySubject[subj] = [];
+            entriesBySubject[subj].push({ className: cls, teachers: teachers, hours: teachers[0].hours });
           }
         });
       });
 
-      var grade = v2GetGrade(cls);
-      // Check if any subject in stream is hard
-      var anyHard = streamEntries.some(function(e) { return v2GetDifficulty(e.subject, grade) >= v2HardThreshold(grade); });
+      var subjectsInStream = Object.keys(entriesBySubject);
+      if (subjectsInStream.length < 2) return; // не реальный поток в этой параллели
+
+      /* parallelClasses = объединение классов по всем subjects потока */
+      var parallelClassesSet = {};
+      subjectsInStream.forEach(function(subj) {
+        entriesBySubject[subj].forEach(function(e) { parallelClassesSet[e.className] = true; });
+      });
+      var parallelClasses = Object.keys(parallelClassesSet);
+      if (parallelClasses.length === 0) return;
+
+      var sKey = st.name + '|' + parallel;
+      if (streamProcessed[sKey]) return;
+      streamProcessed[sKey] = true;
+
+      /* Помечаем (subject, class) обработанными — чтобы не создавать обычные task'и */
+      subjectsInStream.forEach(function(subj) {
+        entriesBySubject[subj].forEach(function(e) {
+          subjectProcessedByStream[subj + '|' + e.className] = true;
+        });
+      });
+
+      /* Часы потока = max часов любого предмета по любому классу параллели.
+         В нормально заданном шаблоне они равны (МАТ-11 = 6 везде). */
+      var maxHours = 0;
+      subjectsInStream.forEach(function(subj) {
+        entriesBySubject[subj].forEach(function(e) { if (e.hours > maxHours) maxHours = e.hours; });
+      });
+
+      /* Все учителя потока в этой параллели — union по всем (subject, class) */
+      var allTeachers = [];
+      var allNames = [];
+      subjectsInStream.forEach(function(subj) {
+        entriesBySubject[subj].forEach(function(e) {
+          e.teachers.forEach(function(t) {
+            if (!allTeachers.some(function(at) { return at.id === t.teacherId; })) {
+              allTeachers.push({ id: t.teacherId, name: t.teacherName, cabinet: t.cabinet });
+              allNames.push(t.teacherName);
+            }
+          });
+        });
+      });
+
+      var grade = parallel;
+      var anyHard = subjectsInStream.some(function(subj) {
+        return v2GetDifficulty(subj, grade) >= v2HardThreshold(grade);
+      });
 
       for (var sh = 0; sh < maxHours; sh++) {
         tasks.push({
-          teacherId: allTeachers[0].id,
+          teacherId:   allTeachers[0].id,
           teacherName: allNames.join(' / '),
-          subject: st.name,
-          className: cls,
-          cabinet: null,
-          difficulty: anyHard ? v2HardThreshold(grade) : 5,
-          isHard: anyHard,
-          grade: grade,
+          subject:     st.name,
+          className:   parallelClasses[0],   // основной для группировки tasksByTeacher
+          parallelClasses: parallelClasses,   // одновременно ставится во все эти классы
+          cabinet:     null,
+          difficulty:  anyHard ? v2HardThreshold(grade) : 5,
+          isHard:      anyHard,
+          grade:       grade,
           isGroupSplit: true,
           groupTeachers: allTeachers,
-          isStream: true,
-          streamName: st.name
+          isStream:    true,
+          streamName:  st.name
         });
       }
     });
@@ -463,6 +512,90 @@ function v2Generate(data, weekDays, onProgress) {
 
   var totalPlaced = 0, totalTasks = tasks.length, errors = [];
 
+  /* ─── Pre-flight: эффективная нагрузка учителя с учётом потоков ───
+     Часы предметов одного потока в одной параллели не суммируются для учителя
+     (он ведёт одну группу в общем слоте всей параллели). Если эффективная
+     нагрузка превышает доступную ёмкость — даём пользователю чёткое
+     сообщение ДО запуска размещения. */
+  data.teachers.forEach(function(t) {
+    var effectiveHours = 0;
+    /* Часы по (поток, параллель) — учитываются один раз (макс. часы среди subjects потока) */
+    var streamHoursByParallel = {}; // "streamName|parallel" → maxHours
+    /* Часы по обычным предметам */
+    t.subjects.forEach(function(sg) {
+      sg.lessons.forEach(function(les) {
+        var streamName = subjectToStream[les.subject];
+        if (streamName) {
+          var p = v2GetParallel(les.className);
+          var k = streamName + '|' + p;
+          if (!streamHoursByParallel[k] || les.hours > streamHoursByParallel[k]) {
+            streamHoursByParallel[k] = les.hours;
+          }
+        } else {
+          effectiveHours += les.hours;
+        }
+      });
+    });
+    Object.keys(streamHoursByParallel).forEach(function(k) { effectiveHours += streamHoursByParallel[k]; });
+
+    /* Доступная ёмкость учителя */
+    var availDays = DAYS;
+    if (t.unavailableDays) {
+      var unavailSet = {};
+      t.unavailableDays.split(/[,;\/\s]+/).forEach(function(p) {
+        var di = DAY_MAP[p.trim()];
+        if (di !== undefined && di < DAYS) unavailSet[di] = true;
+      });
+      availDays = DAYS - Object.keys(unavailSet).length;
+    }
+    var maxCapacity = availDays * MAX_SLOTS;
+
+    if (effectiveHours > maxCapacity) {
+      errors.push(
+        t.name + ': эффективная нагрузка ' + effectiveHours + ' ч/нед превышает ' +
+        'физический максимум ' + maxCapacity + ' ч (' + availDays + ' дн × ' + MAX_SLOTS + ' ур.). ' +
+        'Уменьшите нагрузку или ослабьте ограничения.'
+      );
+    }
+  });
+
+  /* Pre-flight по классам с учётом потоков (для аудит-предупреждений) */
+  data.classes.forEach(function(cls) {
+    var grade = v2GetGrade(cls);
+    var parallel = v2GetParallel(cls);
+    var maxWk = V2_MAX_WK[grade] || 34;
+    var classHours = 0;
+    var streamCountedInParallel = {}; // streamName → true (для этого класса в параллели)
+    /* Собираем часы класса: предметы потоков считаем один раз (как maxHours потока в параллели) */
+    var planForClass = (data.plan && data.plan[cls]) || [];
+    planForClass.forEach(function(p) {
+      var streamName = subjectToStream[p.subject];
+      if (streamName) {
+        if (!streamCountedInParallel[streamName]) {
+          /* maxHours потока в параллели — ищем по любому subjects в любом классе параллели */
+          var maxH = 0;
+          (data.streams || []).forEach(function(st) {
+            if (st.name !== streamName) return;
+            st.subjects.forEach(function(subj) {
+              data.classes.forEach(function(c2) {
+                if (v2GetParallel(c2) !== parallel) return;
+                var entries = (data.plan && data.plan[c2]) || [];
+                entries.forEach(function(pe) { if (pe.subject === subj && pe.hours > maxH) maxH = pe.hours; });
+              });
+            });
+          });
+          classHours += maxH;
+          streamCountedInParallel[streamName] = true;
+        }
+      } else {
+        classHours += p.hours;
+      }
+    });
+    if (classHours > maxWk) {
+      errors.push(cls + ': план ' + classHours + ' ч/нед превышает норму СанПиН ' + maxWk + ' ч/нед.');
+    }
+  });
+
   for (var ti = 0; ti < teacherOrder.length; ti++) {
     var teacher = teacherOrder[ti];
     var tTasks = tasksByTeacher[teacher.id];
@@ -489,6 +622,12 @@ function v2Generate(data, weekDays, onProgress) {
         var task = group.tasks[li];
         var placed = false, candidates = [];
 
+        /* Для stream-задач поток занимает один и тот же слот сразу во всей
+           параллели. targetClasses — список классов, в которые нужно
+           одновременно поставить запись. */
+        var targetClasses = (task.parallelClasses && task.parallelClasses.length > 0)
+          ? task.parallelClasses : [cls];
+
         for (var d = 0; d < DAYS; d++) {
           if (_v2AllBlocked(teacherSlots[teacher.id], d)) continue;
           // Prefer spreading: skip day if already used AND we have enough days
@@ -500,7 +639,12 @@ function v2Generate(data, weekDays, onProgress) {
           if (task.isHard) { slotStart = 1; slotEnd = Math.min(4, maxPd); }
 
           for (var s = slotStart; s < slotEnd; s++) {
-            if (schedule[cls][d][s]) continue;
+            /* Слот должен быть свободен ВО ВСЕХ целевых классах */
+            var anyClassBusy = false;
+            for (var tci = 0; tci < targetClasses.length; tci++) {
+              if (schedule[targetClasses[tci]][d][s]) { anyClassBusy = true; break; }
+            }
+            if (anyClassBusy) continue;
             if (teacherSlots[teacher.id][d][s]) continue;
             // For group splits, check ALL teachers are free
             var groupBlocked = false;
@@ -553,7 +697,13 @@ function v2Generate(data, weekDays, onProgress) {
           if (task.isGroupSplit && task.groupTeachers) {
             teacherLabel = task.groupTeachers.map(function(g) { return g.name; }).join(' / ');
           }
-          schedule[cls][best.day][best.slot] = { subject: task.subject, teacherId: teacher.id, teacherName: teacherLabel, cabinet: task.cabinet, isStream: task.isStream || false };
+          /* Ставим запись во все целевые классы (для потока — вся параллель) */
+          for (var tci2 = 0; tci2 < targetClasses.length; tci2++) {
+            schedule[targetClasses[tci2]][best.day][best.slot] = {
+              subject: task.subject, teacherId: teacher.id, teacherName: teacherLabel,
+              cabinet: task.cabinet, isStream: task.isStream || false
+            };
+          }
           teacherSlots[teacher.id][best.day][best.slot] = true;
           // Block ALL teachers in group split
           if (task.isGroupSplit && task.groupTeachers) {
@@ -571,7 +721,12 @@ function v2Generate(data, weekDays, onProgress) {
         if (!placed) {
           for (var fd = 0; fd < DAYS && !placed; fd++) {
             for (var fs = 0; fs < maxPd && !placed; fs++) {
-              if (schedule[cls][fd][fs]) continue;
+              /* Слот свободен во ВСЕХ целевых классах */
+              var fbClassBusy = false;
+              for (var ftci = 0; ftci < targetClasses.length; ftci++) {
+                if (schedule[targetClasses[ftci]][fd][fs]) { fbClassBusy = true; break; }
+              }
+              if (fbClassBusy) continue;
               if (teacherSlots[teacher.id][fd][fs]) continue;
               var fbBlocked = false;
               if (task.isGroupSplit && task.groupTeachers) {
@@ -593,7 +748,12 @@ function v2Generate(data, weekDays, onProgress) {
               if (fSubjCnt >= 2) continue;
               var fbLabel = task.teacherName;
               if (task.isGroupSplit && task.groupTeachers) fbLabel = task.groupTeachers.map(function(g){return g.name;}).join(' / ');
-              schedule[cls][fd][fs] = { subject: task.subject, teacherId: teacher.id, teacherName: fbLabel, cabinet: task.cabinet, isStream: task.isStream || false };
+              for (var ftci2 = 0; ftci2 < targetClasses.length; ftci2++) {
+                schedule[targetClasses[ftci2]][fd][fs] = {
+                  subject: task.subject, teacherId: teacher.id, teacherName: fbLabel,
+                  cabinet: task.cabinet, isStream: task.isStream || false
+                };
+              }
               teacherSlots[teacher.id][fd][fs] = true;
               if (task.isGroupSplit && task.groupTeachers) {
                 task.groupTeachers.forEach(function(gt) { if (gt.id !== teacher.id && teacherSlots[gt.id]) teacherSlots[gt.id][fd][fs] = true; });
@@ -604,7 +764,10 @@ function v2Generate(data, weekDays, onProgress) {
           }
 
           /* ─── BACKTRACKING: displace existing lesson to free a slot ─── */
-          if (!placed) {
+          /* Backtracking сложен для потоков (нужно вытеснять записи во всех
+             классах параллели одновременно). Пока пропускаем stream-задачи —
+             их размещают основной и fallback placer'ы. */
+          if (!placed && (!task.parallelClasses || task.parallelClasses.length <= 1)) {
             // Build list of candidate displacements, scored
             var bCandidates = [];
 
@@ -734,12 +897,19 @@ function v2Generate(data, weekDays, onProgress) {
     }
   }
 
-  /* Компактность: убираем окна, но сложные не на 1-й урок */
+  /* Компактность: убираем окна, но сложные не на 1-й урок.
+     ВАЖНО: потоковые записи нельзя перемещать — они стоят синхронно во всей
+     параллели и сжатие в одном классе нарушит синхронизацию. */
   if (onProgress) onProgress({ phase: 'compacting', progress: 85, placed: totalPlaced, total: totalTasks });
   data.classes.forEach(function(cls) {
     var grade = v2GetGrade(cls);
     for (var d = 0; d < DAYS; d++) {
-      var filled = schedule[cls][d].filter(function(s) { return s !== null; });
+      var origDay = schedule[cls][d];
+      /* Зафиксированные позиции потоков — нельзя двигать */
+      var hasStream = origDay.some(function(s) { return s && s.isStream; });
+      if (hasStream) continue; // в дне есть поток → пропускаем сжатие этого дня
+
+      var filled = origDay.filter(function(s) { return s !== null; });
       if (filled.length === 0) { schedule[cls][d] = new Array(MAX_SLOTS).fill(null); return; }
 
       // If first lesson is hard, find first non-hard and swap
@@ -756,7 +926,8 @@ function v2Generate(data, weekDays, onProgress) {
     }
   });
 
-  /* Targeted fix: move hard subjects to slots 1-3, swap with easy subjects */
+  /* Targeted fix: move hard subjects to slots 1-3, swap with easy subjects.
+     Потоки не трогаем — их позиции синхронны по параллели. */
   if (onProgress) onProgress({ phase: 'optimizing', progress: 87, placed: totalPlaced, total: totalTasks });
   for (var fixPass = 0; fixPass < 3; fixPass++) {
     data.classes.forEach(function(cls) {
@@ -768,11 +939,13 @@ function v2Generate(data, weekDays, onProgress) {
           if (badSlot >= 1 && badSlot <= 3) continue; // already optimal
           var badLesson = day3[badSlot];
           if (!badLesson) continue;
+          if (badLesson.isStream) continue; // нельзя двигать поток
           if (!v2IsHard(badLesson.subject, grade3)) continue;
           // Find easy subject at slots 1-3 to swap with
           for (var goodSlot = 1; goodSlot <= 3; goodSlot++) {
             var goodLesson = day3[goodSlot];
             if (!goodLesson) continue;
+            if (goodLesson.isStream) continue; // нельзя двигать поток
             if (v2IsHard(goodLesson.subject, grade3)) continue; // don't swap hard with hard
             // Check teacher conflicts for the swap
             var canFix = true;
@@ -800,7 +973,7 @@ function v2Generate(data, weekDays, onProgress) {
     });
   }
 
-  /* Random optimization */
+  /* Random optimization. Потоки не двигаем — синхронность по параллели. */
   if (onProgress) onProgress({ phase: 'optimizing', progress: 90, placed: totalPlaced, total: totalTasks });
   for (var pass = 0; pass < 2000; pass++) {
     var rCls = data.classes[Math.floor(Math.random() * data.classes.length)];
@@ -810,6 +983,7 @@ function v2Generate(data, weekDays, onProgress) {
     if (s1 === s2) continue;
     var a = schedule[rCls][rDay][s1], b = schedule[rCls][rDay][s2];
     if (!a && !b) continue;
+    if ((a && a.isStream) || (b && b.isStream)) continue; // не трогаем потоки
     var canSwap = true;
     if (a && b && a.teacherId !== b.teacherId) {
       if (a.teacherId && teacherSlots[a.teacherId][rDay][s2] && (!b || b.teacherId !== a.teacherId)) canSwap = false;
