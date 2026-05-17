@@ -52,10 +52,10 @@ router.post('/admin/login', (req, res) => {
 router.post('/register', async (req, res) => {
   const { userId, email, name, schoolName, city } = req.body;
 
-  if (!userId || !email || !schoolName) {
+  if (!userId || !email) {
     return res.status(400).json({
       ok: false,
-      error: 'Обязательные поля: userId, email, schoolName',
+      error: 'Обязательные поля: userId, email',
     });
   }
 
@@ -63,23 +63,25 @@ router.post('/register', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Создать запись в schools
-    const schoolRes = await client.query(
-      `INSERT INTO schools (name, city, mode, shifts)
-       VALUES ($1, $2, '5day', 1)
-       RETURNING id`,
-      [schoolName.trim(), (city || '').trim()]
-    );
-    const schoolId = schoolRes.rows[0].id;
+    let schoolId = null;
 
-    // 2. Создать запись в users (id = Supabase Auth UUID)
+    if (schoolName && schoolName.trim()) {
+      const schoolRes = await client.query(
+        `INSERT INTO schools (name, city, mode, shifts)
+         VALUES ($1, $2, '5day', 1)
+         RETURNING id`,
+        [schoolName.trim(), (city || '').trim()]
+      );
+      schoolId = schoolRes.rows[0].id;
+    }
+
     await client.query(
       `INSERT INTO users (id, email, password_hash, name, school_id, role, plan)
        VALUES ($1, $2, 'supabase_auth', $3, $4, 'admin', 'free')
        ON CONFLICT (id) DO UPDATE
          SET email = EXCLUDED.email,
              name  = EXCLUDED.name,
-             school_id = EXCLUDED.school_id`,
+             school_id = COALESCE(EXCLUDED.school_id, users.school_id)`,
       [userId, email.toLowerCase().trim(), (name || '').trim(), schoolId]
     );
 
