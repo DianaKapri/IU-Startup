@@ -144,12 +144,14 @@ spRequireAuth(function () {
       if (!u) return;
       var nameEl    = document.getElementById('profileName');
       var schoolEl  = document.getElementById('profileSchool');
+      var cityEl    = document.getElementById('profileCity');
       var emailEl   = document.getElementById('profileEmail');
       var passEl    = document.getElementById('profilePassword');
       var successEl = document.getElementById('profileSuccess');
       var globalErr = document.getElementById('profileGlobalErr');
-      if (nameEl)    nameEl.value   = u.name;
-      if (schoolEl)  schoolEl.value = u.school;
+      if (nameEl)    nameEl.value   = u.name || '';
+      if (schoolEl)  schoolEl.value = u.school || '';
+      if (cityEl)    cityEl.value   = u.city || '';
       if (emailEl)   emailEl.value  = u.email;
       if (passEl)    passEl.value   = '';
       if (successEl) successEl.style.display = 'none';
@@ -172,7 +174,7 @@ spRequireAuth(function () {
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeProfile(); });
 
   function clearProfileErrors() {
-    ['profileNameErr','profileSchoolErr','profileEmailErr','profilePasswordErr'].forEach(function (id) {
+    ['profileNameErr','profileSchoolErr','profileCityErr','profileEmailErr','profilePasswordErr'].forEach(function (id) {
       var el = document.getElementById(id); if (el) el.textContent = '';
     });
   }
@@ -191,12 +193,11 @@ spRequireAuth(function () {
 
       var nameVal   = (document.getElementById('profileName')     || {}).value.trim();
       var schoolVal = (document.getElementById('profileSchool')   || {}).value.trim();
+      var cityVal   = (document.getElementById('profileCity')     || {}).value.trim();
       var emailVal  = (document.getElementById('profileEmail')    || {}).value.trim().toLowerCase();
       var passVal   = (document.getElementById('profilePassword') || {}).value;
 
       var valid = true;
-      if (!nameVal)   { profileErr('profileNameErr', 'Введите имя'); valid = false; }
-      if (!schoolVal) { profileErr('profileSchoolErr', 'Введите название школы'); valid = false; }
       if (!emailVal || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
         profileErr('profileEmailErr', 'Введите корректный email'); valid = false;
       }
@@ -205,7 +206,7 @@ spRequireAuth(function () {
       }
       if (!valid) return;
 
-      spUpdateProfile(nameVal, schoolVal, emailVal, passVal || null).then(function (res) {
+      spUpdateProfile(nameVal, schoolVal, cityVal, emailVal, passVal || null).then(function (res) {
         if (!res.ok) {
           if (globalErr) globalErr.textContent = res.error || 'Ошибка сохранения';
           return;
