@@ -1100,11 +1100,18 @@ function v2Audit(result) {
    ЭКСПОРТ
    ═══════════════════════════════════════════════════════════════ */
 
-function v2ExportXlsx(result) {
+function v2ExportXlsx(result, opts) {
+  /* opts = { schoolName, year, fileName } — все опциональные.
+     Формат файла соответствует «Шаблону аудита» (3 листа: Расписание, Учителя, Полное)
+     и должен напрямую загружаться обратно в аудит-модуль. */
+  opts = opts || {};
+  var schoolName = opts.schoolName || 'ГБОУ ШКОЛА №N';
+  var year = opts.year || _v2GuessSchoolYear();
+  var title = 'РАСПИСАНИЕ УРОКОВ ' + schoolName + ' на ' + year + ' учебный год';
+
   var sch = result.schedule;
   var DN = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница'];
 
-  // Filter only classes with lessons, sort
   var classes = result.classes.filter(function(cls) {
     for (var d = 0; d < 5; d++) {
       if ((sch[cls][d] || []).some(function(s) { return s; })) return true;
@@ -1115,78 +1122,97 @@ function v2ExportXlsx(result) {
     return na !== nb ? na - nb : a.localeCompare(b, 'ru');
   });
 
-  // Find max lessons per day
+  /* Размер блока «День» = максимальное число использованных слотов в этот день.
+     ВАЖНО: не сжимаем дни через .filter — пустые слоты должны сохранять свою
+     временную позицию, иначе потоки рассинхронизируются по строкам между
+     классами параллели. */
   var maxPerDay = [];
   for (var md = 0; md < 5; md++) {
     var mx = 0;
     classes.forEach(function(cls) {
-      var c = (sch[cls][md] || []).filter(function(s) { return s; }).length;
-      if (c > mx) mx = c;
+      var day = sch[cls][md] || [];
+      /* Находим индекс последнего непустого слота + 1 = реальная длина дня. */
+      var lastUsed = 0;
+      for (var ds = 0; ds < day.length; ds++) {
+        if (day[ds]) lastUsed = ds + 1;
+      }
+      if (lastUsed > mx) mx = lastUsed;
     });
     maxPerDay.push(mx || 1);
   }
 
+  /* Header rows: title (merged) + column headers. После них — данные. */
+  var nCols = 2 + classes.length;
+
+  function buildSheet(cellFn) {
+    var rows = [];
+    /* Title row across all columns */
+    var titleRow = [title];
+    for (var i = 1; i < nCols; i++) titleRow.push('');
+    rows.push(titleRow);
+    /* Header row */
+    rows.push(['День', '№'].concat(classes));
+    /* Data rows. Берём слот по индексу li, не сжимая (.filter сломал бы
+       синхронность потоков между классами параллели). */
+    for (var di = 0; di < 5; di++) {
+      for (var li = 0; li < maxPerDay[di]; li++) {
+        var row = [li === 0 ? DN[di] : '', li + 1];
+        classes.forEach(function(cls) {
+          var slot = (sch[cls][di] || [])[li];
+          row.push(slot ? cellFn(slot) : '');
+        });
+        rows.push(row);
+      }
+    }
+    return rows;
+  }
+
+  function applyMerges(ws) {
+    ws['!merges'] = [];
+    /* Title merged across columns A:last */
+    ws['!merges'].push({ s: { r: 0, c: 0 }, e: { r: 0, c: nCols - 1 } });
+    /* Day cells merged across slots; data starts at row index 2 (after title + header) */
+    var rowIdx = 2;
+    for (var mi = 0; mi < 5; mi++) {
+      if (maxPerDay[mi] > 1) {
+        ws['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx + maxPerDay[mi] - 1, c: 0 } });
+      }
+      rowIdx += maxPerDay[mi];
+    }
+  }
+
   var wb = XLSX.utils.book_new();
 
-  // === Лист 1: Предметы ===
-  var rows1 = [['День', '№'].concat(classes)];
-  for (var di = 0; di < 5; di++) {
-    for (var li = 0; li < maxPerDay[di]; li++) {
-      var row = [li === 0 ? DN[di] : '', li + 1];
-      classes.forEach(function(cls) {
-        var filled = (sch[cls][di] || []).filter(function(s) { return s; });
-        row.push(filled[li] ? filled[li].subject : '');
-      });
-      rows1.push(row);
-    }
-  }
+  /* === Лист «Расписание»: только предметы === */
+  var rows1 = buildSheet(function(les) { return les.subject; });
   var ws1 = XLSX.utils.aoa_to_sheet(rows1);
   ws1['!cols'] = [{ wch: 14 }, { wch: 4 }].concat(classes.map(function() { return { wch: 22 }; }));
-  // Merge day cells
-  ws1['!merges'] = [];
-  var rowIdx = 1;
-  for (var mi = 0; mi < 5; mi++) {
-    if (maxPerDay[mi] > 1) {
-      ws1['!merges'].push({ s: { r: rowIdx, c: 0 }, e: { r: rowIdx + maxPerDay[mi] - 1, c: 0 } });
-    }
-    rowIdx += maxPerDay[mi];
-  }
+  applyMerges(ws1);
   XLSX.utils.book_append_sheet(wb, ws1, 'Расписание');
 
-  // === Лист 2: Учителя ===
-  var rows2 = [['День', '№'].concat(classes)];
-  for (var di2 = 0; di2 < 5; di2++) {
-    for (var li2 = 0; li2 < maxPerDay[di2]; li2++) {
-      var row2 = [li2 === 0 ? DN[di2] : '', li2 + 1];
-      classes.forEach(function(cls) {
-        var filled = (sch[cls][di2] || []).filter(function(s) { return s; });
-        row2.push(filled[li2] ? filled[li2].teacherName : '');
-      });
-      rows2.push(row2);
-    }
-  }
+  /* === Лист «Учителя»: только ФИО === */
+  var rows2 = buildSheet(function(les) { return les.teacherName; });
   var ws2 = XLSX.utils.aoa_to_sheet(rows2);
   ws2['!cols'] = [{ wch: 14 }, { wch: 4 }].concat(classes.map(function() { return { wch: 28 }; }));
-  ws2['!merges'] = ws1['!merges'];
+  applyMerges(ws2);
   XLSX.utils.book_append_sheet(wb, ws2, 'Учителя');
 
-  // === Лист 3: Предмет + Учитель ===
-  var rows3 = [['День', '№'].concat(classes)];
-  for (var di3 = 0; di3 < 5; di3++) {
-    for (var li3 = 0; li3 < maxPerDay[di3]; li3++) {
-      var row3 = [li3 === 0 ? DN[di3] : '', li3 + 1];
-      classes.forEach(function(cls) {
-        var filled = (sch[cls][di3] || []).filter(function(s) { return s; });
-        var les = filled[li3];
-        row3.push(les ? les.subject + ' (' + les.teacherName + ')' : '');
-      });
-      rows3.push(row3);
-    }
-  }
+  /* === Лист «Полное»: предмет + ФИО в скобках === */
+  var rows3 = buildSheet(function(les) { return les.subject + ' (' + les.teacherName + ')'; });
   var ws3 = XLSX.utils.aoa_to_sheet(rows3);
   ws3['!cols'] = [{ wch: 14 }, { wch: 4 }].concat(classes.map(function() { return { wch: 36 }; }));
-  ws3['!merges'] = ws1['!merges'];
+  applyMerges(ws3);
   XLSX.utils.book_append_sheet(wb, ws3, 'Полное');
 
-  XLSX.writeFile(wb, 'raspisanie-v2.xlsx');
+  var fileName = opts.fileName || 'raspisanie-v2.xlsx';
+  XLSX.writeFile(wb, fileName);
+}
+
+/* Выбор актуального учебного года по текущей дате (август = start). */
+function _v2GuessSchoolYear() {
+  var d = new Date();
+  var y = d.getFullYear();
+  /* Учебный год начинается с августа. До августа — предыдущий → текущий. */
+  if (d.getMonth() < 7) return (y - 1) + ' - ' + y;
+  return y + ' - ' + (y + 1);
 }

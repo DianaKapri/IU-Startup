@@ -8,6 +8,7 @@ const XLSX = require('xlsx');
 const db = require('../../config/database');
 const { tryParseRows } = require('./try-parse-rows'); // US-0402
 const { tryParseTransposed } = require('./try-parse-transposed'); // US-0403
+const { tryParseAuditTemplate, isAuditTemplate } = require('./try-parse-audit-template');
 const { normSubj } = require('./norm-subj'); // US-0404
 
 // ─── Детекция стратегии ─────────────────────────────────────
@@ -20,9 +21,13 @@ const CLASS_NAME_PATTERN =
 
 /**
  * @param {XLSX.WorkBook} workbook
- * @returns {'rows' | 'transposed'}
+ * @returns {'audit-template' | 'rows' | 'transposed'}
  */
 function detectStrategy(workbook) {
+  /* Аудит-шаблон узнаётся по характерному составу листов (Расписание + Учителя/Полное).
+     Имеет приоритет — формат точный, перепутать с rows/transposed невозможно. */
+  if (isAuditTemplate(workbook)) return 'audit-template';
+
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:A1');
 
@@ -113,6 +118,9 @@ async function parseScheduleFile(filePath, originalName) {
   let schedule;
 
   switch (strategy) {
+    case 'audit-template':
+      ({ schedule } = tryParseAuditTemplate(workbook));
+      break;
     case 'rows':
       schedule = tryParseRows(workbook);
       break;
