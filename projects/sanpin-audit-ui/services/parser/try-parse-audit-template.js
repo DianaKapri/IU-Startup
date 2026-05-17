@@ -43,21 +43,36 @@ function isClassName(raw) {
 }
 
 /**
- * Проверка, что workbook имеет структуру аудит-шаблона:
- * есть лист «Расписание» (или похожий), хотя бы один из листов
- * «Учителя» / «Полное» — приятный бонус, но не обязательный.
+ * Проверка, что workbook имеет структуру аудит-шаблона.
+ *
+ * Решающий признак — лист «Расписание» с шапкой [День | №] в первых
+ * 5 строках. Это формат как ручного шаблона (1 лист), так и экспорта
+ * из генератора (3 листа); парсер обрабатывает оба одинаково.
+ * Старая эвристика по составу листов («Расписание» + «Учителя»/«Полное»)
+ * не распознавала ручной шаблон с единственным листом.
  *
  * @param {XLSX.WorkBook} workbook
  * @returns {boolean}
  */
 function isAuditTemplate(workbook) {
-  const names = (workbook.SheetNames || []).map(n => n.toLowerCase().trim());
-  const hasSchedule = names.some(n => n.includes('расписан'));
-  /* Достаточно одного маркерного листа + одного из дополнительных,
-     чтобы не путать с обычными excel-файлами с одним листом. */
-  const hasTeachers = names.some(n => n.includes('учител'));
-  const hasFull = names.some(n => n.includes('полн'));
-  return hasSchedule && (hasTeachers || hasFull);
+  const scheduleSheetName = (workbook.SheetNames || []).find(n =>
+    n.toLowerCase().trim().includes('расписан')
+  );
+  if (!scheduleSheetName) return false;
+  const sheet = workbook.Sheets[scheduleSheetName];
+  if (!sheet || !sheet['!ref']) return false;
+
+  const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', blankrows: false });
+  /* Шапка может быть на row 0..4 (метаданные могут быть выше). */
+  for (let r = 0; r < Math.min(matrix.length, 5); r++) {
+    const row = matrix[r] || [];
+    const c0 = String(row[0] || '').toLowerCase().trim();
+    const c1 = String(row[1] || '').toLowerCase().trim();
+    if (c0.startsWith('день') && (c1 === '№' || c1.startsWith('ур'))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function findSheetByName(workbook, needle) {
