@@ -140,27 +140,59 @@ spRequireAuth(function () {
 
   function openProfile() {
     if (!profileModal) return;
-    spGetCurrentUser().then(function (u) {
+
+    var successEl = document.getElementById('profileSuccess');
+    var globalErr = document.getElementById('profileGlobalErr');
+    if (successEl) successEl.style.display = 'none';
+    if (globalErr) globalErr.textContent   = '';
+    clearProfileErrors();
+    profileModal.classList.add('profile-modal--open');
+    profileOverlay.classList.add('profile-overlay--open');
+
+    _initSupabase().then(function (sb) {
+      return sb.auth.getUser().then(function (res) {
+        var u = res.data && res.data.user;
+        if (!u) return null;
+        var meta = u.user_metadata || {};
+        var base = {
+          id: u.id,
+          email: u.email,
+          name:   meta.name   || '',
+          school: meta.school || '',
+          city:   meta.city   || '',
+        };
+        return sb.auth.getSession().then(function (s) {
+          var token = s.data && s.data.session && s.data.session.access_token;
+          if (!token) return base;
+          return fetch('/api/users/me', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+              if (data && data.ok && data.user) {
+                return Object.assign({}, base, {
+                  name:   data.user.name   || base.name,
+                  school: data.user.school || base.school,
+                  city:   data.user.city   || base.city,
+                });
+              }
+              return base;
+            })
+            .catch(function () { return base; });
+        });
+      });
+    }).then(function (u) {
       if (!u) return;
-      var nameEl    = document.getElementById('profileName');
-      var schoolEl  = document.getElementById('profileSchool');
-      var cityEl    = document.getElementById('profileCity');
-      var emailEl   = document.getElementById('profileEmail');
-      var passEl    = document.getElementById('profilePassword');
-      var successEl = document.getElementById('profileSuccess');
-      var globalErr = document.getElementById('profileGlobalErr');
-      if (nameEl)    nameEl.value   = u.name || '';
-      if (schoolEl)  schoolEl.value = u.school || '';
-      if (cityEl)    cityEl.value   = u.city || '';
-      if (emailEl)   emailEl.value  = u.email;
-      if (passEl)    passEl.value   = '';
-      if (successEl) successEl.style.display = 'none';
-      if (globalErr) globalErr.textContent   = '';
-      clearProfileErrors();
-      profileModal.classList.add('profile-modal--open');
-      profileOverlay.classList.add('profile-overlay--open');
-      if (nameEl) nameEl.focus();
-    });
+      var nameEl   = document.getElementById('profileName');
+      var schoolEl = document.getElementById('profileSchool');
+      var cityEl   = document.getElementById('profileCity');
+      var emailEl  = document.getElementById('profileEmail');
+      var passEl   = document.getElementById('profilePassword');
+      if (nameEl)   nameEl.value   = u.name   || '';
+      if (schoolEl) schoolEl.value = u.school || '';
+      if (cityEl)   cityEl.value   = u.city   || '';
+      if (emailEl)  emailEl.value  = u.email  || '';
+      if (passEl)   passEl.value   = '';
+      if (nameEl)   nameEl.focus();
+    }).catch(function () {});
   }
 
   function closeProfile() {
