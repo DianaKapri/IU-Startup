@@ -106,7 +106,7 @@ spRequireAuth(function () {
 
   /* ═══ Fill nav header ═══ */
   function refreshHeader() {
-    spGetCurrentUser().then(function (u) {
+    spGetCachedUser().then(function (u) {
       if (!u) return;
       user = u;
       var accName    = document.getElementById('accName');
