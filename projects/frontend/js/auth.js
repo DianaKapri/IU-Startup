@@ -137,32 +137,74 @@ function _initSupabase() {
   return _configPromise;
 }
 
+/* Быстрое чтение из кэша localStorage — без сетевых запросов (мгновенно) */
+function spGetCachedUser() {
+  return _initSupabase().then(function (sb) {
+    return sb.auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (!session || !session.user) return null;
+      var u    = session.user;
+      var meta = u.user_metadata || {};
+      return {
+        id:     u.id,
+        email:  u.email,
+        name:   meta.name   || u.email || '',
+        school: meta.school || '',
+        city:   meta.city   || '',
+        plan:   meta.plan   || 'free',
+        plan_expires_at: null,
+        _cached: true,
+      };
+    });
+  });
+}
+
+/* Полные данные с бэкенда (план, школа из БД) — используется там, где нужна актуальность */
 function spGetCurrentUser() {
   return _initSupabase().then(function (sb) {
-    return sb.auth.getUser().then(function (res) {
-      if (res.error || !res.data.user) return null;
-      var u = res.data.user;
-      var meta = u.user_metadata || {};
-
-      return sb.auth.getSession().then(function (sessRes) {
-        var token = sessRes.data && sessRes.data.session && sessRes.data.session.access_token;
-        var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-        return fetch('/api/users/me', { headers: headers });
-      }).then(function (r) { return r && r.ok ? r.json() : null; })
+    return sb.auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (!session || !session.user) return null;
+      var u     = session.user;
+      var meta  = u.user_metadata || {};
+      var token = session.access_token;
+      var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      return fetch('/api/users/me', { headers: headers })
+        .then(function (r) { return r && r.ok ? r.json() : null; })
         .then(function (data) {
-          if (!data || !data.ok || !data.user) return null;
+          if (!data || !data.ok || !data.user) {
+            return {
+              id:     u.id,
+              email:  u.email,
+              name:   meta.name   || u.email || '',
+              school: meta.school || '',
+              city:   meta.city   || '',
+              plan:   meta.plan   || 'free',
+              plan_expires_at: null,
+            };
+          }
           var db = data.user;
           return {
-            id: u.id,
-            email: u.email,
-            name:   db.name,
-            school: db.school || '',
-            city:   db.city   || '',
-            plan:   db.plan   || 'free',
+            id:     u.id,
+            email:  u.email,
+            name:   db.name   || meta.name   || u.email || '',
+            school: db.school || meta.school || '',
+            city:   db.city   || meta.city   || '',
+            plan:   db.plan   || meta.plan   || 'free',
             plan_expires_at: db.plan_expires_at || null,
           };
         })
-        .catch(function () { return null; });
+        .catch(function () {
+          return {
+            id:     u.id,
+            email:  u.email,
+            name:   meta.name   || u.email || '',
+            school: meta.school || '',
+            city:   meta.city   || '',
+            plan:   meta.plan   || 'free',
+            plan_expires_at: null,
+          };
+        });
     });
   });
 }
@@ -380,7 +422,7 @@ function spInitNav() {
   var navRight = guestLinks && guestLinks.parentNode;
   if (navRight) navRight.appendChild(loader);
 
-  spGetCurrentUser().then(function (user) {
+  spGetCachedUser().then(function (user) {
     loader.remove();
     var navAvatar = document.getElementById('navAvatar');
     var navName   = document.getElementById('navUserName');
