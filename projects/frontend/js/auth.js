@@ -223,9 +223,7 @@ function spLogin(email, password) {
   });
 }
 
-function spRegister(name, school, city, email, password) {
-  if (!name || !name.trim()) return Promise.resolve({ ok: false, error: 'Введите имя' });
-  if (!school || !school.trim()) return Promise.resolve({ ok: false, error: 'Укажите название школы' });
+function spRegister(email, password) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     return Promise.resolve({ ok: false, error: 'Некорректный email' });
   }
@@ -238,7 +236,7 @@ function spRegister(name, school, city, email, password) {
       email: email.trim().toLowerCase(),
       password: password,
       options: {
-        data: { name: name.trim(), school: school.trim(), city: (city || '').trim(), plan: 'free' },
+        data: { plan: 'free' },
       },
     }).then(function (res) {
       if (res.error) return { ok: false, error: _translateError(res.error.message) };
@@ -247,7 +245,7 @@ function spRegister(name, school, city, email, password) {
       if (!u) return { ok: false, error: 'Не удалось создать пользователя. Попробуйте ещё раз.' };
 
       var confirmRequired = !session;
-      var resultUser = { id: u.id, email: email, name: name, school: school, plan: 'free' };
+      var resultUser = { id: u.id, email: email, plan: 'free' };
 
       var profilePromise = session
         ? spEnsureProfile(sb, u).catch(function (e) {
@@ -262,9 +260,9 @@ function spRegister(name, school, city, email, password) {
         body: JSON.stringify({
           userId: u.id,
           email: u.email,
-          name: name.trim(),
-          schoolName: school.trim(),
-          city: (city || '').trim(),
+          name: '',
+          schoolName: '',
+          city: '',
         }),
       }).then(function (r) { return r.json(); })
         .then(function (data) {
@@ -281,14 +279,25 @@ function spRegister(name, school, city, email, password) {
   });
 }
 
-function spUpdateProfile(name, school, email, password) {
+function spUpdateProfile(name, school, city, email, password) {
   return _initSupabase().then(function (sb) {
-    var updates = { data: { name: name, school: school } };
+    var updates = { data: { name: name, school: school, city: city || '' } };
     if (email) updates.email = email;
     if (password) updates.password = password;
     return sb.auth.updateUser(updates).then(function (res) {
       if (res.error) return { ok: false, error: res.error.message };
-      return { ok: true };
+
+      return sb.auth.getSession().then(function (sessRes) {
+        var token = sessRes.data && sessRes.data.session && sessRes.data.session.access_token;
+        var headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+        return fetch('/api/users/me', {
+          method: 'PATCH',
+          headers: headers,
+          body: JSON.stringify({ name: name, school: school, city: city || '' }),
+        });
+      }).then(function () { return { ok: true }; })
+        .catch(function () { return { ok: true }; });
     });
   });
 }
