@@ -419,6 +419,9 @@ function spRequireAuth(callback) {
     } else if (callback) {
       callback();
     }
+  }).catch(function (err) {
+    console.warn('[spRequireAuth] Auth service unavailable:', err && err.message);
+    if (callback) callback();
   });
 }
 
