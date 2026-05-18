@@ -6,6 +6,7 @@
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Личный кабинет — ШколаПлан</title>
 <link rel="stylesheet" href="./css/styles.css"/>
+<link rel="stylesheet" href="./css/demo.css"/>
 <link rel="stylesheet" href="./css/account.css"/>
 <link rel="stylesheet" href="./css/account-cards.css?v=1"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -207,111 +208,6 @@
     </div>
 
     <p class="acc-error" id="gen2Error"></p>
-  </section>
-
-  <section class="acc-intro" id="accIntro" style="display:none">
-    <div class="acc-intro__header fade-in">
-      <p class="acc-intro__eyebrow">ЧТО ВЫ ПОЛУЧИТЕ</p>
-      <h2 class="acc-intro__title">Полный анализ расписания за секунды</h2>
-    </div>
-    
-    <div class="pg-products fade-in fade-in--d1">
-      <div class="pg-product-card">
-        <div class="pg-product-card__img">
-          <div class="pg-product-mock pg-product-mock--audit">
-            <div class="pg-product-mock__bar">
-              <span class="pg-product-mock__dots"><span></span><span></span><span></span></span>
-              <span class="pg-product-mock__tab">Аудит СанПиН</span>
-            </div>
-            <div class="pg-product-mock__body">
-              <div class="pg-product-mock__badge pg-product-mock__badge--red">3 нарушения · 2 предупреждения</div>
-              <div class="pg-product-mock__summary">Score: 78/100</div>
-            </div>
-          </div>
-        </div>
-        <h3 class="pg-product-card__title">Аудит по СанПиН</h3>
-        <p class="pg-product-card__desc">23 автоматические проверки: дневная и недельная нагрузка, сдвоенные уроки, трудные предметы утром, пик нагрузки в середине недели.</p>
-        <div class="pg-product-card__tags"><span>C-01</span><span>C-02</span><span>C-03</span><span>E-01</span><span>X-01</span></div>
-      </div>
-
-      <div class="pg-product-card">
-        <div class="pg-product-card__img">
-          <div class="pg-product-mock pg-product-mock--grid">
-            <div class="pg-product-mock__bar">
-              <span class="pg-product-mock__dots"><span></span><span></span><span></span></span>
-              <span class="pg-product-mock__tab">Сетка уроков</span>
-            </div>
-            <div class="pg-product-mock__body">
-              <div class="pg-product-mock__grid-mini">
-                <div class="pg-product-mock__grid-head">
-                  <span></span><span>5А</span><span>7В</span><span>9А</span>
-                </div>
-                <div class="pg-product-mock__grid-row">
-                  <span class="pg-product-mock__day">Пн</span>
-                  <span class="pg-product-mock__cell pg-product-mock__cell--ok">✓</span>
-                  <span class="pg-product-mock__cell pg-product-mock__cell--err">7</span>
-                  <span class="pg-product-mock__cell pg-product-mock__cell--ok">✓</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <h3 class="pg-product-card__title">Сетка уроков</h3>
-        <p class="pg-product-card__desc">Визуальная таблица по всем классам и дням недели. Нарушения подсвечены красным, рекомендации — жёлтым, норма — зелёным.</p>
-        <div class="pg-product-card__tags"><span>Все классы</span><span>Пн–Пт</span></div>
-      </div>
-
-      <div class="pg-product-card">
-        <div class="pg-product-card__img">
-          <div class="pg-product-mock pg-product-mock--heat">
-            <div class="pg-product-mock__bar">
-              <span class="pg-product-mock__dots"><span></span><span></span><span></span></span>
-              <span class="pg-product-mock__tab">Тепловая карта</span>
-            </div>
-            <div class="pg-product-mock__body">
-              <div class="pg-product-mock__heat-grid">
-                <div class="pg-product-mock__heat-cell pg-product-mock__heat-cell--low"></div>
-                <div class="pg-product-mock__heat-cell pg-product-mock__heat-cell--high"></div>
-                <div class="pg-product-mock__heat-cell pg-product-mock__heat-cell--med"></div>
-                <div class="pg-product-mock__heat-cell pg-product-mock__heat-cell--low"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <h3 class="pg-product-card__title">Тепловая карта</h3>
-        <p class="pg-product-card__desc">Нагрузка в баллах по каждому дню и классу. Сразу видно, где перегруз и где есть резерв для перестановки уроков.</p>
-        <div class="pg-product-card__tags"><span>Баллы нагрузки</span><span>По дням</span></div>
-      </div>
-
-      <div class="pg-product-card">
-        <div class="pg-product-card__img">
-          <div class="pg-product-mock pg-product-mock--recs">
-            <div class="pg-product-mock__bar">
-              <span class="pg-product-mock__dots"><span></span><span></span><span></span></span>
-              <span class="pg-product-mock__tab">Рекомендации</span>
-            </div>
-            <div class="pg-product-mock__body">
-              <div class="pg-product-mock__rec-list">
-                <div class="pg-product-mock__rec-item">🔄 Перенести физику с 1-го на 3-й урок</div>
-                <div class="pg-product-mock__rec-item">⚖️ Уменьшить нагрузку в среду</div>
-                <div class="pg-product-mock__rec-item">📅 Добавить облегченный день</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <h3 class="pg-product-card__title">Рекомендации</h3>
-        <p class="pg-product-card__desc">Конкретные советы по исправлению каждого нарушения: какой урок переставить, на какое место и почему.</p>
-        <div class="pg-product-card__tags"><span>Нарушения</span><span>Рекомендации</span></div>
-      </div>
-    </div>
-    <div class="acc-tip">
-      <div class="acc-tip__icon">📋</div>
-      <div>
-        <p class="acc-tip__title">Требования к формату файла</p>
-        <p class="acc-tip__text">Файл Excel должен содержать отдельный лист для каждого класса (например «5А», «7Б»). Первый столбец — номер урока (1–7), остальные столбцы — предметы по дням недели (Пн, Вт, Ср, Чт, Пт).</p>
-        <a href="/assets/shablon-raspisaniya.xlsx" class="btn btn--ghost btn--sm" download>Скачать шаблон .xlsx</a>
-      </div>
-    </div>
   </section>
 
   <section class="acc-results" id="accResults" style="display:none">

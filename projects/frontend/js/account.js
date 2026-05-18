@@ -743,17 +743,22 @@ spRequireAuth(function () {
 
   /* ─── Render Rules ─── */
   function renderRules(container) {
+    /* Контент скопирован 1:1 с лендинга (index.html стр. 105-242) — кроме
+       заголовка «Как работает аудит», который в ЛК уже стоит во вкладке
+       (data-tab="rules"). Карточки повторяются 2 раза в каждой колонке —
+       это требует CSS-анимация бесконечной прокрутки rules-col__track. */
     container.innerHTML = `
       <div class="rules-hero">
         <div class="rules-hero__badge">Нормативная база</div>
+        <h2 class="rules-hero__title">Как работает аудит</h2>
       </div>
 
       <div class="rules-score-box">
-        <div class="rules-score-box__formula">Score = (7 × number of classes - violations - recommendations) ÷ (7 × number of classes) × 100</div>
+        <div class="rules-score-box__formula">Score = (7 × кол-во классов − нарушения − рекомендации) ÷ (7 × кол-во классов) × 100</div>
         <div class="rules-score-box__scale">
-          <span class="rules-scale rules-scale--green">90-100 compliant</span>
-          <span class="rules-scale rules-scale--yellow">70-89 recommendations</span>
-          <span class="rules-scale rules-scale--red">0-69 violations</span>
+          <span class="rules-scale rules-scale--green">90–100 соответствует</span>
+          <span class="rules-scale rules-scale--yellow">70–89 рекомендации</span>
+          <span class="rules-scale rules-scale--red">0–69 нарушения</span>
         </div>
       </div>
 
@@ -762,27 +767,39 @@ spRequireAuth(function () {
           <div class="rules-col__track">
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">C-01</div>
-              <div class="rules-card__title">Maximum lessons per day</div>
-              <div class="rules-card__text">1st grade: 4 lessons (once 5 for PE). 2-4 grades: 5 (once 6 with PE). 5-6 grades: 6. 7-11 grades: 7.</div>
-              <div class="rules-card__src">SP 2.4.3648-20, p. 3.4.16</div>
+              <div class="rules-card__title">Максимум уроков в день</div>
+              <div class="rules-card__text">1 кл.: 4 урока (один раз 5 за счёт физ-ры). 2–4 кл.: 5 (один раз 6 с физ-рой). 5–6 кл.: 6. 7–11 кл.: 7.</div>
+              <div class="rules-card__src">СП 2.4.3648-20, п. 3.4.16</div>
             </div>
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">C-02</div>
-              <div class="rules-card__title">Weekly workload</div>
-              <div class="rules-card__text">5-day week: 1st grade - 21 h, 2-4 - 23, 5 - 29, 6 - 30, 7 - 32, 8-9 - 33, 10-11 - 34 h. Exceeding = violation.</div>
-              <div class="rules-card__src">SanPiN 1.2.3685-21, table 6.6</div>
+              <div class="rules-card__title">Недельная нагрузка</div>
+              <div class="rules-card__text">5-дневка: 1 кл. — 21 ч, 2–4 — 23, 5 — 29, 6 — 30, 7 — 32, 8–9 — 33, 10–11 — 34 ч. Превышение = нарушение.</div>
+              <div class="rules-card__src">СанПиН 1.2.3685-21, табл. 6.6</div>
             </div>
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">C-03</div>
-              <div class="rules-card__title">Workload uniformity</div>
-              <div class="rules-card__text">Difference between max and min lessons per day <= 1. Acceptable: 6-6-6-6-5. Violation: 4-7-6-7-7.</div>
-              <div class="rules-card__src">SP 2.4.3648-20, p. 3.4.16</div>
+              <div class="rules-card__title">Равномерность нагрузки</div>
+              <div class="rules-card__text">Разница между max и min уроков в день ≤ 1. Допустимо: 6–6–6–6–5. Нарушение: 4–7–6–7–7.</div>
+              <div class="rules-card__src">СП 2.4.3648-20, п. 3.4.16</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">?</div>
-              <div class="rules-card__title">Difficulty scale</div>
-              <div class="rules-card__text">Each subject has a difficulty score from 1 to 13. PE = 1, Math = 8-10, Physics = 8-13. Scores depend on grade.</div>
-              <div class="rules-card__src">SanPiN table 6.9-6.11</div>
+              <div class="rules-card__badge rules-card__badge--info">💡</div>
+              <div class="rules-card__title">Шкала трудности</div>
+              <div class="rules-card__text">Каждый предмет имеет балл трудности от 1 до 13. Физкультура = 1, Математика = 8–10, Физика = 8–13. Баллы зависят от класса.</div>
+              <div class="rules-card__src">СанПиН табл. 6.9–6.11</div>
+            </div>
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">C-01</div>
+              <div class="rules-card__title">Максимум уроков в день</div>
+              <div class="rules-card__text">1 кл.: 4 урока (один раз 5 за счёт физ-ры). 2–4 кл.: 5 (один раз 6 с физ-рой). 5–6 кл.: 6. 7–11 кл.: 7.</div>
+              <div class="rules-card__src">СП 2.4.3648-20, п. 3.4.16</div>
+            </div>
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">C-02</div>
+              <div class="rules-card__title">Недельная нагрузка</div>
+              <div class="rules-card__text">5-дневка: 1 кл. — 21 ч, 2–4 — 23, 5 — 29, 6 — 30, 7 — 32, 8–9 — 33, 10–11 — 34 ч.</div>
+              <div class="rules-card__src">СанПиН 1.2.3685-21, табл. 6.6</div>
             </div>
           </div>
         </div>
@@ -790,27 +807,39 @@ spRequireAuth(function () {
           <div class="rules-col__track rules-col__track--slow">
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">E-02</div>
-              <div class="rules-card__title">Light day</div>
-              <div class="rules-card__text">Wednesday or Thursday - the lightest day by difficulty score sum. If minimum on Mon or Fri - violation.</div>
-              <div class="rules-card__src">SanPiN p. 189; MR p. 3.3</div>
+              <div class="rules-card__title">Облегчённый день</div>
+              <div class="rules-card__text">Среда или четверг — самый лёгкий день по сумме баллов трудности. Если минимум на Пн или Пт — нарушение.</div>
+              <div class="rules-card__src">СанПиН п. 189; МР п. 3.3</div>
             </div>
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">X-01</div>
-              <div class="rules-card__title">Windows in schedule</div>
-              <div class="rules-card__text">Empty lessons between first and last - forbidden. 6 lessons = consecutively, without gaps. Windows for students are unacceptable.</div>
-              <div class="rules-card__src">Common practice</div>
+              <div class="rules-card__title">Окна в расписании</div>
+              <div class="rules-card__text">Пустые уроки между первым и последним — запрещены. 6 уроков = подряд, без пропусков. Окна у учеников недопустимы.</div>
+              <div class="rules-card__src">Общепринятая практика</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">?</div>
-              <div class="rules-card__title">How Score is calculated</div>
-              <div class="rules-card__text">Each class is checked by 7 rules. Total checks = 7 × number of classes. Each violation or recommendation reduces Score. 100 = no problems.</div>
-              <div class="rules-card__src">ShkolaPlan Formula</div>
+              <div class="rules-card__badge rules-card__badge--info">📊</div>
+              <div class="rules-card__title">Как считается Score</div>
+              <div class="rules-card__text">Каждый класс проверяется по 7 правилам. Всего проверок = 7 × кол-во классов. Каждое нарушение или рекомендация снижает Score. 100 = ни одной проблемы.</div>
+              <div class="rules-card__src">Формула ШколаПлан</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__badge rules-card__badge--info">⚖️</div>
               <div class="rules-card__title">Hard vs Soft</div>
-              <div class="rules-card__text">5 hard (C-01, C-02, C-03, E-02, X-01) - red, SanPiN violations. 2 soft (E-01, E-03) - orange, MR recommendations.</div>
-              <div class="rules-card__src">ShkolaPlan Classification</div>
+              <div class="rules-card__text">5 жёстких (C-01, C-02, C-03, E-02, X-01) — красные, нарушения СанПиН. 2 мягких (E-01, E-03) — оранжевые, рекомендации МР.</div>
+              <div class="rules-card__src">Классификация ШколаПлан</div>
+            </div>
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">E-02</div>
+              <div class="rules-card__title">Облегчённый день</div>
+              <div class="rules-card__text">Среда или четверг — самый лёгкий день по сумме баллов трудности.</div>
+              <div class="rules-card__src">СанПиН п. 189; МР п. 3.3</div>
+            </div>
+            <div class="rules-card rules-card--hard">
+              <div class="rules-card__badge rules-card__badge--hard">X-01</div>
+              <div class="rules-card__title">Окна в расписании</div>
+              <div class="rules-card__text">Пустые уроки между первым и последним — запрещены.</div>
+              <div class="rules-card__src">Общепринятая практика</div>
             </div>
           </div>
         </div>
@@ -818,27 +847,39 @@ spRequireAuth(function () {
           <div class="rules-col__track rules-col__track--fast">
             <div class="rules-card rules-card--soft">
               <div class="rules-card__badge rules-card__badge--soft">E-01</div>
-              <div class="rules-card__title">Difficult subjects in 2-4 lessons</div>
-              <div class="rules-card__text">Subjects >= 8 points - in 2-4 lessons (peak performance 10:00-12:00). In 1st and 5+ - undesirable but acceptable.</div>
-              <div class="rules-card__src">MR 2.4.0331-23, p. 3.2</div>
+              <div class="rules-card__title">Сложные на 2–4 уроках</div>
+              <div class="rules-card__text">Предметы ≥ 8 баллов — на 2–4 уроки (пик работоспособности 10:00–12:00). На 1-м и 5+ — нежелательно, но допустимо.</div>
+              <div class="rules-card__src">МР 2.4.0331-23, п. 3.2</div>
             </div>
             <div class="rules-card rules-card--soft">
               <div class="rules-card__badge rules-card__badge--soft">E-03</div>
-              <div class="rules-card__title">Alternating subjects</div>
-              <div class="rules-card__text">2 difficult in a row (>= 8 b.) - warning. 3+ in a row - strong warning. This is a recommendation, not a prohibition.</div>
-              <div class="rules-card__src">MR p. 3.2; SP p. 3.4.16</div>
+              <div class="rules-card__title">Чередование предметов</div>
+              <div class="rules-card__text">2 сложных подряд (≥ 8 б.) — предупреждение. 3+ подряд — сильное предупреждение. Это рекомендация, не запрет.</div>
+              <div class="rules-card__src">МР п. 3.2; СП п. 3.4.16</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">?</div>
-              <div class="rules-card__title">Regulatory documents</div>
-              <div class="rules-card__text">SanPiN 1.2.3685-21 (ed. 24.12.2025) - valid until 01.03.2027. SP 2.4.3648-20 - until 01.01.2027. MR 2.4.0331-23 - indefinitely.</div>
-              <div class="rules-card__src">Rospotrebnadzor</div>
+              <div class="rules-card__badge rules-card__badge--info">📋</div>
+              <div class="rules-card__title">Нормативные документы</div>
+              <div class="rules-card__text">СанПиН 1.2.3685-21 (ред. 24.12.2025) — действует до 01.03.2027. СП 2.4.3648-20 — до 01.01.2027. МР 2.4.0331-23 — бессрочно.</div>
+              <div class="rules-card__src">Роспотребнадзор</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">?</div>
-              <div class="rules-card__title">Why E-03 is not a prohibition</div>
-              <div class="rules-card__text">In a real school with limited number of teachers and classrooms, separating all difficult subjects with easy ones is often physically impossible.</div>
-              <div class="rules-card__src">Practical experience</div>
+              <div class="rules-card__badge rules-card__badge--info">🏫</div>
+              <div class="rules-card__title">Почему E-03 не запрет</div>
+              <div class="rules-card__text">В реальной школе с ограниченным числом учителей и кабинетов разделить все сложные предметы лёгкими часто физически невозможно.</div>
+              <div class="rules-card__src">Практический опыт</div>
+            </div>
+            <div class="rules-card rules-card--soft">
+              <div class="rules-card__badge rules-card__badge--soft">E-01</div>
+              <div class="rules-card__title">Сложные на 2–4 уроках</div>
+              <div class="rules-card__text">Предметы ≥ 8 баллов — на 2–4 уроки (пик работоспособности 10:00–12:00).</div>
+              <div class="rules-card__src">МР 2.4.0331-23, п. 3.2</div>
+            </div>
+            <div class="rules-card rules-card--soft">
+              <div class="rules-card__badge rules-card__badge--soft">E-03</div>
+              <div class="rules-card__title">Чередование предметов</div>
+              <div class="rules-card__text">2 сложных подряд — предупреждение. 3+ подряд — сильное предупреждение.</div>
+              <div class="rules-card__src">МР п. 3.2; СП п. 3.4.16</div>
             </div>
           </div>
         </div>
