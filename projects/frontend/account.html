@@ -338,7 +338,7 @@
             <p class="acc-dropzone__sub">
               или
               <a
-                href="https://docs.google.com/spreadsheets/d/1QuuRiug3dHQSGesT1db8EzVmtkKTSSGQ/export?format=xlsx"
+                href="/assets/generator-template.xlsx"
                 class="acc-dropzone__btn"
                 download
                 >Скачать пустой шаблон</a
@@ -1228,6 +1228,47 @@
             if (gen2Result) v2ExportXlsx(gen2Result);
           });
 
+        /* ─── Restore gen2 from saved run ─── */
+        window.sp_restoreGen2 = function(run) {
+          if (!run || !run.gen2ResultData) return;
+          gen2Result = run.gen2ResultData;
+          if (run.gen2InputData) gen2Data = run.gen2InputData;
+
+          var audit = v2Audit(gen2Result);
+          document.getElementById("gen2Score").textContent = "Score " + (audit ? audit.score : 0);
+          document.getElementById("gen2Placed").textContent = gen2Result.placed + "/" + gen2Result.total + " уроков";
+          document.getElementById("gen2Bar").style.width = "100%";
+          document.getElementById("gen2Status").textContent = "Восстановлено из сохранения";
+
+          var violHtml = "";
+          if (audit && audit.violations.length) {
+            violHtml += '<p style="color:#ff453a;font-weight:600">Нарушения (' + audit.violations.length + "):</p>";
+            audit.violations.forEach(function(v) { violHtml += '<p style="color:#ff453a;font-size:.85rem">❌ ' + v.desc + "</p>"; });
+          }
+          if (gen2Result.errors && gen2Result.errors.length) {
+            violHtml += '<p style="color:#ff9f0a;font-weight:600;margin-top:8px">Не удалось разместить (' + gen2Result.errors.length + "):</p>";
+            gen2Result.errors.forEach(function(e) { violHtml += '<p style="color:#ff9f0a;font-size:.85rem">⚠ ' + e + "</p>"; });
+          }
+          document.getElementById("gen2Violations").innerHTML = violHtml;
+
+          var sortedClasses = (gen2Result.classes || []).slice().sort(function(a, b) {
+            var na = parseInt(a), nb = parseInt(b);
+            return na !== nb ? na - nb : a.localeCompare(b, "ru");
+          });
+          window._gen2View = { schedule: gen2Result.schedule, sortedClasses: sortedClasses, data: gen2Data, violMap: {} };
+          _rebuildViolMap();
+          renderGen2ClassView();
+          document.getElementById("gen2ViewToggle").style.display = "";
+          document.getElementById("gen2Progress").style.display = "";
+          document.getElementById("gen2Result").style.display = "";
+
+          var accGen2 = document.getElementById("accGen2");
+          if (accGen2) accGen2.style.display = "";
+          var accStart = document.getElementById("accStart");
+          if (accStart) accStart.style.display = "none";
+          accGen2 && accGen2.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+
         /* ─── Save gen2 schedule ─── */
         var gen2SaveBtn = document.getElementById("gen2SaveBtn");
         if (gen2SaveBtn)
@@ -1246,6 +1287,8 @@
               grade: score >= 90 ? "A" : score >= 70 ? "B" : score >= 50 ? "C" : score >= 30 ? "D" : "F",
               date: new Date().toISOString(),
               gen2: true,
+              gen2ResultData: gen2Result,
+              gen2InputData: gen2Data || null,
             };
             runs.push(run);
             if (runs.length > 30) runs = runs.slice(-30);
