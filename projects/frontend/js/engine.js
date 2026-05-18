@@ -950,3 +950,106 @@ function showDash(sch,cg){
     dash.scrollIntoView({behavior:'smooth',block:'start'});
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ЭКСПОРТ НАРУШЕНИЙ В EXCEL
+   Используется из вкладки «Требует корректировки» в audit-view.html
+   и account.html. Данные уже в браузере, серверный круг не нужен.
+   ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * Сортировка классов: «5А» < «5Б» < «10А», русская локаль.
+ */
+function _cmpClass(a,b){
+  var na=parseInt(a),nb=parseInt(b);
+  if(na!==nb)return na-nb;
+  return String(a).localeCompare(String(b),'ru');
+}
+
+/**
+ * Экспорт результатов аудита (нарушения и рекомендации) в xlsx.
+ *
+ * @param {Object} audit  — результат doAudit(sch, cg)
+ * @param {Object} opts   — { schoolName?, fileName?, createdAt? }
+ *
+ * Лист 1 «По классам» — плоская таблица: каждое нарушение/рекомендация
+ *   отдельной строкой. Удобно для фильтрации, сортировки, печати.
+ * Лист 2 «Сводка по правилам» — группировка по id правила
+ *   (C-01..C-03, E-01..E-03, X-01, D-02): сколько классов затронуто и список.
+ */
+function exportRecsXlsx(audit,opts){
+  if(typeof XLSX==='undefined'){
+    alert('Не удалось загрузить модуль Excel. Обновите страницу и попробуйте снова.');
+    return;
+  }
+  opts=opts||{};
+  var schoolName=opts.schoolName||'';
+  var createdAt=opts.createdAt?new Date(opts.createdAt):new Date();
+  var dateStr=createdAt.toLocaleDateString('ru-RU');
+
+  var all=(audit.vi||[]).concat(audit.wa||[]);
+  if(!all.length){
+    alert('Нарушений и рекомендаций нет — экспортировать нечего.');
+    return;
+  }
+
+  /* ─── Лист 1: «По классам» ─── */
+  var title='Нарушения и рекомендации'+(schoolName?' — '+schoolName:'')+' · '+dateStr;
+  var headers1=['Класс','Тип','Код','Правило','Описание','Что исправить'];
+  var rows1=[[title],[],headers1];
+
+  /* Группируем по классу, сортируем; внутри класса сначала нарушения, потом рекомендации */
+  var byCls={};
+  all.forEach(function(x){if(!byCls[x.cls])byCls[x.cls]=[];byCls[x.cls].push(x);});
+  var clsList=Object.keys(byCls).sort(_cmpClass);
+  clsList.forEach(function(cl){
+    byCls[cl].sort(function(a,b){
+      if(a.st!==b.st)return a.st==='v'?-1:1;
+      return String(a.id).localeCompare(String(b.id));
+    });
+    byCls[cl].forEach(function(x){
+      rows1.push([
+        cl,
+        x.st==='v'?'❌ Нарушение':'⚠️ Рекомендация',
+        x.id,
+        x.nm||'',
+        x.ds||'',
+        x.sg||''
+      ]);
+    });
+  });
+
+  /* ─── Лист 2: «Сводка по правилам» ─── */
+  var headers2=['Код','Правило','Тип','Затронуто классов','Классы','Что исправить'];
+  var rows2=[['Сводка по правилам · '+dateStr],[],headers2];
+  (audit.top||[]).forEach(function(t){
+    var classes=(t.classes||[]).slice().sort(_cmpClass);
+    rows2.push([
+      t.id,
+      t.nm||'',
+      t.st==='v'?'❌ Нарушение':'⚠️ Рекомендация',
+      classes.length,
+      classes.join(', '),
+      t.sg||''
+    ]);
+  });
+
+  /* ─── Сборка workbook ─── */
+  var wb=XLSX.utils.book_new();
+
+  var ws1=XLSX.utils.aoa_to_sheet(rows1);
+  ws1['!cols']=[{wch:8},{wch:18},{wch:8},{wch:28},{wch:55},{wch:45}];
+  ws1['!merges']=[{s:{r:0,c:0},e:{r:0,c:headers1.length-1}}];
+  XLSX.utils.book_append_sheet(wb,ws1,'По классам');
+
+  var ws2=XLSX.utils.aoa_to_sheet(rows2);
+  ws2['!cols']=[{wch:8},{wch:28},{wch:18},{wch:10},{wch:50},{wch:45}];
+  ws2['!merges']=[{s:{r:0,c:0},e:{r:0,c:headers2.length-1}}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Сводка по правилам');
+
+  /* Имя файла: «narusheniya_DD-MM-YYYY.xlsx» — без пробелов и кириллицы в имени */
+  var d=createdAt;
+  var pad=function(n){return n<10?'0'+n:''+n;};
+  var fileName=opts.fileName||('narusheniya_'+pad(d.getDate())+'-'+pad(d.getMonth()+1)+'-'+d.getFullYear()+'.xlsx');
+  XLSX.writeFile(wb,fileName);
+}

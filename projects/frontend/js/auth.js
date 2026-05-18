@@ -123,6 +123,7 @@ function _initSupabase() {
       return r.json();
     })
     .then(function (cfg) {
+      if (cfg.siteUrl) window._spSiteUrl = cfg.siteUrl;
       if (!cfg.supabaseUrl || !cfg.supabaseKey) {
         throw new Error('Supabase не настроен. Обратитесь к администратору.');
       }
@@ -350,6 +351,35 @@ function spLogout() {
   });
 }
 
+function spRequestPasswordReset(email) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    return Promise.resolve({ ok: false, error: 'Введите корректный email' });
+  }
+  return _initSupabase().then(function (sb) {
+    var base = (window._spSiteUrl && window._spSiteUrl !== '')
+      ? window._spSiteUrl.replace(/\/$/, '')
+      : location.origin;
+    var redirectTo = base + '/reset-password.html';
+    return sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: redirectTo })
+      .then(function (res) {
+        if (res.error) return { ok: false, error: _translateError(res.error.message) };
+        return { ok: true };
+      });
+  });
+}
+
+function spSetNewPassword(newPassword) {
+  if (!newPassword || newPassword.length < 6) {
+    return Promise.resolve({ ok: false, error: 'Пароль должен содержать не менее 6 символов' });
+  }
+  return _initSupabase().then(function (sb) {
+    return sb.auth.updateUser({ password: newPassword }).then(function (res) {
+      if (res.error) return { ok: false, error: _translateError(res.error.message) };
+      return { ok: true };
+    });
+  });
+}
+
 // Меняет пароль текущего пользователя в Supabase Auth.
 // Сначала повторно проверяем текущий пароль (re-auth) — если он неверный,
 // возвращаем понятную ошибку и НЕ обновляем пароль.
@@ -393,6 +423,9 @@ function spRequireAuth(callback) {
     } else if (callback) {
       callback();
     }
+  }).catch(function (err) {
+    console.warn('[spRequireAuth] Auth service unavailable:', err && err.message);
+    if (callback) callback();
   });
 }
 

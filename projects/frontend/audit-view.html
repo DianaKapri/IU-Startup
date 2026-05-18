@@ -142,7 +142,26 @@ body{background:#000;color:#f5f5f7;min-height:100vh;}
   /* Render recs */
   var recsEl = document.getElementById('avTabRecs');
   if (typeof renderRecs === 'function') {
-    renderRecs(audit.top, recsEl);
+    var hasItems = (audit.top && audit.top.length) || (audit.vi && audit.vi.length) || (audit.wa && audit.wa.length);
+    var toolbar = '';
+    if (hasItems && typeof exportRecsXlsx === 'function') {
+      /* Кнопка «Скачать Excel» — над списком нарушений.
+         Стиль повторяет .av-tab, чтобы не вводить отдельных правил CSS. */
+      toolbar = '<div class="av-recs-toolbar" style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="avRecsExport" type="button" class="av-tab" style="background:rgba(0,113,227,.15);color:#0a84ff;border:1px solid rgba(0,113,227,.3);font-weight:600">'
+              + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px;margin-right:6px"><path d="M8 1v10m0 0l-3.5-3.5M8 11l3.5-3.5M2 13.5h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+              + 'Скачать Excel</button></div>';
+    }
+    recsEl.innerHTML = toolbar + '<div id="avRecsList"></div>';
+    renderRecs(audit.top, document.getElementById('avRecsList'));
+    var expBtn = document.getElementById('avRecsExport');
+    if (expBtn) {
+      expBtn.addEventListener('click', function () {
+        exportRecsXlsx(audit, {
+          schoolName: school || '',
+          createdAt: item.createdAt || Date.now()
+        });
+      });
+    }
   }
 
   /* Render rules (compact) */

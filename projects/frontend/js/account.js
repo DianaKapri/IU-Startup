@@ -485,8 +485,8 @@ spRequireAuth(function () {
   /* ═══ Demo button ═══ */
   var demoBtn = document.getElementById('accDemoBtn');
   if (demoBtn) {
-    demoBtn.addEventListener('click', function () { 
-      // Load demo file and show results in main account section
+    demoBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
       showResults(DEM, DCG);
     });
   }
@@ -592,6 +592,8 @@ spRequireAuth(function () {
 
     // Сохраняем данные аудита для возможности сохранения
     currentAuditData = audit;
+    currentSch = sch;
+    currentCg  = cg;
 
     if (accUpload) accUpload.style.display = 'none';
     if (accStart) accStart.style.display = 'none';
@@ -642,71 +644,158 @@ spRequireAuth(function () {
     btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
   });
 
-  /* ═══ Save Audit Functionality ═══ */
-  var saveAuditBtn = document.getElementById('saveAuditBtn');
+  /* ═══ Save / Load — localStorage ═══ */
+  var saveAuditBtn    = document.getElementById('saveAuditBtn');
+  var newAuditBtn     = document.getElementById('newAuditBtn');
   var currentAuditData = null;
+  var currentSch       = null;
+  var currentCg        = null;
+
+  if (newAuditBtn) {
+    newAuditBtn.addEventListener('click', function () {
+      var results  = document.getElementById('accResults');
+      var accStart = document.getElementById('accStart');
+      var accUp    = document.getElementById('accUpload');
+      if (results)  results.style.display  = 'none';
+      if (accUp)    { accUp.style.display  = ''; }
+      if (accStart) accStart.style.display = '';
+      currentAuditData = null; currentSch = null; currentCg = null;
+      if (saveAuditBtn) { saveAuditBtn.textContent = 'Сохранить аудит'; saveAuditBtn.disabled = false; }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  var SP_KEY = 'sp_saved_runs';
+
+  function _loadRuns() {
+    try { return JSON.parse(localStorage.getItem(SP_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function _saveRuns(arr) {
+    try { localStorage.setItem(SP_KEY, JSON.stringify(arr)); } catch(e) {}
+  }
+  function _grade(score) {
+    if (score >= 90) return 'A';
+    if (score >= 70) return 'B';
+    if (score >= 50) return 'C';
+    if (score >= 30) return 'D';
+    return 'F';
+  }
+  function _fmtDate(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString('ru-RU', { day:'numeric', month:'short', year:'numeric' })
+      + ' ' + d.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function renderSavedRuns() {
+    var list = document.getElementById('savedRunsList');
+    var section = document.getElementById('accSaved');
+    if (!list) return;
+    var runs = _loadRuns();
+    if (!runs.length) {
+      if (section) section.style.display = 'none';
+      list.innerHTML = '';
+      return;
+    }
+    if (section) section.style.display = '';
+    list.innerHTML = runs.slice().reverse().map(function(r) {
+      var grade = r.grade || _grade(r.score || 0);
+      var scoreColor = { A:'#30d158', B:'#4da3ff', C:'#ffd60a', D:'#ff9f0a', F:'#ff453a' }[grade] || '#86868b';
+      var isGen2 = r.gen2 || (r.type === 'schedule' && !r.sch);
+      var typeLabel = isGen2 ? 'Генератор 2.0' : (r.type === 'schedule' ? 'Расписание' : 'Аудит');
+      var canOpen = isGen2 ? !!r.gen2ResultData : (r.sch && r.cg);
+      var openBtn = canOpen
+        ? '<button class="profile-wizard-history__delete btn-load-run" data-id="' + r.id + '" title="Открыть" style="background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.3);color:#4da3ff;margin-right:4px">↩ Открыть</button>'
+        : '';
+      return '<div class="profile-wizard-history__item" data-id="' + r.id + '">'
+        + '<div style="flex:1;min-width:0">'
+        + '<span class="profile-wizard-history__name">' + _esc(r.title || 'Расписание') + '</span>'
+        + '<span class="profile-wizard-history__date">' + typeLabel + ' · ' + _fmtDate(r.date) + '</span>'
+        + '</div>'
+        + '<span class="profile-wizard-history__score profile-wizard-history__score--' + grade + '">'
+        + grade + '<span class="profile-wizard-history__score-num"> ' + (r.score || 0) + '</span></span>'
+        + openBtn
+        + '<button class="profile-wizard-history__delete btn-del-run" data-id="' + r.id + '" title="Удалить">✕</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  function _esc(s) {
+    return String(s || '').replace(/[<>&"']/g, function(c){
+      return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  document.getElementById('savedRunsList') && document.getElementById('savedRunsList').addEventListener('click', function(e) {
+    var delBtn  = e.target.closest('.btn-del-run');
+    var loadBtn = e.target.closest('.btn-load-run');
+    if (delBtn) {
+      var id = delBtn.dataset.id;
+      var runs = _loadRuns().filter(function(r){ return String(r.id) !== String(id); });
+      _saveRuns(runs);
+      renderSavedRuns();
+    }
+    if (loadBtn) {
+      var id = loadBtn.dataset.id;
+      var run = _loadRuns().find(function(r){ return String(r.id) === String(id); });
+      if (run) {
+        var isGen2 = run.gen2 || (run.type === 'schedule' && !run.sch);
+        if (isGen2 && run.gen2ResultData) {
+          if (typeof window.sp_restoreGen2 === 'function') {
+            window.sp_restoreGen2(run);
+          }
+        } else if (run.sch && run.cg) {
+          showResults(run.sch, run.cg);
+          document.getElementById('accResults') && document.getElementById('accResults').scrollIntoView({ behavior:'smooth' });
+        }
+      }
+    }
+  });
+
+  function saveCurrentRun(type) {
+    if (!currentAuditData || !currentSch || !currentCg) return false;
+    var score = currentAuditData.score || 0;
+    var schoolName = (user && user.school)
+      ? user.school
+      : (document.getElementById('profileSchool') && document.getElementById('profileSchool').value) || null;
+    var title = schoolName || ('Расписание ' + new Date().toLocaleDateString('ru-RU'));
+    var run = {
+      id:    Date.now(),
+      type:  type || 'audit',
+      title: title,
+      score: score,
+      grade: _grade(score),
+      date:  new Date().toISOString(),
+      sch:   currentSch,
+      cg:    currentCg,
+    };
+    var runs = _loadRuns();
+    runs.push(run);
+    if (runs.length > 30) runs = runs.slice(-30);
+    _saveRuns(runs);
+    renderSavedRuns();
+    return true;
+  }
 
   if (saveAuditBtn) {
     saveAuditBtn.addEventListener('click', function () {
-      if (!currentAuditData) {
-        alert('Нет данных аудита для сохранения');
-        return;
+      if (!currentAuditData) return;
+      var ok = saveCurrentRun('audit');
+      if (ok) {
+        saveAuditBtn.textContent = '✓ Сохранено';
+        saveAuditBtn.disabled = true;
+        setTimeout(function() {
+          saveAuditBtn.textContent = '💾 Сохранить аудит';
+          saveAuditBtn.disabled = false;
+        }, 2000);
+        var savedEl = document.getElementById('savedRunsList');
+        if (savedEl) savedEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
       }
-      saveAuditToSupabase(currentAuditData);
     });
   }
 
-  function saveAuditToSupabase(auditData) {
-    spGetCurrentUser().then(function (user) {
-      if (!user) {
-        alert('Пользователь не авторизован');
-        return;
-      }
+  document.addEventListener('sp:savedRunsChanged', renderSavedRuns);
 
-      var auditRecord = {
-        user_id: user.id,
-        school_name: user.school || '',
-        audit_data: JSON.stringify(auditData),
-        violations_count: auditData.vi ? auditData.vi.length : 0,
-        recommendations_count: auditData.wa ? auditData.wa.length : 0,
-        score: auditData.score || 0,
-        created_at: new Date().toISOString()
-      };
-
-      // Сохранение в Supabase
-      supabase
-        .from('saved_audits')
-        .insert([auditRecord])
-        .then(function (response) {
-          if (response.error) {
-            console.error('Ошибка сохранения аудита:', response.error);
-            alert('Ошибка при сохранении аудита: ' + response.error.message);
-          } else {
-            alert('Аудит успешно сохранен!');
-            console.log('Аудит сохранен:', response.data);
-          }
-        })
-        .catch(function (error) {
-          console.error('Ошибка запроса:', error);
-          alert('Произошла ошибка при сохранении аудита');
-        });
-    });
-  }
-
-  // Обновляем функцию renderResults для сохранения текущих данных
-  var originalRenderResults = window.renderResults;
-  if (originalRenderResults) {
-    window.renderResults = function(sch, cg, audit) {
-      currentAuditData = audit;
-      return originalRenderResults(sch, cg, audit);
-    };
-  } else {
-    // Если функции нет, создаем свою
-    window.renderResults = function(sch, cg, audit) {
-      currentAuditData = audit;
-      // Здесь можно добавить логику отображения результатов
-    };
-  }
+  renderSavedRuns();
 
   /* ─── Render Optimized Schedule ─── */
   function renderOptimized(sch, cg, audit, container) {

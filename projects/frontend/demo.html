@@ -85,6 +85,7 @@
   <span class="footer__copy">© 2026 ШколаПлан</span>
 </div></footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/engine.js"></script>
@@ -160,7 +161,29 @@
     }
 
     var recsEl = document.getElementById('demoTabRecs');
-    if (recsEl) renderRecs(audit.top, recsEl);
+    if (recsEl) {
+      var hasItems = (audit.top && audit.top.length) || (audit.vi && audit.vi.length) || (audit.wa && audit.wa.length);
+      var toolbar = '';
+      if (hasItems && typeof exportRecsXlsx === 'function') {
+        toolbar = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px">'
+                + '<button id="demoRecsExport" type="button" '
+                + 'style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;'
+                + 'background:rgba(0,113,227,.15);color:#0a84ff;border:1px solid rgba(0,113,227,.3);'
+                + 'border-radius:8px;font-weight:600;font-size:.85rem;cursor:pointer;font-family:inherit">'
+                + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none">'
+                + '<path d="M8 1v10m0 0l-3.5-3.5M8 11l3.5-3.5M2 13.5h12" '
+                + 'stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                + 'Скачать Excel</button></div>';
+      }
+      recsEl.innerHTML = toolbar + '<div id="demoRecsList"></div>';
+      renderRecs(audit.top, document.getElementById('demoRecsList'));
+      var demoBtn = document.getElementById('demoRecsExport');
+      if (demoBtn) {
+        demoBtn.addEventListener('click', function() {
+          exportRecsXlsx(audit, { createdAt: Date.now() });
+        });
+      }
+    }
 
     showTab('audit');
   }
