@@ -701,7 +701,7 @@ spRequireAuth(function () {
       var grade = r.grade || _grade(r.score || 0);
       var scoreColor = { A:'#30d158', B:'#4da3ff', C:'#ffd60a', D:'#ff9f0a', F:'#ff453a' }[grade] || '#86868b';
       var isGen2 = r.gen2 || (r.type === 'schedule' && !r.sch);
-      var typeLabel = isGen2 ? '📅 Генератор 2.0' : (r.type === 'schedule' ? '📅 Расписание' : '🔍 Аудит');
+      var typeLabel = isGen2 ? 'Генератор 2.0' : (r.type === 'schedule' ? 'Расписание' : 'Аудит');
       var canOpen = isGen2 ? !!r.gen2ResultData : (r.sch && r.cg);
       var openBtn = canOpen
         ? '<button class="profile-wizard-history__delete btn-load-run" data-id="' + r.id + '" title="Открыть" style="background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.3);color:#4da3ff;margin-right:4px">↩ Открыть</button>'
