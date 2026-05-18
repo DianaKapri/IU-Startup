@@ -1384,6 +1384,17 @@ body.acc-page .field__input:focus { border-color: var(--blue); }
 .acc-gen2__title { font-size: 1.4rem; font-weight: 700; color: #f5f5f7; margin-bottom: 6px; }
 .acc-gen2__sub { font-size: .9rem; color: #86868b; }
 
+.acc-gen2__template-link {
+  margin: 14px 0 0; text-align: center; font-size: .85rem;
+}
+.acc-gen2__template-link a {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--blue); text-decoration: none;
+  padding: 6px 10px; border-radius: 8px;
+  transition: background .15s;
+}
+.acc-gen2__template-link a:hover { background: rgba(0,113,227,.08); text-decoration: underline; }
+
 .acc-gen2__info { margin-top: 20px; }
 .acc-gen2__stats { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
 .acc-gen2__stat { font-size: .9rem; color: #ccc; }
