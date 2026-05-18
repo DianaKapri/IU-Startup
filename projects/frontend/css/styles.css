@@ -250,6 +250,8 @@ body.nav-open .nav__backdrop { opacity: 1; pointer-events: all; }
 .hero__btns { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 40px; }
 .btn--green { background: linear-gradient(135deg, #30d158 0%, #25a244 100%); color: #fff; border: none; height: 50px; padding: 0 30px; font-size: .92rem; font-weight: 600; letter-spacing: -.01em; box-shadow: 0 2px 12px rgba(48,209,88,.22); }
 .btn--green:hover { background: linear-gradient(135deg, #36e060 0%, #28b84c 100%); box-shadow: 0 6px 22px rgba(48,209,88,.4); transform: translateY(-1px); }
+.btn--hero-blue { background: linear-gradient(135deg, #a1c4fd 0%, #6ea8f7 100%); color: #0d1a2e; border: none; height: 50px; padding: 0 30px; font-size: .92rem; font-weight: 600; letter-spacing: -.01em; box-shadow: 0 2px 12px rgba(161,196,253,.25); }
+.btn--hero-blue:hover { background: linear-gradient(135deg, #b8d4ff 0%, #85b8f9 100%); box-shadow: 0 6px 22px rgba(161,196,253,.45); transform: translateY(-1px); }
 .btn--outline { background: rgba(161,196,253,.07) !important; color: #a1c4fd !important; border: 1px solid rgba(161,196,253,.45) !important; height: 50px; padding: 0 28px; font-size: .92rem; font-weight: 500; letter-spacing: -.01em; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .btn--outline:hover { background: rgba(161,196,253,.14) !important; border-color: rgba(161,196,253,.75) !important; color: #c2e9fb !important; transform: translateY(-1px); }
 .hero__actions { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
