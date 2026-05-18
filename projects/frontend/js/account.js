@@ -298,10 +298,6 @@ spRequireAuth(function () {
   if (modeContinue) {
     modeContinue.addEventListener('click', function () {
       if (!selectedMode) return;
-      if (selectedMode === 'build') {
-        window.location.href = './generator.html';
-        return;
-      }
       if (accStart) accStart.style.display = 'none';
       if (selectedMode === 'audit') {
         if (accUpload) accUpload.style.display = '';
