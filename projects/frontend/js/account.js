@@ -271,35 +271,46 @@ spRequireAuth(function () {
   var accIntro  = document.getElementById('accIntro');
   var accBuilder = document.getElementById('accBuilder');
 
-  /* ═══ Старт-карточки: клик = немедленное действие, без подтверждения ═══
-     Раньше требовалось выбрать карточку → нажать «Продолжить». Сейчас
-     одношагово: клик по карточке сразу скрывает старт и открывает
-     соответствующий блок. Карточка accModeGen2 обрабатывается отдельным
-     скриптом в account.html (стр. 285+) — здесь только audit. */
+  var selectedMode = '';
   var modeCards = document.querySelectorAll('.acc-start-card');
+  var modeContinue = document.getElementById('accModeContinue');
 
-  function openAuditMode() {
-    if (accStart) accStart.style.display = 'none';
-    if (accUpload) accUpload.style.display = '';
-    if (accBuilder) accBuilder.style.display = 'none';
-    if (accIntro) accIntro.style.display = '';
-    if (dropzone) dropzone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  function setMode(mode) {
+    selectedMode = mode;
+    modeCards.forEach(function (card) {
+      card.classList.toggle('acc-start-card--active', card.dataset.mode === mode);
+    });
+    if (modeContinue) modeContinue.disabled = !selectedMode;
   }
 
   modeCards.forEach(function (card) {
-    if (card.dataset.mode === 'audit') {
-      card.addEventListener('click', openAuditMode);
-    }
-    /* gen2 обрабатывается в встроенном script-блоке account.html */
+    card.addEventListener('click', function () {
+      setMode(card.dataset.mode || '');
+    });
   });
-  /* Fallback delegation: если карточки рендерятся динамически */
+  // Fallback delegation: keeps selector working even if cards are re-rendered.
   document.addEventListener('click', function (e) {
     var card = e.target.closest('.acc-start-card');
-    if (!card || card.dataset.mode !== 'audit') return;
-    /* Защита от двойного срабатывания (прямой обработчик + делегат) */
-    if (accUpload && accUpload.style.display !== 'none') return;
-    openAuditMode();
+    if (!card) return;
+    setMode(card.dataset.mode || '');
   });
+
+  if (modeContinue) {
+    modeContinue.addEventListener('click', function () {
+      if (!selectedMode) return;
+      if (selectedMode === 'build') {
+        window.location.href = './generator.html';
+        return;
+      }
+      if (accStart) accStart.style.display = 'none';
+      if (selectedMode === 'audit') {
+        if (accUpload) accUpload.style.display = '';
+        if (accBuilder) accBuilder.style.display = 'none';
+        if (accIntro) accIntro.style.display = '';
+        if (dropzone) dropzone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
 
   /* ═══ Builder flow on account page ═══ */
   var builderStep = 1;
@@ -424,7 +435,7 @@ spRequireAuth(function () {
       try {
         showBuilderError('');
         var built = buildScheduleFromBuilder();
-        showResults(built.sch, built.cg, { kind: 'builder', school: built.school || '' });
+        showResults(built.sch, built.cg);
         switchTab('optimized');
       } catch (err) {
         showBuilderError(err.message || 'Ошибка генерации расписания');
@@ -465,7 +476,7 @@ spRequireAuth(function () {
     if (!file.name.match(/\.(xlsx|xls)$/i)) { showError('Поддерживаются файлы .xlsx и .xls'); return; }
     if (file.size > 5 * 1024 * 1024) { showError('Файл слишком большой (максимум 5 МБ)'); return; }
     parseXls(file).then(function (result) {
-      showResults(result.sch, result.cg, { kind: 'file', fileName: file.name });
+      showResults(result.sch, result.cg);
     }).catch(function (err) {
       showError(typeof err === 'string' ? err : 'Ошибка обработки файла. Попробуйте шаблон.');
     });
@@ -476,7 +487,7 @@ spRequireAuth(function () {
   if (demoBtn) {
     demoBtn.addEventListener('click', function () { 
       // Load demo file and show results in main account section
-      showResults(DEM, DCG, { kind: 'demo' });
+      showResults(DEM, DCG);
     });
   }
 
@@ -568,11 +579,12 @@ spRequireAuth(function () {
       if (introEl2) introEl2.style.display = 'none';
       showError('');
       if (fileInput) fileInput.value = '';
+      setMode('');
     });
   }
 
   /* ═══ Show results ═══ */
-  function showResults(sch, cg, meta) {
+  function showResults(sch, cg) {
     var audit   = doAudit(sch, cg);
     var results = document.getElementById('accResults');
     var actions = document.getElementById('accActions');
@@ -580,29 +592,8 @@ spRequireAuth(function () {
 
     // Сохраняем данные аудита для возможности сохранения
     currentAuditData = audit;
-
-    /* ─── Запись в историю «Мои аудиты и расписания» ───
-       meta: { kind: 'file'|'demo'|'builder', fileName?, school? }.
-       saveWizardRun определён в js/scripts.js и сам обновит #savedRunsList. */
-    try {
-      if (typeof saveWizardRun === 'function' && meta && meta.kind) {
-        var classCount = Object.keys(sch || {}).length;
-        var title;
-        if (meta.kind === 'demo') {
-          title = 'Аудит · демо-данные · ' + classCount + ' кл.';
-        } else if (meta.kind === 'builder') {
-          title = 'Аудит · собранное расписание · ' + classCount + ' кл.';
-        } else {
-          title = 'Аудит · ' + (meta.fileName || 'файл.xlsx') + ' · ' + classCount + ' кл.';
-        }
-        saveWizardRun('audit', title, {
-          sch: sch, cg: cg,
-          school: meta.school || '',
-          fileName: meta.fileName || '',
-          isDemo: meta.kind === 'demo',
-        });
-      }
-    } catch (_) { /* история — best-effort, не ломать показ */ }
+    currentSch = sch;
+    currentCg  = cg;
 
     if (accUpload) accUpload.style.display = 'none';
     if (accStart) accStart.style.display = 'none';
@@ -623,23 +614,7 @@ spRequireAuth(function () {
 
     /* --- Recs tab --- */
     var recsEl = document.getElementById('tabRecs');
-    if (recsEl) {
-      var hasItems = (audit.top && audit.top.length) || (audit.vi && audit.vi.length) || (audit.wa && audit.wa.length);
-      var toolbar = '';
-      if (hasItems && typeof exportRecsXlsx === 'function') {
-        toolbar = '<div class="acc-recs-toolbar" style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="accRecsExport" type="button" class="acc-tab" style="background:rgba(0,113,227,.15);color:#0a84ff;border:1px solid rgba(0,113,227,.3);font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer">'
-                + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px;margin-right:6px"><path d="M8 1v10m0 0l-3.5-3.5M8 11l3.5-3.5M2 13.5h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-                + 'Скачать Excel</button></div>';
-      }
-      recsEl.innerHTML = toolbar + '<div id="tabRecsList"></div>';
-      renderRecs(audit.top, document.getElementById('tabRecsList'));
-      var expBtn = document.getElementById('accRecsExport');
-      if (expBtn) {
-        expBtn.addEventListener('click', function () {
-          exportRecsXlsx(audit, { createdAt: Date.now() });
-        });
-      }
-    }
+    if (recsEl) { renderRecs(audit.top, recsEl); }
 
     /* --- Optimized tab --- */
     var optimizedEl = document.getElementById('tabOptimized');
@@ -669,71 +644,140 @@ spRequireAuth(function () {
     btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
   });
 
-  /* ═══ Save Audit Functionality ═══ */
-  var saveAuditBtn = document.getElementById('saveAuditBtn');
+  /* ═══ Save / Load — localStorage ═══ */
+  var saveAuditBtn    = document.getElementById('saveAuditBtn');
+  var newAuditBtn     = document.getElementById('newAuditBtn');
   var currentAuditData = null;
+  var currentSch       = null;
+  var currentCg        = null;
+
+  if (newAuditBtn) {
+    newAuditBtn.addEventListener('click', function () {
+      var results  = document.getElementById('accResults');
+      var accStart = document.getElementById('accStart');
+      var accUp    = document.getElementById('accUpload');
+      if (results)  results.style.display  = 'none';
+      if (accUp)    { accUp.style.display  = ''; }
+      if (accStart) accStart.style.display = '';
+      currentAuditData = null; currentSch = null; currentCg = null;
+      if (saveAuditBtn) { saveAuditBtn.textContent = 'Сохранить аудит'; saveAuditBtn.disabled = false; }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  var SP_KEY = 'sp_saved_runs';
+
+  function _loadRuns() {
+    try { return JSON.parse(localStorage.getItem(SP_KEY) || '[]'); } catch(e) { return []; }
+  }
+  function _saveRuns(arr) {
+    try { localStorage.setItem(SP_KEY, JSON.stringify(arr)); } catch(e) {}
+  }
+  function _grade(score) {
+    if (score >= 90) return 'A';
+    if (score >= 70) return 'B';
+    if (score >= 50) return 'C';
+    if (score >= 30) return 'D';
+    return 'F';
+  }
+  function _fmtDate(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString('ru-RU', { day:'numeric', month:'short', year:'numeric' })
+      + ' ' + d.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function renderSavedRuns() {
+    var list = document.getElementById('savedRunsList');
+    if (!list) return;
+    var runs = _loadRuns();
+    if (!runs.length) {
+      list.innerHTML = '<div class="profile-wizard-history__empty">Сохранённых аудитов и расписаний пока нет.<br/>Нажмите «Сохранить аудит» после проверки расписания.</div>';
+      return;
+    }
+    list.innerHTML = runs.slice().reverse().map(function(r) {
+      var grade = r.grade || _grade(r.score || 0);
+      var scoreColor = { A:'#30d158', B:'#4da3ff', C:'#ffd60a', D:'#ff9f0a', F:'#ff453a' }[grade] || '#86868b';
+      var typeLabel = r.type === 'schedule' ? '📅 Расписание' : '🔍 Аудит';
+      return '<div class="profile-wizard-history__item" data-id="' + r.id + '">'
+        + '<div style="flex:1;min-width:0">'
+        + '<span class="profile-wizard-history__name">' + _esc(r.title || 'Расписание') + '</span>'
+        + '<span class="profile-wizard-history__date">' + typeLabel + ' · ' + _fmtDate(r.date) + '</span>'
+        + '</div>'
+        + '<span class="profile-wizard-history__score profile-wizard-history__score--' + grade + '">'
+        + grade + '<span class="profile-wizard-history__score-num"> ' + (r.score || 0) + '</span></span>'
+        + '<button class="profile-wizard-history__delete btn-load-run" data-id="' + r.id + '" title="Открыть" style="background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.3);color:#4da3ff;margin-right:4px">↩ Открыть</button>'
+        + '<button class="profile-wizard-history__delete btn-del-run" data-id="' + r.id + '" title="Удалить">✕</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  function _esc(s) {
+    return String(s || '').replace(/[<>&"']/g, function(c){
+      return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  document.getElementById('savedRunsList') && document.getElementById('savedRunsList').addEventListener('click', function(e) {
+    var delBtn  = e.target.closest('.btn-del-run');
+    var loadBtn = e.target.closest('.btn-load-run');
+    if (delBtn) {
+      var id = delBtn.dataset.id;
+      var runs = _loadRuns().filter(function(r){ return String(r.id) !== String(id); });
+      _saveRuns(runs);
+      renderSavedRuns();
+    }
+    if (loadBtn) {
+      var id = loadBtn.dataset.id;
+      var run = _loadRuns().find(function(r){ return String(r.id) === String(id); });
+      if (run && run.sch && run.cg) {
+        showResults(run.sch, run.cg);
+        document.getElementById('accResults') && document.getElementById('accResults').scrollIntoView({ behavior:'smooth' });
+      }
+    }
+  });
+
+  function saveCurrentRun(type) {
+    if (!currentAuditData || !currentSch || !currentCg) return false;
+    var score = currentAuditData.score || 0;
+    var schoolName = (user && user.school)
+      ? user.school
+      : (document.getElementById('profileSchool') && document.getElementById('profileSchool').value) || null;
+    var title = schoolName || ('Расписание ' + new Date().toLocaleDateString('ru-RU'));
+    var run = {
+      id:    Date.now(),
+      type:  type || 'audit',
+      title: title,
+      score: score,
+      grade: _grade(score),
+      date:  new Date().toISOString(),
+      sch:   currentSch,
+      cg:    currentCg,
+    };
+    var runs = _loadRuns();
+    runs.push(run);
+    if (runs.length > 30) runs = runs.slice(-30);
+    _saveRuns(runs);
+    renderSavedRuns();
+    return true;
+  }
 
   if (saveAuditBtn) {
     saveAuditBtn.addEventListener('click', function () {
-      if (!currentAuditData) {
-        alert('Нет данных аудита для сохранения');
-        return;
+      if (!currentAuditData) return;
+      var ok = saveCurrentRun('audit');
+      if (ok) {
+        saveAuditBtn.textContent = '✓ Сохранено';
+        saveAuditBtn.disabled = true;
+        setTimeout(function() {
+          saveAuditBtn.textContent = 'Сохранить аудит';
+          saveAuditBtn.disabled = false;
+        }, 2000);
+        document.getElementById('savedRunsList') && document.getElementById('savedRunsList').scrollIntoView({ behavior:'smooth', block:'nearest' });
       }
-      saveAuditToSupabase(currentAuditData);
     });
   }
 
-  function saveAuditToSupabase(auditData) {
-    spGetCurrentUser().then(function (user) {
-      if (!user) {
-        alert('Пользователь не авторизован');
-        return;
-      }
-
-      var auditRecord = {
-        user_id: user.id,
-        school_name: user.school || '',
-        audit_data: JSON.stringify(auditData),
-        violations_count: auditData.vi ? auditData.vi.length : 0,
-        recommendations_count: auditData.wa ? auditData.wa.length : 0,
-        score: auditData.score || 0,
-        created_at: new Date().toISOString()
-      };
-
-      // Сохранение в Supabase
-      supabase
-        .from('saved_audits')
-        .insert([auditRecord])
-        .then(function (response) {
-          if (response.error) {
-            console.error('Ошибка сохранения аудита:', response.error);
-            alert('Ошибка при сохранении аудита: ' + response.error.message);
-          } else {
-            alert('Аудит успешно сохранен!');
-            console.log('Аудит сохранен:', response.data);
-          }
-        })
-        .catch(function (error) {
-          console.error('Ошибка запроса:', error);
-          alert('Произошла ошибка при сохранении аудита');
-        });
-    });
-  }
-
-  // Обновляем функцию renderResults для сохранения текущих данных
-  var originalRenderResults = window.renderResults;
-  if (originalRenderResults) {
-    window.renderResults = function(sch, cg, audit) {
-      currentAuditData = audit;
-      return originalRenderResults(sch, cg, audit);
-    };
-  } else {
-    // Если функции нет, создаем свою
-    window.renderResults = function(sch, cg, audit) {
-      currentAuditData = audit;
-      // Здесь можно добавить логику отображения результатов
-    };
-  }
+  renderSavedRuns();
 
   /* ─── Render Optimized Schedule ─── */
   function renderOptimized(sch, cg, audit, container) {
@@ -758,22 +802,17 @@ spRequireAuth(function () {
 
   /* ─── Render Rules ─── */
   function renderRules(container) {
-    /* Контент скопирован 1:1 с лендинга (index.html стр. 105-242) — кроме
-       заголовка «Как работает аудит», который в ЛК уже стоит во вкладке
-       (data-tab="rules"). Карточки повторяются 2 раза в каждой колонке —
-       это требует CSS-анимация бесконечной прокрутки rules-col__track. */
     container.innerHTML = `
       <div class="rules-hero">
         <div class="rules-hero__badge">Нормативная база</div>
-        <h2 class="rules-hero__title">Как работает аудит</h2>
       </div>
 
       <div class="rules-score-box">
-        <div class="rules-score-box__formula">Score = (7 × кол-во классов − нарушения − рекомендации) ÷ (7 × кол-во классов) × 100</div>
+        <div class="rules-score-box__formula">Score = (7 × number of classes - violations - recommendations) ÷ (7 × number of classes) × 100</div>
         <div class="rules-score-box__scale">
-          <span class="rules-scale rules-scale--green">90–100 соответствует</span>
-          <span class="rules-scale rules-scale--yellow">70–89 рекомендации</span>
-          <span class="rules-scale rules-scale--red">0–69 нарушения</span>
+          <span class="rules-scale rules-scale--green">90-100 compliant</span>
+          <span class="rules-scale rules-scale--yellow">70-89 recommendations</span>
+          <span class="rules-scale rules-scale--red">0-69 violations</span>
         </div>
       </div>
 
@@ -782,39 +821,27 @@ spRequireAuth(function () {
           <div class="rules-col__track">
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">C-01</div>
-              <div class="rules-card__title">Максимум уроков в день</div>
-              <div class="rules-card__text">1 кл.: 4 урока (один раз 5 за счёт физ-ры). 2–4 кл.: 5 (один раз 6 с физ-рой). 5–6 кл.: 6. 7–11 кл.: 7.</div>
-              <div class="rules-card__src">СП 2.4.3648-20, п. 3.4.16</div>
+              <div class="rules-card__title">Maximum lessons per day</div>
+              <div class="rules-card__text">1st grade: 4 lessons (once 5 for PE). 2-4 grades: 5 (once 6 with PE). 5-6 grades: 6. 7-11 grades: 7.</div>
+              <div class="rules-card__src">SP 2.4.3648-20, p. 3.4.16</div>
             </div>
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">C-02</div>
-              <div class="rules-card__title">Недельная нагрузка</div>
-              <div class="rules-card__text">5-дневка: 1 кл. — 21 ч, 2–4 — 23, 5 — 29, 6 — 30, 7 — 32, 8–9 — 33, 10–11 — 34 ч. Превышение = нарушение.</div>
-              <div class="rules-card__src">СанПиН 1.2.3685-21, табл. 6.6</div>
+              <div class="rules-card__title">Weekly workload</div>
+              <div class="rules-card__text">5-day week: 1st grade - 21 h, 2-4 - 23, 5 - 29, 6 - 30, 7 - 32, 8-9 - 33, 10-11 - 34 h. Exceeding = violation.</div>
+              <div class="rules-card__src">SanPiN 1.2.3685-21, table 6.6</div>
             </div>
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">C-03</div>
-              <div class="rules-card__title">Равномерность нагрузки</div>
-              <div class="rules-card__text">Разница между max и min уроков в день ≤ 1. Допустимо: 6–6–6–6–5. Нарушение: 4–7–6–7–7.</div>
-              <div class="rules-card__src">СП 2.4.3648-20, п. 3.4.16</div>
+              <div class="rules-card__title">Workload uniformity</div>
+              <div class="rules-card__text">Difference between max and min lessons per day <= 1. Acceptable: 6-6-6-6-5. Violation: 4-7-6-7-7.</div>
+              <div class="rules-card__src">SP 2.4.3648-20, p. 3.4.16</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">💡</div>
-              <div class="rules-card__title">Шкала трудности</div>
-              <div class="rules-card__text">Каждый предмет имеет балл трудности от 1 до 13. Физкультура = 1, Математика = 8–10, Физика = 8–13. Баллы зависят от класса.</div>
-              <div class="rules-card__src">СанПиН табл. 6.9–6.11</div>
-            </div>
-            <div class="rules-card rules-card--hard">
-              <div class="rules-card__badge rules-card__badge--hard">C-01</div>
-              <div class="rules-card__title">Максимум уроков в день</div>
-              <div class="rules-card__text">1 кл.: 4 урока (один раз 5 за счёт физ-ры). 2–4 кл.: 5 (один раз 6 с физ-рой). 5–6 кл.: 6. 7–11 кл.: 7.</div>
-              <div class="rules-card__src">СП 2.4.3648-20, п. 3.4.16</div>
-            </div>
-            <div class="rules-card rules-card--hard">
-              <div class="rules-card__badge rules-card__badge--hard">C-02</div>
-              <div class="rules-card__title">Недельная нагрузка</div>
-              <div class="rules-card__text">5-дневка: 1 кл. — 21 ч, 2–4 — 23, 5 — 29, 6 — 30, 7 — 32, 8–9 — 33, 10–11 — 34 ч.</div>
-              <div class="rules-card__src">СанПиН 1.2.3685-21, табл. 6.6</div>
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">Difficulty scale</div>
+              <div class="rules-card__text">Each subject has a difficulty score from 1 to 13. PE = 1, Math = 8-10, Physics = 8-13. Scores depend on grade.</div>
+              <div class="rules-card__src">SanPiN table 6.9-6.11</div>
             </div>
           </div>
         </div>
@@ -822,39 +849,27 @@ spRequireAuth(function () {
           <div class="rules-col__track rules-col__track--slow">
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">E-02</div>
-              <div class="rules-card__title">Облегчённый день</div>
-              <div class="rules-card__text">Среда или четверг — самый лёгкий день по сумме баллов трудности. Если минимум на Пн или Пт — нарушение.</div>
-              <div class="rules-card__src">СанПиН п. 189; МР п. 3.3</div>
+              <div class="rules-card__title">Light day</div>
+              <div class="rules-card__text">Wednesday or Thursday - the lightest day by difficulty score sum. If minimum on Mon or Fri - violation.</div>
+              <div class="rules-card__src">SanPiN p. 189; MR p. 3.3</div>
             </div>
             <div class="rules-card rules-card--hard">
               <div class="rules-card__badge rules-card__badge--hard">X-01</div>
-              <div class="rules-card__title">Окна в расписании</div>
-              <div class="rules-card__text">Пустые уроки между первым и последним — запрещены. 6 уроков = подряд, без пропусков. Окна у учеников недопустимы.</div>
-              <div class="rules-card__src">Общепринятая практика</div>
+              <div class="rules-card__title">Windows in schedule</div>
+              <div class="rules-card__text">Empty lessons between first and last - forbidden. 6 lessons = consecutively, without gaps. Windows for students are unacceptable.</div>
+              <div class="rules-card__src">Common practice</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">📊</div>
-              <div class="rules-card__title">Как считается Score</div>
-              <div class="rules-card__text">Каждый класс проверяется по 7 правилам. Всего проверок = 7 × кол-во классов. Каждое нарушение или рекомендация снижает Score. 100 = ни одной проблемы.</div>
-              <div class="rules-card__src">Формула ШколаПлан</div>
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">How Score is calculated</div>
+              <div class="rules-card__text">Each class is checked by 7 rules. Total checks = 7 × number of classes. Each violation or recommendation reduces Score. 100 = no problems.</div>
+              <div class="rules-card__src">ShkolaPlan Formula</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">⚖️</div>
+              <div class="rules-card__badge rules-card__badge--info">?</div>
               <div class="rules-card__title">Hard vs Soft</div>
-              <div class="rules-card__text">5 жёстких (C-01, C-02, C-03, E-02, X-01) — красные, нарушения СанПиН. 2 мягких (E-01, E-03) — оранжевые, рекомендации МР.</div>
-              <div class="rules-card__src">Классификация ШколаПлан</div>
-            </div>
-            <div class="rules-card rules-card--hard">
-              <div class="rules-card__badge rules-card__badge--hard">E-02</div>
-              <div class="rules-card__title">Облегчённый день</div>
-              <div class="rules-card__text">Среда или четверг — самый лёгкий день по сумме баллов трудности.</div>
-              <div class="rules-card__src">СанПиН п. 189; МР п. 3.3</div>
-            </div>
-            <div class="rules-card rules-card--hard">
-              <div class="rules-card__badge rules-card__badge--hard">X-01</div>
-              <div class="rules-card__title">Окна в расписании</div>
-              <div class="rules-card__text">Пустые уроки между первым и последним — запрещены.</div>
-              <div class="rules-card__src">Общепринятая практика</div>
+              <div class="rules-card__text">5 hard (C-01, C-02, C-03, E-02, X-01) - red, SanPiN violations. 2 soft (E-01, E-03) - orange, MR recommendations.</div>
+              <div class="rules-card__src">ShkolaPlan Classification</div>
             </div>
           </div>
         </div>
@@ -862,53 +877,31 @@ spRequireAuth(function () {
           <div class="rules-col__track rules-col__track--fast">
             <div class="rules-card rules-card--soft">
               <div class="rules-card__badge rules-card__badge--soft">E-01</div>
-              <div class="rules-card__title">Сложные на 2–4 уроках</div>
-              <div class="rules-card__text">Предметы ≥ 8 баллов — на 2–4 уроки (пик работоспособности 10:00–12:00). На 1-м и 5+ — нежелательно, но допустимо.</div>
-              <div class="rules-card__src">МР 2.4.0331-23, п. 3.2</div>
+              <div class="rules-card__title">Difficult subjects in 2-4 lessons</div>
+              <div class="rules-card__text">Subjects >= 8 points - in 2-4 lessons (peak performance 10:00-12:00). In 1st and 5+ - undesirable but acceptable.</div>
+              <div class="rules-card__src">MR 2.4.0331-23, p. 3.2</div>
             </div>
             <div class="rules-card rules-card--soft">
               <div class="rules-card__badge rules-card__badge--soft">E-03</div>
-              <div class="rules-card__title">Чередование предметов</div>
-              <div class="rules-card__text">2 сложных подряд (≥ 8 б.) — предупреждение. 3+ подряд — сильное предупреждение. Это рекомендация, не запрет.</div>
-              <div class="rules-card__src">МР п. 3.2; СП п. 3.4.16</div>
+              <div class="rules-card__title">Alternating subjects</div>
+              <div class="rules-card__text">2 difficult in a row (>= 8 b.) - warning. 3+ in a row - strong warning. This is a recommendation, not a prohibition.</div>
+              <div class="rules-card__src">MR p. 3.2; SP p. 3.4.16</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">📋</div>
-              <div class="rules-card__title">Нормативные документы</div>
-              <div class="rules-card__text">СанПиН 1.2.3685-21 (ред. 24.12.2025) — действует до 01.03.2027. СП 2.4.3648-20 — до 01.01.2027. МР 2.4.0331-23 — бессрочно.</div>
-              <div class="rules-card__src">Роспотребнадзор</div>
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">Regulatory documents</div>
+              <div class="rules-card__text">SanPiN 1.2.3685-21 (ed. 24.12.2025) - valid until 01.03.2027. SP 2.4.3648-20 - until 01.01.2027. MR 2.4.0331-23 - indefinitely.</div>
+              <div class="rules-card__src">Rospotrebnadzor</div>
             </div>
             <div class="rules-card rules-card--info">
-              <div class="rules-card__badge rules-card__badge--info">🏫</div>
-              <div class="rules-card__title">Почему E-03 не запрет</div>
-              <div class="rules-card__text">В реальной школе с ограниченным числом учителей и кабинетов разделить все сложные предметы лёгкими часто физически невозможно.</div>
-              <div class="rules-card__src">Практический опыт</div>
-            </div>
-            <div class="rules-card rules-card--soft">
-              <div class="rules-card__badge rules-card__badge--soft">E-01</div>
-              <div class="rules-card__title">Сложные на 2–4 уроках</div>
-              <div class="rules-card__text">Предметы ≥ 8 баллов — на 2–4 уроки (пик работоспособности 10:00–12:00).</div>
-              <div class="rules-card__src">МР 2.4.0331-23, п. 3.2</div>
-            </div>
-            <div class="rules-card rules-card--soft">
-              <div class="rules-card__badge rules-card__badge--soft">E-03</div>
-              <div class="rules-card__title">Чередование предметов</div>
-              <div class="rules-card__text">2 сложных подряд — предупреждение. 3+ подряд — сильное предупреждение.</div>
-              <div class="rules-card__src">МР п. 3.2; СП п. 3.4.16</div>
+              <div class="rules-card__badge rules-card__badge--info">?</div>
+              <div class="rules-card__title">Why E-03 is not a prohibition</div>
+              <div class="rules-card__text">In a real school with limited number of teachers and classrooms, separating all difficult subjects with easy ones is often physically impossible.</div>
+              <div class="rules-card__src">Practical experience</div>
             </div>
           </div>
         </div>
       </div>
     `;
-  }
-
-  /* ═══ История «Мои аудиты и расписания» — первая отрисовка при заходе ═══
-     Контейнер #savedRunsList лежит в account.html. Логика чтения из
-     localStorage и рендеринга карточек — в js/scripts.js (он загружен
-     раньше account.js, см. account.html). Без этого вызова блок остаётся
-     пустым: renderSavedWizardRuns ранее звался только из loadWizardComponent,
-     который на странице ЛК не отрабатывает (нет data-wizard-mount). */
-  if (typeof renderSavedWizardRuns === 'function') {
-    try { renderSavedWizardRuns(); } catch (_) {}
   }
 })});
