@@ -793,6 +793,35 @@ function downloadOptSchedule() {
 }
 
 var _inlineDemoReady = false;
+
+/* Монтирует список нарушений с кнопкой «Скачать Excel» сверху.
+   Используется и для демо-данных, и для пользовательских загрузок. */
+function _renderRecsWithExport(audit, recsEl, opts) {
+  opts = opts || {};
+  var hasItems = (audit.top && audit.top.length) || (audit.vi && audit.vi.length) || (audit.wa && audit.wa.length);
+  var btnId = opts.btnId || ('inlineRecsExport_' + Date.now());
+  var toolbar = '';
+  if (hasItems && typeof exportRecsXlsx === 'function') {
+    toolbar = '<div style="display:flex;justify-content:flex-end;margin-bottom:14px">'
+            + '<button id="' + btnId + '" type="button" '
+            + 'style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;'
+            + 'background:rgba(0,113,227,.15);color:#0a84ff;border:1px solid rgba(0,113,227,.3);'
+            + 'border-radius:8px;font-weight:600;font-size:.85rem;cursor:pointer;font-family:inherit">'
+            + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none">'
+            + '<path d="M8 1v10m0 0l-3.5-3.5M8 11l3.5-3.5M2 13.5h12" '
+            + 'stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            + 'Скачать Excel</button></div>';
+  }
+  recsEl.innerHTML = toolbar + '<div></div>';
+  renderRecs(audit.top, recsEl.lastChild);
+  var btn = document.getElementById(btnId);
+  if (btn) {
+    btn.addEventListener('click', function() {
+      exportRecsXlsx(audit, { schoolName: opts.schoolName || '', createdAt: opts.createdAt || Date.now() });
+    });
+  }
+}
+
 function _initInlineDemo() {
   if (_inlineDemoReady) return;
   _inlineDemoReady = true;
@@ -805,7 +834,7 @@ function _initInlineDemo() {
     gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
     renderGrid(DEM, DCG, audit, tbl);
     var recsEl = document.getElementById('inlineDemoTabRecs');
-    renderRecs(audit.top, recsEl);
+    _renderRecsWithExport(audit, recsEl, { btnId: 'inlineDemoExport' });
     // _renderOptimizedTab removed
   } catch(e) { console.warn('Demo init error:', e); }
 }
@@ -856,7 +885,11 @@ document.addEventListener('DOMContentLoaded', function() {
           gridEl.querySelector('.acc-tbl-wrap').appendChild(tbl);
           renderGrid(result.sch, result.cg, audit, tbl);
           var recsEl = document.getElementById('inlineDemoTabRecs');
-          renderRecs(audit.top, recsEl);
+          _renderRecsWithExport(audit, recsEl, {
+            btnId: 'inlineUserExport',
+            schoolName: '',
+            createdAt: Date.now()
+          });
           // _renderOptimizedTab removed
           /* Show summary above grid */
           var summary = '<div style="margin-bottom:16px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:600px;margin-left:auto;margin-right:auto">';
