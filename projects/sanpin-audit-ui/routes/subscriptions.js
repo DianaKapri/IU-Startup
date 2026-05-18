@@ -95,59 +95,6 @@ router.post('/', async (req, res) => {
       [paymentId, paymentUrl, requestId]
     );
 
-    const safePaymentUrl = escapeHtml(paymentUrl);
-
-    // Письмо 1: Заявка создана
-    try {
-      await resend.emails.send({
-        from: FROM_EMAIL,
-        to: email,
-        subject: 'Заявка на подписку ШколаПлан принята',
-        html: `
-          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
-            <h2 style="margin-bottom:8px">Заявка принята</h2>
-            <p>Ваша заявка на тариф <strong>«Школа»</strong> зарегистрирована.</p>
-            <table style="border-collapse:collapse;width:100%;margin:16px 0">
-              <tr><td style="padding:8px 0;color:#555">Организация</td><td style="padding:8px 0"><strong>${safeOrgName}</strong></td></tr>
-              <tr><td style="padding:8px 0;color:#555">ИНН</td><td style="padding:8px 0"><strong>${safeInn}</strong></td></tr>
-              <tr><td style="padding:8px 0;color:#555">Сумма</td><td style="padding:8px 0"><strong>${formatPrice(SCHOOL_PRICE_YEAR)} ₽/год</strong></td></tr>
-            </table>
-            <p style="color:#888;font-size:13px">Счёт на оплату отправлен отдельным письмом.</p>
-            <p style="color:#888;font-size:13px">Если у вас есть вопросы — ответьте на это письмо.</p>
-            <p style="color:#888;font-size:13px">— Команда ШколаПлан</p>
-          </div>
-        `,
-      });
-    } catch (err) {
-      console.error('[Subscriptions] resend confirmation email error:', err.message);
-    }
-
-    // Письмо 2: Счёт на оплату
-    try {
-      await resend.emails.send({
-        from: FROM_EMAIL,
-        to: email,
-        subject: 'Счёт на оплату — ШколаПлан',
-        html: `
-          <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#1a1a2e">
-            <h2 style="margin-bottom:8px">Счёт на оплату</h2>
-            <p>Организация: <strong>${safeOrgName}</strong></p>
-            <p>Тариф: <strong>Школа</strong> &mdash; <strong>${formatPrice(SCHOOL_PRICE_YEAR)} ₽/год</strong></p>
-            <p style="margin:24px 0">
-              <a href="${safePaymentUrl}"
-                 style="background:#0071e3;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">
-                Оплатить →
-              </a>
-            </p>
-            <p style="color:#888;font-size:13px">Ссылка действительна 24 часа. Если возникнут вопросы — ответьте на это письмо.</p>
-            <p style="color:#888;font-size:13px">— Команда ШколаПлан</p>
-          </div>
-        `,
-      });
-    } catch (err) {
-      console.error('[Subscriptions] resend payment email error:', err.message);
-    }
-
     // Уведомление админу о новой заявке
     if (ADMIN_EMAIL) {
       resend.emails.send({
@@ -170,7 +117,7 @@ router.post('/', async (req, res) => {
       }).catch(err => console.error('[Subscriptions] resend admin email error:', err.message));
     }
 
-    res.json({ success: true, data: { id: requestId } });
+    res.json({ success: true, data: { id: requestId, payment_url: paymentUrl } });
   } catch (err) {
     console.error('[Subscriptions] Error:', err.message);
     res.status(500).json({
