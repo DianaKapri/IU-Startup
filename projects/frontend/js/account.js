@@ -485,8 +485,8 @@ spRequireAuth(function () {
   /* ═══ Demo button ═══ */
   var demoBtn = document.getElementById('accDemoBtn');
   if (demoBtn) {
-    demoBtn.addEventListener('click', function () { 
-      // Load demo file and show results in main account section
+    demoBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
       showResults(DEM, DCG);
     });
   }
@@ -700,7 +700,12 @@ spRequireAuth(function () {
     list.innerHTML = runs.slice().reverse().map(function(r) {
       var grade = r.grade || _grade(r.score || 0);
       var scoreColor = { A:'#30d158', B:'#4da3ff', C:'#ffd60a', D:'#ff9f0a', F:'#ff453a' }[grade] || '#86868b';
-      var typeLabel = r.type === 'schedule' ? '📅 Расписание' : '🔍 Аудит';
+      var isGen2 = r.gen2 || (r.type === 'schedule' && !r.sch);
+      var typeLabel = isGen2 ? '📅 Генератор 2.0' : (r.type === 'schedule' ? '📅 Расписание' : '🔍 Аудит');
+      var canOpen = isGen2 ? !!r.gen2ResultData : (r.sch && r.cg);
+      var openBtn = canOpen
+        ? '<button class="profile-wizard-history__delete btn-load-run" data-id="' + r.id + '" title="Открыть" style="background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.3);color:#4da3ff;margin-right:4px">↩ Открыть</button>'
+        : '';
       return '<div class="profile-wizard-history__item" data-id="' + r.id + '">'
         + '<div style="flex:1;min-width:0">'
         + '<span class="profile-wizard-history__name">' + _esc(r.title || 'Расписание') + '</span>'
@@ -708,7 +713,7 @@ spRequireAuth(function () {
         + '</div>'
         + '<span class="profile-wizard-history__score profile-wizard-history__score--' + grade + '">'
         + grade + '<span class="profile-wizard-history__score-num"> ' + (r.score || 0) + '</span></span>'
-        + '<button class="profile-wizard-history__delete btn-load-run" data-id="' + r.id + '" title="Открыть" style="background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.3);color:#4da3ff;margin-right:4px">↩ Открыть</button>'
+        + openBtn
         + '<button class="profile-wizard-history__delete btn-del-run" data-id="' + r.id + '" title="Удалить">✕</button>'
         + '</div>';
     }).join('');
@@ -732,9 +737,16 @@ spRequireAuth(function () {
     if (loadBtn) {
       var id = loadBtn.dataset.id;
       var run = _loadRuns().find(function(r){ return String(r.id) === String(id); });
-      if (run && run.sch && run.cg) {
-        showResults(run.sch, run.cg);
-        document.getElementById('accResults') && document.getElementById('accResults').scrollIntoView({ behavior:'smooth' });
+      if (run) {
+        var isGen2 = run.gen2 || (run.type === 'schedule' && !run.sch);
+        if (isGen2 && run.gen2ResultData) {
+          if (typeof window.sp_restoreGen2 === 'function') {
+            window.sp_restoreGen2(run);
+          }
+        } else if (run.sch && run.cg) {
+          showResults(run.sch, run.cg);
+          document.getElementById('accResults') && document.getElementById('accResults').scrollIntoView({ behavior:'smooth' });
+        }
       }
     }
   });
