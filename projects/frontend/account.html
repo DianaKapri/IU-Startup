@@ -158,12 +158,6 @@
         </div>
       </section>
 
-      <section class="profile-wizard-wrapper account-wizard"></section>
-
-      <section class="profile-wizard-history">
-        <div id="savedRunsList" class="profile-wizard-history__list"></div>
-      </section>
-
       <section class="acc-upload" id="accUpload" style="display: none">
         <button class="acc-back-btn" type="button" id="auditBackBtn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -177,6 +171,10 @@
           </svg>
           Назад к выбору
         </button>
+        <div class="acc-upload__header">
+          <h2 class="acc-upload__title">Проверить расписание</h2>
+          <p class="acc-upload__sub">Загрузите Excel-файл — мгновенно покажем нарушения СанПиН и рекомендации.</p>
+        </div>
         <div class="acc-dropzone" id="accDropzone">
           <input type="file" id="accFileInput" accept=".xlsx,.xls" hidden />
           <svg
@@ -425,6 +423,13 @@
             >
               Скачать .xlsx
             </button>
+            <button
+              class="btn btn--save btn--sm"
+              type="button"
+              id="gen2SaveBtn"
+            >
+              💾 Сохранить расписание
+            </button>
           </div>
         </div>
 
@@ -603,6 +608,18 @@
       </section>
 
       <section class="acc-results" id="accResults" style="display: none">
+        <button class="acc-back-btn" type="button" id="resultsBackBtn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path
+              d="M10 12L6 8l4-4"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Назад к выбору
+        </button>
         <div class="acc-results-header">
           <div class="acc-tabs" id="accTabs">
             <button class="acc-tab acc-tab--active" data-tab="grid">
@@ -618,11 +635,11 @@
           </div>
           <div class="acc-actions-header">
             <button
-              class="btn btn--primary btn--sm"
+              class="btn btn--save btn--sm"
               id="saveAuditBtn"
               type="button"
             >
-              Сохранить аудит
+              💾 Сохранить аудит
             </button>
           </div>
         </div>
@@ -634,6 +651,14 @@
           style="display: none"
         ></div>
         <div id="tabRules" class="acc-tab-panel" style="display: none"></div>
+      </section>
+
+      <section class="acc-saved" id="accSaved" style="display: none">
+        <div class="acc-saved__header">
+          <h2 class="acc-saved__title">Мои расписания</h2>
+          <p class="acc-saved__sub">Сохранённые проверки и сгенерированные расписания</p>
+        </div>
+        <div id="savedRunsList" class="profile-wizard-history__list"></div>
       </section>
     </main>
 
@@ -751,6 +776,9 @@
 
         var gen2BackBtn = document.getElementById("gen2BackBtn");
         if (gen2BackBtn) gen2BackBtn.addEventListener("click", goBackToStart);
+
+        var resultsBackBtn = document.getElementById("resultsBackBtn");
+        if (resultsBackBtn) resultsBackBtn.addEventListener("click", goBackToStart);
 
         /* ─── File upload ─── */
         var dropzone = document.getElementById("gen2Dropzone");
@@ -1198,6 +1226,45 @@
         if (dlBtn)
           dlBtn.addEventListener("click", function () {
             if (gen2Result) v2ExportXlsx(gen2Result);
+          });
+
+        /* ─── Save gen2 schedule ─── */
+        var gen2SaveBtn = document.getElementById("gen2SaveBtn");
+        if (gen2SaveBtn)
+          gen2SaveBtn.addEventListener("click", function () {
+            if (!gen2Result) return;
+            var audit = v2Audit(gen2Result);
+            var score = audit ? audit.score : 0;
+            var runs;
+            try { runs = JSON.parse(localStorage.getItem("sp_saved_runs") || "[]"); } catch(e) { runs = []; }
+            var title = "Расписание " + new Date().toLocaleDateString("ru-RU");
+            var run = {
+              id: Date.now(),
+              type: "schedule",
+              title: title,
+              score: score,
+              grade: score >= 90 ? "A" : score >= 70 ? "B" : score >= 50 ? "C" : score >= 30 ? "D" : "F",
+              date: new Date().toISOString(),
+              gen2: true,
+            };
+            runs.push(run);
+            if (runs.length > 30) runs = runs.slice(-30);
+            try { localStorage.setItem("sp_saved_runs", JSON.stringify(runs)); } catch(e) {}
+            gen2SaveBtn.textContent = "✓ Сохранено";
+            gen2SaveBtn.disabled = true;
+            var savedSection = document.getElementById("accSaved");
+            if (savedSection) { savedSection.style.display = ""; }
+            /* refresh the list if renderSavedRuns is available */
+            if (typeof renderSavedRuns === "function") renderSavedRuns();
+            /* trigger re-render via account.js public fn if bound */
+            var evt = new CustomEvent("sp:savedRunsChanged");
+            document.dispatchEvent(evt);
+            setTimeout(function() {
+              gen2SaveBtn.textContent = "💾 Сохранить расписание";
+              gen2SaveBtn.disabled = false;
+            }, 2000);
+            var savedEl = document.getElementById("savedRunsList");
+            if (savedEl) savedEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
           });
 
         /* ─── Regenerate ─── */
