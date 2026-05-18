@@ -123,6 +123,7 @@ function _initSupabase() {
       return r.json();
     })
     .then(function (cfg) {
+      if (cfg.siteUrl) window._spSiteUrl = cfg.siteUrl;
       if (!cfg.supabaseUrl || !cfg.supabaseKey) {
         throw new Error('Supabase не настроен. Обратитесь к администратору.');
       }
@@ -355,7 +356,10 @@ function spRequestPasswordReset(email) {
     return Promise.resolve({ ok: false, error: 'Введите корректный email' });
   }
   return _initSupabase().then(function (sb) {
-    var redirectTo = location.origin + '/reset-password.html';
+    var base = (window._spSiteUrl && window._spSiteUrl !== '')
+      ? window._spSiteUrl.replace(/\/$/, '')
+      : location.origin;
+    var redirectTo = base + '/reset-password.html';
     return sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: redirectTo })
       .then(function (res) {
         if (res.error) return { ok: false, error: _translateError(res.error.message) };
