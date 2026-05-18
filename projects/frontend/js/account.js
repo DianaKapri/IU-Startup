@@ -271,42 +271,35 @@ spRequireAuth(function () {
   var accIntro  = document.getElementById('accIntro');
   var accBuilder = document.getElementById('accBuilder');
 
-  var selectedMode = '';
+  /* ═══ Старт-карточки: клик = немедленное действие, без подтверждения ═══
+     Раньше требовалось выбрать карточку → нажать «Продолжить». Сейчас
+     одношагово: клик по карточке сразу скрывает старт и открывает
+     соответствующий блок. Карточка accModeGen2 обрабатывается отдельным
+     скриптом в account.html (стр. 285+) — здесь только audit. */
   var modeCards = document.querySelectorAll('.acc-start-card');
-  var modeContinue = document.getElementById('accModeContinue');
 
-  function setMode(mode) {
-    selectedMode = mode;
-    modeCards.forEach(function (card) {
-      card.classList.toggle('acc-start-card--active', card.dataset.mode === mode);
-    });
-    if (modeContinue) modeContinue.disabled = !selectedMode;
+  function openAuditMode() {
+    if (accStart) accStart.style.display = 'none';
+    if (accUpload) accUpload.style.display = '';
+    if (accBuilder) accBuilder.style.display = 'none';
+    if (accIntro) accIntro.style.display = '';
+    if (dropzone) dropzone.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   modeCards.forEach(function (card) {
-    card.addEventListener('click', function () {
-      setMode(card.dataset.mode || '');
-    });
+    if (card.dataset.mode === 'audit') {
+      card.addEventListener('click', openAuditMode);
+    }
+    /* gen2 обрабатывается в встроенном script-блоке account.html */
   });
-  // Fallback delegation: keeps selector working even if cards are re-rendered.
+  /* Fallback delegation: если карточки рендерятся динамически */
   document.addEventListener('click', function (e) {
     var card = e.target.closest('.acc-start-card');
-    if (!card) return;
-    setMode(card.dataset.mode || '');
+    if (!card || card.dataset.mode !== 'audit') return;
+    /* Защита от двойного срабатывания (прямой обработчик + делегат) */
+    if (accUpload && accUpload.style.display !== 'none') return;
+    openAuditMode();
   });
-
-  if (modeContinue) {
-    modeContinue.addEventListener('click', function () {
-      if (!selectedMode) return;
-      if (accStart) accStart.style.display = 'none';
-      if (selectedMode === 'audit') {
-        if (accUpload) accUpload.style.display = '';
-        if (accBuilder) accBuilder.style.display = 'none';
-        if (accIntro) accIntro.style.display = '';
-        if (dropzone) dropzone.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  }
 
   /* ═══ Builder flow on account page ═══ */
   var builderStep = 1;
@@ -431,7 +424,7 @@ spRequireAuth(function () {
       try {
         showBuilderError('');
         var built = buildScheduleFromBuilder();
-        showResults(built.sch, built.cg);
+        showResults(built.sch, built.cg, { kind: 'builder', school: built.school || '' });
         switchTab('optimized');
       } catch (err) {
         showBuilderError(err.message || 'Ошибка генерации расписания');
@@ -472,7 +465,7 @@ spRequireAuth(function () {
     if (!file.name.match(/\.(xlsx|xls)$/i)) { showError('Поддерживаются файлы .xlsx и .xls'); return; }
     if (file.size > 5 * 1024 * 1024) { showError('Файл слишком большой (максимум 5 МБ)'); return; }
     parseXls(file).then(function (result) {
-      showResults(result.sch, result.cg);
+      showResults(result.sch, result.cg, { kind: 'file', fileName: file.name });
     }).catch(function (err) {
       showError(typeof err === 'string' ? err : 'Ошибка обработки файла. Попробуйте шаблон.');
     });
@@ -483,7 +476,7 @@ spRequireAuth(function () {
   if (demoBtn) {
     demoBtn.addEventListener('click', function () { 
       // Load demo file and show results in main account section
-      showResults(DEM, DCG);
+      showResults(DEM, DCG, { kind: 'demo' });
     });
   }
 
@@ -575,12 +568,11 @@ spRequireAuth(function () {
       if (introEl2) introEl2.style.display = 'none';
       showError('');
       if (fileInput) fileInput.value = '';
-      setMode('');
     });
   }
 
   /* ═══ Show results ═══ */
-  function showResults(sch, cg) {
+  function showResults(sch, cg, meta) {
     var audit   = doAudit(sch, cg);
     var results = document.getElementById('accResults');
     var actions = document.getElementById('accActions');
@@ -588,6 +580,29 @@ spRequireAuth(function () {
 
     // Сохраняем данные аудита для возможности сохранения
     currentAuditData = audit;
+
+    /* ─── Запись в историю «Мои аудиты и расписания» ───
+       meta: { kind: 'file'|'demo'|'builder', fileName?, school? }.
+       saveWizardRun определён в js/scripts.js и сам обновит #savedRunsList. */
+    try {
+      if (typeof saveWizardRun === 'function' && meta && meta.kind) {
+        var classCount = Object.keys(sch || {}).length;
+        var title;
+        if (meta.kind === 'demo') {
+          title = 'Аудит · демо-данные · ' + classCount + ' кл.';
+        } else if (meta.kind === 'builder') {
+          title = 'Аудит · собранное расписание · ' + classCount + ' кл.';
+        } else {
+          title = 'Аудит · ' + (meta.fileName || 'файл.xlsx') + ' · ' + classCount + ' кл.';
+        }
+        saveWizardRun('audit', title, {
+          sch: sch, cg: cg,
+          school: meta.school || '',
+          fileName: meta.fileName || '',
+          isDemo: meta.kind === 'demo',
+        });
+      }
+    } catch (_) { /* история — best-effort, не ломать показ */ }
 
     if (accUpload) accUpload.style.display = 'none';
     if (accStart) accStart.style.display = 'none';
@@ -885,5 +900,15 @@ spRequireAuth(function () {
         </div>
       </div>
     `;
+  }
+
+  /* ═══ История «Мои аудиты и расписания» — первая отрисовка при заходе ═══
+     Контейнер #savedRunsList лежит в account.html. Логика чтения из
+     localStorage и рендеринга карточек — в js/scripts.js (он загружен
+     раньше account.js, см. account.html). Без этого вызова блок остаётся
+     пустым: renderSavedWizardRuns ранее звался только из loadWizardComponent,
+     который на странице ЛК не отрабатывает (нет data-wizard-mount). */
+  if (typeof renderSavedWizardRuns === 'function') {
+    try { renderSavedWizardRuns(); } catch (_) {}
   }
 })});
