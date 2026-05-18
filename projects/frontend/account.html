@@ -338,6 +338,7 @@
             <p class="acc-dropzone__sub">
               или
               <a
+                id="gen2TplLink"
                 href="/assets/generator-template.xlsx"
                 class="acc-dropzone__btn"
                 download
@@ -785,6 +786,13 @@
         var fileInput = document.getElementById("gen2FileInput");
         var gen2Data = null;
         var gen2Result = null;
+
+        var gen2TplLink = document.getElementById("gen2TplLink");
+        if (gen2TplLink) {
+          gen2TplLink.addEventListener("click", function (e) {
+            e.stopPropagation();
+          });
+        }
 
         if (dropzone) {
           dropzone.addEventListener("click", function () {
