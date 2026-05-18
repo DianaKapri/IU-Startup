@@ -688,12 +688,15 @@ spRequireAuth(function () {
 
   function renderSavedRuns() {
     var list = document.getElementById('savedRunsList');
+    var section = document.getElementById('accSaved');
     if (!list) return;
     var runs = _loadRuns();
     if (!runs.length) {
-      list.innerHTML = '<div class="profile-wizard-history__empty">Сохранённых аудитов и расписаний пока нет.<br/>Нажмите «Сохранить аудит» после проверки расписания.</div>';
+      if (section) section.style.display = 'none';
+      list.innerHTML = '';
       return;
     }
+    if (section) section.style.display = '';
     list.innerHTML = runs.slice().reverse().map(function(r) {
       var grade = r.grade || _grade(r.score || 0);
       var scoreColor = { A:'#30d158', B:'#4da3ff', C:'#ffd60a', D:'#ff9f0a', F:'#ff453a' }[grade] || '#86868b';
@@ -769,13 +772,16 @@ spRequireAuth(function () {
         saveAuditBtn.textContent = '✓ Сохранено';
         saveAuditBtn.disabled = true;
         setTimeout(function() {
-          saveAuditBtn.textContent = 'Сохранить аудит';
+          saveAuditBtn.textContent = '💾 Сохранить аудит';
           saveAuditBtn.disabled = false;
         }, 2000);
-        document.getElementById('savedRunsList') && document.getElementById('savedRunsList').scrollIntoView({ behavior:'smooth', block:'nearest' });
+        var savedEl = document.getElementById('savedRunsList');
+        if (savedEl) savedEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
       }
     });
   }
+
+  document.addEventListener('sp:savedRunsChanged', renderSavedRuns);
 
   renderSavedRuns();
 
