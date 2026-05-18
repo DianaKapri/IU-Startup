@@ -66,12 +66,33 @@
   </section>
 
   <section class="acc-upload" id="accUpload" style="display:none">
-    <div class="acc-dropzone" id="accDropzone">
-      <input type="file" id="accFileInput" accept=".xlsx,.xls" hidden/>
-      <svg class="acc-dropzone__icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-      <p class="acc-dropzone__title">Перетащите файл расписания</p>
-      <p class="acc-dropzone__sub">или <button class="acc-dropzone__btn" type="button" id="accDemoBtn">Загрузите Демо-файл</button></p>
-      <p class="acc-dropzone__fmt">Форматы: .xlsx, .xls · Максимум 5 МБ</p>
+    <!-- Стиль повторяет блок аудита на лендинге (index.html стр. 87-94, 244-249).
+         ID элементов сохранены (accFileInput, accDemoBtn) — обработчики
+         в account.js про них и так знают. accDropzone оставлен как обёртка
+         для drag-and-drop, который уже работает в js/account.js. -->
+    <div class="audit-upload-wrap" id="accDropzone">
+      <label class="audit-upload-btn" for="accFileInput">
+        <svg width="52" height="52" viewBox="0 0 28 28" fill="none">
+          <rect x="2" y="6" width="24" height="18" rx="2.5" stroke="currentColor" stroke-width="1.2"/>
+          <path d="M14 11v8M10 15l4-4 4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 6V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.1"/>
+        </svg>
+        <span>Загрузить своё расписание (.xlsx)</span>
+      </label>
+      <input type="file" id="accFileInput" accept=".xlsx,.xls" style="display:none"/>
+      <button class="link-cta link-cta--muted audit-demo-link" type="button" id="accDemoBtn"
+              style="background:none;border:none;cursor:pointer;padding:0;font:inherit">
+        Смотреть аудит на демо-данных ›
+      </button>
+    </div>
+    <div class="audit-template-row">
+      <a href="/assets/shablon-raspisaniya.xlsx" download class="audit-template-link">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M7.5 2v9M3.5 8l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 13h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Скачать шаблон расписания
+      </a>
     </div>
     <p class="acc-error" id="accError"></p>
     <div class="acc-actions" id="accActions" style="display:none">
