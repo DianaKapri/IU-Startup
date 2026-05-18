@@ -612,7 +612,23 @@ spRequireAuth(function () {
 
     /* --- Recs tab --- */
     var recsEl = document.getElementById('tabRecs');
-    if (recsEl) { renderRecs(audit.top, recsEl); }
+    if (recsEl) {
+      var hasItems = (audit.top && audit.top.length) || (audit.vi && audit.vi.length) || (audit.wa && audit.wa.length);
+      var toolbar = '';
+      if (hasItems && typeof exportRecsXlsx === 'function') {
+        toolbar = '<div class="acc-recs-toolbar" style="display:flex;justify-content:flex-end;margin-bottom:14px"><button id="accRecsExport" type="button" class="acc-tab" style="background:rgba(0,113,227,.15);color:#0a84ff;border:1px solid rgba(0,113,227,.3);font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer">'
+                + '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px;margin-right:6px"><path d="M8 1v10m0 0l-3.5-3.5M8 11l3.5-3.5M2 13.5h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                + 'Скачать Excel</button></div>';
+      }
+      recsEl.innerHTML = toolbar + '<div id="tabRecsList"></div>';
+      renderRecs(audit.top, document.getElementById('tabRecsList'));
+      var expBtn = document.getElementById('accRecsExport');
+      if (expBtn) {
+        expBtn.addEventListener('click', function () {
+          exportRecsXlsx(audit, { createdAt: Date.now() });
+        });
+      }
+    }
 
     /* --- Optimized tab --- */
     var optimizedEl = document.getElementById('tabOptimized');
