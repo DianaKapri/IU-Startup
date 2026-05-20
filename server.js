@@ -14,7 +14,7 @@ process.on('unhandledRejection', (reason) => {
 
 const app = express();
 // используй 3000-ый порт, т.к 5000 обычно занят
-const PORT = 3000;
+const PORT = 5000;
 const BACKEND_PORT = 4000;
 
 // ─── Start backend subprocess ────────────────────────────────
