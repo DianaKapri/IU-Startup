@@ -511,10 +511,10 @@
   <p class="pay-modal__plan" data-price="school-modal">Тариф «Школа» — 29 000 ₽/год</p>
   <div class="field"><label class="field__label" for="indexPayOrg">Название организации</label><input class="field__input" id="indexPayOrg" type="text" placeholder="МБОУ СОШ №42"/></div>
   <div class="field"><label class="field__label" for="indexPayInn">ИНН</label><input class="field__input" id="indexPayInn" type="text" placeholder="1234567890"/></div>
-  <div class="field"><label class="field__label" for="indexPayEmail">Email для счёта</label><input class="field__input" id="indexPayEmail" type="email" placeholder="buh@school.ru"/></div>
+  <div class="field"><label class="field__label" for="indexPayEmail">Email для чека</label><input class="field__input" id="indexPayEmail" type="email" placeholder="buh@school.ru"/></div>
   <p class="pay-modal__err" id="indexPayErr"></p>
   <p class="pay-modal__ok" id="indexPayOk"></p>
-  <button class="btn btn--primary btn--full" id="indexPaySubmit" type="button">Запросить счёт</button>
+  <button class="btn btn--primary btn--full" id="indexPaySubmit" type="button">Перейти к оплате</button>
 </div>
 
 
@@ -570,12 +570,16 @@ spInitNav();
     var btn = document.getElementById('indexPaySubmit');
     var originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = 'Отправляем…';
+    btn.textContent = 'Создаём платёж…';
+
+    var payWindow = window.open('', '_blank');
 
     var body = { organization_name: org, inn: inn, email: email };
     try {
-      var user = await spGetCurrentUser();
-      if (user) { body.user_id = user.id; body.user_name = user.name; body.user_school = user.school; }
+      if (typeof spGetCurrentUser === 'function') {
+        var user = await spGetCurrentUser();
+        if (user) { body.user_id = user.id; body.user_name = user.name; body.user_school = user.school; }
+      }
     } catch (_) {}
 
     try {
@@ -586,17 +590,22 @@ spInitNav();
       });
       var data = await res.json();
       if (!res.ok) {
+        if (payWindow) payWindow.close();
         err.textContent = (data.error && data.error.message) || 'Ошибка. Попробуйте позже.';
         btn.disabled = false;
         btn.textContent = originalText;
         return;
       }
-      ok.textContent = 'Счёт будет отправлен на ' + email + ' в течение 1 рабочего дня. Спасибо!';
-      btn.textContent = 'Заявка отправлена';
-      document.getElementById('indexPayOrg').value = '';
-      document.getElementById('indexPayInn').value = '';
-      document.getElementById('indexPayEmail').value = '';
+      if (payWindow) {
+        payWindow.location.href = data.data.payment_url;
+      } else {
+        window.location.href = data.data.payment_url;
+      }
+      ok.textContent = 'Страница оплаты открыта в новой вкладке.';
+      btn.disabled = false;
+      btn.textContent = originalText;
     } catch (_) {
+      if (payWindow) payWindow.close();
       err.textContent = 'Произошла ошибка. Попробуйте позже.';
       btn.disabled = false;
       btn.textContent = originalText;
