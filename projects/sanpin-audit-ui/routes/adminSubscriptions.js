@@ -20,7 +20,11 @@ const requireAdmin = require('../middleware/requireAdmin');
 const yokassa = require('../services/payment/yokassa');
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend = null;
+function getResend() {
+  if (!_resend && process.env.RESEND_API_KEY) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@shkolaplan.ru';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -169,7 +173,7 @@ router.put('/:id', async (req, res) => {
       if (row.email) {
         const safeOrg = escapeHtml(row.organization_name || '');
         const safeUrl = escapeHtml(paymentUrl);
-        resend.emails.send({
+        getResend().emails.send({
           from: FROM_EMAIL,
           to: row.email,
           subject: 'Счёт на оплату — ШколаПлан',
