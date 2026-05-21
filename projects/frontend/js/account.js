@@ -435,7 +435,7 @@ spRequireAuth(function () {
       try {
         showBuilderError('');
         var built = buildScheduleFromBuilder();
-        showResults(built.sch, built.cg);
+        showResults(built.sch, built.cg, { kind: 'builder', school: built.school || '' });
         switchTab('optimized');
       } catch (err) {
         showBuilderError(err.message || 'Ошибка генерации расписания');
@@ -476,7 +476,7 @@ spRequireAuth(function () {
     if (!file.name.match(/\.(xlsx|xls)$/i)) { showError('Поддерживаются файлы .xlsx и .xls'); return; }
     if (file.size > 5 * 1024 * 1024) { showError('Файл слишком большой (максимум 5 МБ)'); return; }
     parseXls(file).then(function (result) {
-      showResults(result.sch, result.cg);
+      showResults(result.sch, result.cg, { kind: 'file', fileName: file.name });
     }).catch(function (err) {
       showError(typeof err === 'string' ? err : 'Ошибка обработки файла. Попробуйте шаблон.');
     });
@@ -487,7 +487,7 @@ spRequireAuth(function () {
   if (demoBtn) {
     demoBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      showResults(DEM, DCG);
+      showResults(DEM, DCG, { kind: 'demo' });
     });
   }
 
@@ -584,7 +584,7 @@ spRequireAuth(function () {
   }
 
   /* ═══ Show results ═══ */
-  function showResults(sch, cg) {
+  function showResults(sch, cg, meta) {
     var audit   = doAudit(sch, cg);
     var results = document.getElementById('accResults');
     var actions = document.getElementById('accActions');
@@ -594,6 +594,47 @@ spRequireAuth(function () {
     currentAuditData = audit;
     currentSch = sch;
     currentCg  = cg;
+
+    /* ─── Авто-запись в историю «Мои аудиты и расписания» ───
+       Тот же ключ sp_saved_runs, что использует генератор 2.0.
+       Раньше аудиты в историю не попадали (запись существовала только
+       для gen2 через ручную кнопку «Сохранить расписание»).
+       meta: { kind: 'file'|'demo'|'builder'|'history', fileName?, school? }.
+       kind='history' означает, что вызов идёт из открытия записи в истории
+       — повторно её сохранять не надо. */
+    try {
+      if (meta && meta.kind && meta.kind !== 'history') {
+        var classCount = Object.keys(sch || {}).length;
+        var titleAudit;
+        if (meta.kind === 'demo') {
+          titleAudit = 'Аудит · демо-данные · ' + classCount + ' кл.';
+        } else if (meta.kind === 'builder') {
+          titleAudit = 'Аудит · собранное расписание · ' + classCount + ' кл.';
+        } else {
+          titleAudit = 'Аудит · ' + (meta.fileName || 'файл.xlsx') + ' · ' + classCount + ' кл.';
+        }
+        var runs;
+        try { runs = JSON.parse(localStorage.getItem('sp_saved_runs') || '[]'); } catch(e) { runs = []; }
+        var sc = audit && typeof audit.score === 'number' ? audit.score : 0;
+        var grd = sc >= 90 ? 'A' : sc >= 70 ? 'B' : sc >= 50 ? 'C' : sc >= 30 ? 'D' : 'F';
+        runs.push({
+          id: Date.now(),
+          type: 'audit',
+          title: titleAudit,
+          score: sc,
+          grade: grd,
+          date: new Date().toISOString(),
+          sch: sch,
+          cg: cg,
+          school: meta.school || '',
+          fileName: meta.fileName || '',
+          isDemo: meta.kind === 'demo',
+        });
+        if (runs.length > 30) runs = runs.slice(-30);
+        try { localStorage.setItem('sp_saved_runs', JSON.stringify(runs)); } catch(e) {}
+        document.dispatchEvent(new CustomEvent('sp:savedRunsChanged'));
+      }
+    } catch (_) { /* история — best-effort, не ломать показ */ }
 
     if (accUpload) accUpload.style.display = 'none';
     if (accStart) accStart.style.display = 'none';
@@ -701,7 +742,7 @@ spRequireAuth(function () {
       var grade = r.grade || _grade(r.score || 0);
       var scoreColor = { A:'#30d158', B:'#4da3ff', C:'#ffd60a', D:'#ff9f0a', F:'#ff453a' }[grade] || '#86868b';
       var isGen2 = r.gen2 || (r.type === 'schedule' && !r.sch);
-      var typeLabel = isGen2 ? 'Генератор 2.0' : (r.type === 'schedule' ? 'Расписание' : 'Аудит');
+      var typeLabel = isGen2 ? 'Составить расписание' : (r.type === 'schedule' ? 'Расписание' : 'Аудит');
       var canOpen = isGen2 ? !!r.gen2ResultData : (r.sch && r.cg);
       var openBtn = canOpen
         ? '<button class="profile-wizard-history__delete btn-load-run" data-id="' + r.id + '" title="Открыть" style="background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.3);color:#4da3ff;margin-right:4px">↩ Открыть</button>'
@@ -744,7 +785,7 @@ spRequireAuth(function () {
             window.sp_restoreGen2(run);
           }
         } else if (run.sch && run.cg) {
-          showResults(run.sch, run.cg);
+          showResults(run.sch, run.cg, { kind: 'history' });
           document.getElementById('accResults') && document.getElementById('accResults').scrollIntoView({ behavior:'smooth' });
         }
       }

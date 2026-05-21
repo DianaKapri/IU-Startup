@@ -144,12 +144,8 @@
             data-mode="gen2"
             id="accModeGen2"
           >
-            <span
-              class="acc-start-card__badge"
-              style="background: rgba(48, 209, 88, 0.12); color: #30d158"
-              >2.0</span
-            >
-            <span class="acc-start-card__title">Генератор 2.0</span>
+            <span class="acc-start-card__badge">02</span>
+            <span class="acc-start-card__title">Составить расписание</span>
             <span class="acc-start-card__text"
               >Загрузите шаблон — расписание за секунды. Работает в браузере,
               без ожидания сервера.</span
@@ -312,7 +308,7 @@
           Назад к выбору
         </button>
         <div class="acc-gen2__head">
-          <h2 class="acc-gen2__title">Генератор 2.0</h2>
+          <h2 class="acc-gen2__title">Составить расписание</h2>
           <p class="acc-gen2__sub">
             Загрузите заполненный шаблон — расписание будет готово за секунды.
           </p>
@@ -423,13 +419,6 @@
               id="gen2DownloadBtn"
             >
               Скачать .xlsx
-            </button>
-            <button
-              class="btn btn--save btn--sm"
-              type="button"
-              id="gen2SaveBtn"
-            >
-              💾 Сохранить расписание
             </button>
           </div>
         </div>
@@ -953,6 +942,34 @@
 
               document.getElementById("gen2Result").style.display = "";
               runBtn.disabled = false;
+
+              /* ─── Автосохранение в историю ───
+                 Без необходимости нажимать «Сохранить расписание».
+                 Та же запись sp_saved_runs, что использует ручная кнопка
+                 (см. ниже). Если пользователь повторно запустит
+                 генерацию — в истории будет несколько записей подряд,
+                 это даёт возможность сравнить итерации. */
+              try {
+                var hRuns;
+                try { hRuns = JSON.parse(localStorage.getItem("sp_saved_runs") || "[]"); } catch(e) { hRuns = []; }
+                var hScore = audit ? audit.score : 0;
+                var hGrade = hScore >= 90 ? "A" : hScore >= 70 ? "B" : hScore >= 50 ? "C" : hScore >= 30 ? "D" : "F";
+                var hClassCount = (gen2Result.classes || []).length;
+                hRuns.push({
+                  id: Date.now(),
+                  type: "schedule",
+                  title: "Составить расписание · " + hClassCount + " кл.",
+                  score: hScore,
+                  grade: hGrade,
+                  date: new Date().toISOString(),
+                  gen2: true,
+                  gen2ResultData: gen2Result,
+                  gen2InputData: gen2Data || null,
+                });
+                if (hRuns.length > 30) hRuns = hRuns.slice(-30);
+                try { localStorage.setItem("sp_saved_runs", JSON.stringify(hRuns)); } catch(e) {}
+                document.dispatchEvent(new CustomEvent("sp:savedRunsChanged"));
+              } catch (_) {}
             }, 50);
           });
         }
@@ -1278,45 +1295,9 @@
         };
 
         /* ─── Save gen2 schedule ─── */
-        var gen2SaveBtn = document.getElementById("gen2SaveBtn");
-        if (gen2SaveBtn)
-          gen2SaveBtn.addEventListener("click", function () {
-            if (!gen2Result) return;
-            var audit = v2Audit(gen2Result);
-            var score = audit ? audit.score : 0;
-            var runs;
-            try { runs = JSON.parse(localStorage.getItem("sp_saved_runs") || "[]"); } catch(e) { runs = []; }
-            var title = "Расписание " + new Date().toLocaleDateString("ru-RU");
-            var run = {
-              id: Date.now(),
-              type: "schedule",
-              title: title,
-              score: score,
-              grade: score >= 90 ? "A" : score >= 70 ? "B" : score >= 50 ? "C" : score >= 30 ? "D" : "F",
-              date: new Date().toISOString(),
-              gen2: true,
-              gen2ResultData: gen2Result,
-              gen2InputData: gen2Data || null,
-            };
-            runs.push(run);
-            if (runs.length > 30) runs = runs.slice(-30);
-            try { localStorage.setItem("sp_saved_runs", JSON.stringify(runs)); } catch(e) {}
-            gen2SaveBtn.textContent = "✓ Сохранено";
-            gen2SaveBtn.disabled = true;
-            var savedSection = document.getElementById("accSaved");
-            if (savedSection) { savedSection.style.display = ""; }
-            /* refresh the list if renderSavedRuns is available */
-            if (typeof renderSavedRuns === "function") renderSavedRuns();
-            /* trigger re-render via account.js public fn if bound */
-            var evt = new CustomEvent("sp:savedRunsChanged");
-            document.dispatchEvent(evt);
-            setTimeout(function() {
-              gen2SaveBtn.textContent = "💾 Сохранить расписание";
-              gen2SaveBtn.disabled = false;
-            }, 2000);
-            var savedEl = document.getElementById("savedRunsList");
-            if (savedEl) savedEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          });
+        /* Save-кнопка убрана: автосохранение запускается сразу после
+           успешной генерации (см. блок setTimeout выше, поиск «Автосохранение
+           в историю»). Запись sp_saved_runs создаётся автоматически. */
 
         /* ─── Regenerate ─── */
         var regenBtn = document.getElementById("gen2RegenBtn");
