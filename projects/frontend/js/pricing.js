@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var FALLBACK = { school: { year: 13999, month: 1166 } };
+  var FALLBACK = { school: { year: 29000, month: 2416 } };
 
   function fmt(n) {
     return n.toLocaleString('ru-RU');

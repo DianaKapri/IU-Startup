@@ -13,7 +13,7 @@
 
   function getPriceLabel() {
     var p = window.__spPricing;
-    var year = (p && p.year) || 13999;
+    var year = (p && p.year) || 29000;
     return year.toLocaleString('ru-RU') + ' ₽/год';
   }
   var DEFAULT_TEXT = 'Оформите подписку, чтобы получить доступ к составлению расписания и другим премиум-возможностям.';

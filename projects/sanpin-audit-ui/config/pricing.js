@@ -1,5 +1,5 @@
-const SCHOOL_PRICE_YEAR = 13999;
-const SCHOOL_PRICE_MONTH = 1166;
+const SCHOOL_PRICE_YEAR = 29000;
+const SCHOOL_PRICE_MONTH = 2416;
 
 function formatPrice(amount) {
   return amount.toLocaleString('ru-RU');
