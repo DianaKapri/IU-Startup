@@ -225,6 +225,7 @@ spRequireAuth(function () {
 
       var nameVal   = (document.getElementById('profileName')     || {}).value.trim();
       var schoolVal = (document.getElementById('profileSchool')   || {}).value.trim();
+      var cityVal   = (document.getElementById('profileCity')     || {}).value.trim();
       var emailVal  = (document.getElementById('profileEmail')    || {}).value.trim().toLowerCase();
       var passVal   = (document.getElementById('profilePassword') || {}).value;
 
@@ -237,7 +238,7 @@ spRequireAuth(function () {
       }
       if (!valid) return;
 
-      spUpdateProfile(nameVal, schoolVal, emailVal, passVal || null).then(function (res) {
+      spUpdateProfile(nameVal, schoolVal, cityVal, emailVal, passVal || null).then(function (res) {
         if (!res.ok) {
           if (globalErr) globalErr.textContent = res.error || 'Ошибка сохранения';
           return;
