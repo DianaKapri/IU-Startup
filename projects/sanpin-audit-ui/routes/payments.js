@@ -15,7 +15,11 @@ const db = require('../config/database');
 const yokassa = require('../services/payment/yokassa');
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend = null;
+function getResend() {
+  if (!resend && process.env.RESEND_API_KEY) resend = new Resend(process.env.RESEND_API_KEY);
+  return resend;
+}
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@shkolaplan.ru';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
@@ -120,7 +124,7 @@ router.post(
           : 'на 1 год';
         const accountUrl = `${process.env.FRONTEND_URL || 'https://shkolaplan.ru'}/account.html`;
 
-        resend.emails.send({
+        getResend().emails.send({
           from: FROM_EMAIL,
           to: row.email,
           subject: 'Подписка активирована — ШколаПлан',
@@ -146,7 +150,7 @@ router.post(
 
       // Уведомление админу об оплате
       if (ADMIN_EMAIL) {
-        resend.emails.send({
+        getResend().emails.send({
           from: FROM_EMAIL,
           to: ADMIN_EMAIL,
           subject: `Оплата получена — ${row.organization_name || row.email}`,
@@ -251,7 +255,7 @@ router.post('/check/:paymentId', requireAdmin, async (req, res) => {
         ? new Date(planExpiresAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
         : 'на 1 год';
       const accountUrl = `${process.env.FRONTEND_URL || 'https://shkolaplan.ru'}/account.html`;
-      resend.emails.send({
+      getResend().emails.send({
         from: FROM_EMAIL,
         to: row.email,
         subject: 'Подписка активирована — ШколаПлан',
