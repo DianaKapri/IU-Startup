@@ -237,7 +237,7 @@ spRequireAuth(function () {
       }
       if (!valid) return;
 
-      spUpdateProfile(nameVal, schoolVal, cityVal, emailVal, passVal || null).then(function (res) {
+      spUpdateProfile(nameVal, schoolVal, emailVal, passVal || null).then(function (res) {
         if (!res.ok) {
           if (globalErr) globalErr.textContent = res.error || 'Ошибка сохранения';
           return;
