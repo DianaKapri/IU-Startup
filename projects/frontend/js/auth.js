@@ -324,23 +324,26 @@ function spRegister(email, password) {
 
 function spUpdateProfile(name, school, city, email, password) {
   return _initSupabase().then(function (sb) {
-    var updates = { data: { name: name, school: school, city: city || '' } };
-    if (email) updates.email = email;
-    if (password) updates.password = password;
-    return sb.auth.updateUser(updates).then(function (res) {
-      if (res.error) return { ok: false, error: res.error.message };
+    return sb.auth.getUser().then(function (userRes) {
+      var currentEmail = userRes.data && userRes.data.user && userRes.data.user.email;
+      var updates = { data: { name: name, school: school, city: city || '' } };
+      if (email && email !== currentEmail) updates.email = email;
+      if (password) updates.password = password;
+      return sb.auth.updateUser(updates).then(function (res) {
+        if (res.error) return { ok: false, error: _translateError(res.error.message) };
 
-      return sb.auth.getSession().then(function (sessRes) {
-        var token = sessRes.data && sessRes.data.session && sessRes.data.session.access_token;
-        var headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = 'Bearer ' + token;
-        return fetch('/api/users/me', {
-          method: 'PATCH',
-          headers: headers,
-          body: JSON.stringify({ name: name, school: school, city: city || '' }),
-        });
-      }).then(function () { return { ok: true }; })
-        .catch(function () { return { ok: true }; });
+        return sb.auth.getSession().then(function (sessRes) {
+          var token = sessRes.data && sessRes.data.session && sessRes.data.session.access_token;
+          var headers = { 'Content-Type': 'application/json' };
+          if (token) headers['Authorization'] = 'Bearer ' + token;
+          return fetch('/api/users/me', {
+            method: 'PATCH',
+            headers: headers,
+            body: JSON.stringify({ name: name, school: school, city: city || '' }),
+          });
+        }).then(function () { return { ok: true }; })
+          .catch(function () { return { ok: true }; });
+      });
     });
   });
 }
