@@ -733,8 +733,16 @@ spRequireAuth(function () {
     if (!list) return;
     var runs = _loadRuns();
     if (!runs.length) {
-      if (section) section.style.display = 'none';
-      list.innerHTML = '';
+      /* Секцию не скрываем — заголовок «Мои аудиты и расписания» должен
+         оставаться виден, чтобы пользователь знал, что раздел существует.
+         Вместо списка рисуем заглушку. */
+      if (section) section.style.display = '';
+      list.innerHTML =
+        '<div class="profile-wizard-history__empty" '
+        + 'style="padding:28px 20px;text-align:center;color:#86868b;font-size:.9rem;'
+        + 'border:1px dashed rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.02)">'
+        + 'Пока пусто.<br>Здесь появятся ваши проверки расписаний и сгенерированные расписания — сохраняются автоматически.'
+        + '</div>';
       return;
     }
     if (section) section.style.display = '';
