@@ -13,8 +13,21 @@ const app = express();
 
 // ─── Middleware ──────────────────────────────────────────────
 app.use(helmet());
+const ALLOWED_ORIGINS = new Set(
+  (process.env.FRONTEND_URL || 'http://localhost:3000')
+    .split(',')
+    .map(s => s.trim())
+    .concat(['http://localhost:3000', 'http://localhost:5000', 'https://shkolaplan.ru'])
+    .filter(Boolean)
+);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.has(origin) || origin.endsWith('.replit.dev') || origin.endsWith('.repl.co')) {
+      return callback(null, true);
+    }
+    callback(new Error('CORS: origin not allowed: ' + origin));
+  },
   credentials: true,
 }));
 app.use(express.json());
