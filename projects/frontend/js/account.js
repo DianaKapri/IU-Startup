@@ -789,10 +789,25 @@ spRequireAuth(function () {
       if (run) {
         var isGen2 = run.gen2 || (run.type === 'schedule' && !run.sch);
         if (isGen2 && run.gen2ResultData) {
-          if (typeof window.sp_restoreGen2 === 'function') {
-            window.sp_restoreGen2(run);
+          /* Gate подписки: просмотр прошлой генерации тоже требует
+             активного плана. Иначе сценарий «оплатил → сгенерировал →
+             отменил подписку → бессрочный доступ к скачиванию xlsx»
+             обходит платёжку. spEnsurePaidThen определена в account.html,
+             использует тот же source-of-truth (spGetCachedUser). */
+          var openRun = function () {
+            if (typeof window.sp_restoreGen2 === 'function') {
+              window.sp_restoreGen2(run);
+            }
+          };
+          if (typeof window.spEnsurePaidThen === 'function') {
+            window.spEnsurePaidThen(openRun,
+              'Просмотр сгенерированных расписаний доступен на тарифе «Школа». ' +
+              'Оформите подписку, чтобы открыть результат и скачать .xlsx.');
+          } else {
+            openRun();
           }
         } else if (run.sch && run.cg) {
+          /* Аудиты доступны без подписки — это базовая функция. */
           showResults(run.sch, run.cg, { kind: 'history' });
           document.getElementById('accResults') && document.getElementById('accResults').scrollIntoView({ behavior:'smooth' });
         }

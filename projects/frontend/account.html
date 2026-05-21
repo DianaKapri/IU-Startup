@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="./css/styles.css" />
     <link rel="stylesheet" href="./css/account.css" />
     <link rel="stylesheet" href="./css/account-cards.css?v=1" />
+    <link rel="stylesheet" href="./css/paywall.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -145,10 +146,12 @@
             id="accModeGen2"
           >
             <span class="acc-start-card__badge">02</span>
-            <span class="acc-start-card__title">Составить расписание</span>
+            <span class="acc-start-card__title">
+              Составить расписание
+              <span class="acc-start-card__pro" aria-label="Доступно на тарифе Школа">PRO</span>
+            </span>
             <span class="acc-start-card__text"
-              >Загрузите шаблон — расписание за секунды. Работает в браузере,
-              без ожидания сервера.</span
+              >Загрузите шаблон — расписание за секунды. Доступно на тарифе «Школа».</span
             >
           </button>
         </div>
@@ -730,6 +733,8 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <script src="./js/auth.js"></script>
+    <script src="./js/pricing.js"></script>
+    <script src="./js/paywall.js"></script>
     <script src="./js/engine.js"></script>
     <script src="./js/scripts.js"></script>
     <script>
@@ -750,13 +755,56 @@
           });
         }
 
+        /* ─── Gate подписки для генератора («Составить расписание») ───
+           Сам генератор v2Generate работает в браузере, поэтому надёжной
+           серверной защиты нет в принципе. Здесь — UX-блок: проверяем
+           plan через spGetCachedUser (тот же источник, что используется
+           для кнопки «Купить подписку» в шапке) и либо открываем секцию,
+           либо paywall-модалку.
+           openGen2Section вынесена в функцию, чтобы её можно было
+           вызвать и из «↩ Открыть» в истории (см. ниже). */
+        function openGen2Section() {
+          document.getElementById("accStart").style.display = "none";
+          document.getElementById("accGen2").style.display = "";
+        }
+
+        function ensurePaidThen(callback, reason) {
+          if (typeof spGetCachedUser !== "function") {
+            /* Если auth-модуль ещё не подгружен — пропускаем (fail-open в
+               dev-среде, чтобы не блокировать разработку). В проде функция
+               определена в auth.js, который подключён выше. */
+            callback();
+            return;
+          }
+          spGetCachedUser().then(function (u) {
+            if (u && u.plan === "paid") {
+              callback();
+              return;
+            }
+            if (typeof window.openPaywall === "function") {
+              window.openPaywall({
+                reason: reason ||
+                  "Составитель расписания доступен на тарифе «Школа». " +
+                  "Оформите подписку, чтобы загрузить шаблон и получить готовое " +
+                  "расписание за секунды.",
+              });
+            } else {
+              /* Fallback на случай если paywall.js не загрузился */
+              window.location.href = "/subscription.html";
+            }
+          });
+        }
+
         var gen2Card = document.getElementById("accModeGen2");
         if (gen2Card) {
           gen2Card.addEventListener("click", function () {
-            document.getElementById("accStart").style.display = "none";
-            document.getElementById("accGen2").style.display = "";
+            ensurePaidThen(openGen2Section);
           });
         }
+
+        /* Expose ensurePaidThen для других обработчиков на странице
+           (например, восстановление gen2-результата из истории). */
+        window.spEnsurePaidThen = ensurePaidThen;
 
         /* ─── Back buttons ─── */
         function goBackToStart() {
