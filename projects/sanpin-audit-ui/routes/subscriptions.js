@@ -6,7 +6,11 @@ const yokassa = require('../services/payment/yokassa');
 
 const { SCHOOL_PRICE_YEAR, formatPrice } = require('../config/pricing');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend = null;
+function getResend() {
+  if (!_resend && process.env.RESEND_API_KEY) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@shkolaplan.ru';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
@@ -97,7 +101,7 @@ router.post('/', async (req, res) => {
 
     // Уведомление админу о новой заявке
     if (ADMIN_EMAIL) {
-      resend.emails.send({
+      getResend().emails.send({
         from: FROM_EMAIL,
         to: ADMIN_EMAIL,
         subject: `Новая заявка — ${organization_name}`,
