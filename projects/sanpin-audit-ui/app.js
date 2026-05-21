@@ -85,6 +85,12 @@ app.use('/subscription-request', subscriptionsRouter);
 const adminSubscriptionsRouter = require('./routes/adminSubscriptions');
 app.use('/subscription-requests', adminSubscriptionsRouter);
 
+// ─── Protected scripts (signed URL для generator-v2.js) ───────
+// POST /api/generator-token  → выдать HMAC-токен (требует подписку)
+// GET  /api/scripts/generator-v2.js?token=...  → отдать защищённый файл
+const protectedScriptsRouter = require('./routes/protectedScripts');
+app.use('/', protectedScriptsRouter);
+
 // const dashboardRouter = require('./routes/dashboard');    // EP-07 (TODO)
 // app.use('/api/dashboard', dashboardRouter);
 

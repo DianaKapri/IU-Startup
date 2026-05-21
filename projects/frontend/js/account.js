@@ -789,13 +789,25 @@ spRequireAuth(function () {
       if (run) {
         var isGen2 = run.gen2 || (run.type === 'schedule' && !run.sch);
         if (isGen2 && run.gen2ResultData) {
-          /* Gate подписки: просмотр прошлой генерации тоже требует
-             активного плана. Иначе сценарий «оплатил → сгенерировал →
-             отменил подписку → бессрочный доступ к скачиванию xlsx»
-             обходит платёжку. spEnsurePaidThen определена в account.html,
-             использует тот же source-of-truth (spGetCachedUser). */
+          /* Gate подписки + загрузка защищённого скрипта.
+             1) spEnsurePaidThen — проверка plan на клиенте (UX-gate).
+             2) spLoadGen2Script — запрос signed-токена и подключение скрипта.
+             Без шага 2 sp_restoreGen2 упадёт на v2Audit is not defined.
+             Если пользователь без подписки — шаг 1 покажет paywall и до
+             шага 2 не дойдёт. */
           var openRun = function () {
-            if (typeof window.sp_restoreGen2 === 'function') {
+            if (typeof window.spLoadGen2Script === 'function') {
+              window.spLoadGen2Script().then(function () {
+                if (typeof window.sp_restoreGen2 === 'function') {
+                  window.sp_restoreGen2(run);
+                }
+              }).catch(function (err) {
+                console.error('[history → gen2 restore] load failed:', err);
+                alert('Не удалось загрузить составитель расписания. Попробуйте позже.');
+              });
+            } else if (typeof window.sp_restoreGen2 === 'function') {
+              /* Fallback (старый код без lazy loading) — теперь не должно
+                 случаться, потому что spLoadGen2Script определена в account.html. */
               window.sp_restoreGen2(run);
             }
           };

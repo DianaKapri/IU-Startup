@@ -742,7 +742,11 @@
       spInitNav();
     </script>
     <script src="./js/account.js?v=20260503"></script>
-    <script src="./js/generator-v2.js"></script>
+    <!-- generator-v2.js загружается лениво через защищённый эндпоинт
+         /api/scripts/generator-v2.js?token=... после проверки подписки.
+         См. функцию loadGen2Script ниже. Прямой статический путь
+         /js/generator-v2.js теперь не существует — файл переехал в
+         projects/sanpin-audit-ui/protected/generator-v2.js. -->
     <script>
       (function () {
         /* ─── Card clicks: direct navigation ─── */
@@ -756,23 +760,100 @@
         }
 
         /* ─── Gate подписки для генератора («Составить расписание») ───
-           Сам генератор v2Generate работает в браузере, поэтому надёжной
-           серверной защиты нет в принципе. Здесь — UX-блок: проверяем
-           plan через spGetCachedUser (тот же источник, что используется
-           для кнопки «Купить подписку» в шапке) и либо открываем секцию,
-           либо paywall-модалку.
+           Двойная защита:
+             1) Проверка plan через spGetCachedUser — если не paid, paywall.
+             2) Если paid — запрос signed-токена на сервере (требует
+                Authorization: Bearer + подписку). Сервер выдаёт HMAC-токен
+                с TTL 5 мин и отдаёт generator-v2.js только по этому токену.
+           Если пользователь обходит UI через DevTools и вызывает v2Generate
+           напрямую — функции в глобальном scope нет, потому что файл
+           вообще не загружается без проверки на сервере.
            openGen2Section вынесена в функцию, чтобы её можно было
            вызвать и из «↩ Открыть» в истории (см. ниже). */
+
+        var _gen2ScriptPromise = null;
+        function loadGen2Script() {
+          /* Возвращаем кэшированный Promise, чтобы повторные клики не
+             перезагружали скрипт. */
+          if (_gen2ScriptPromise) return _gen2ScriptPromise;
+
+          _gen2ScriptPromise = (async function () {
+            /* 1. Получаем supabase access_token */
+            var supa = null;
+            if (typeof window._initSupabase === "function") {
+              try { supa = await window._initSupabase(); } catch (_) {}
+            } else if (window.supabase && typeof window.supabase.createClient === "function") {
+              /* fallback — auth.js должен был это уже сделать */
+            }
+            var session = supa && supa.auth ? (await supa.auth.getSession()).data.session : null;
+            var accessToken = session && session.access_token;
+            if (!accessToken) {
+              throw new Error("Нет access token — войдите заново.");
+            }
+
+            /* 2. Запрашиваем signed-токен */
+            var tokenRes = await fetch("/api/generator-token", {
+              method: "POST",
+              headers: { "Authorization": "Bearer " + accessToken },
+            });
+            if (!tokenRes.ok) {
+              if (tokenRes.status === 403) {
+                throw new Error("PLAN_REQUIRED");
+              }
+              throw new Error("Не удалось получить токен (" + tokenRes.status + ")");
+            }
+            var tokenData = await tokenRes.json();
+            if (!tokenData.token) {
+              throw new Error("Сервер не вернул токен");
+            }
+
+            /* 3. Подключаем скрипт. Ждём onload. */
+            return new Promise(function (resolve, reject) {
+              var s = document.createElement("script");
+              s.src = "/api/scripts/generator-v2.js?token=" + encodeURIComponent(tokenData.token);
+              s.onload = function () { resolve(); };
+              s.onerror = function () {
+                _gen2ScriptPromise = null;  /* сбросить, чтобы можно было ретраить */
+                reject(new Error("Не удалось загрузить скрипт"));
+              };
+              document.head.appendChild(s);
+            });
+          })().catch(function (err) {
+            _gen2ScriptPromise = null;
+            throw err;
+          });
+
+          return _gen2ScriptPromise;
+        }
+
         function openGen2Section() {
-          document.getElementById("accStart").style.display = "none";
-          document.getElementById("accGen2").style.display = "";
+          /* Сначала грузим защищённый скрипт, потом открываем секцию.
+             Если что-то пошло не так — показываем paywall (вероятная
+             причина — подписка истекла между загрузкой страницы и кликом). */
+          loadGen2Script().then(function () {
+            document.getElementById("accStart").style.display = "none";
+            document.getElementById("accGen2").style.display = "";
+          }).catch(function (err) {
+            if (err && err.message === "PLAN_REQUIRED") {
+              if (typeof window.openPaywall === "function") {
+                window.openPaywall({
+                  reason: "Подписка истекла или не активна. " +
+                    "Оформите тариф «Школа», чтобы пользоваться составителем расписания.",
+                });
+              } else {
+                window.location.href = "/subscription.html";
+              }
+            } else {
+              console.error("[gen2 load]", err);
+              alert("Не удалось загрузить составитель расписания. Попробуйте позже.");
+            }
+          });
         }
 
         function ensurePaidThen(callback, reason) {
           if (typeof spGetCachedUser !== "function") {
-            /* Если auth-модуль ещё не подгружен — пропускаем (fail-open в
-               dev-среде, чтобы не блокировать разработку). В проде функция
-               определена в auth.js, который подключён выше. */
+            /* fail-open в dev-среде. В проде spGetCachedUser определена
+               в auth.js, который подключён выше. */
             callback();
             return;
           }
@@ -789,7 +870,6 @@
                   "расписание за секунды.",
               });
             } else {
-              /* Fallback на случай если paywall.js не загрузился */
               window.location.href = "/subscription.html";
             }
           });
@@ -802,9 +882,9 @@
           });
         }
 
-        /* Expose ensurePaidThen для других обработчиков на странице
-           (например, восстановление gen2-результата из истории). */
+        /* Expose для других обработчиков (history → restore gen2 result). */
         window.spEnsurePaidThen = ensurePaidThen;
+        window.spLoadGen2Script = loadGen2Script;
 
         /* ─── Back buttons ─── */
         function goBackToStart() {
