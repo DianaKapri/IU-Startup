@@ -225,7 +225,6 @@ spRequireAuth(function () {
 
       var nameVal   = (document.getElementById('profileName')     || {}).value.trim();
       var schoolVal = (document.getElementById('profileSchool')   || {}).value.trim();
-      var cityVal   = (document.getElementById('profileCity')     || {}).value.trim();
       var emailVal  = (document.getElementById('profileEmail')    || {}).value.trim().toLowerCase();
       var passVal   = (document.getElementById('profilePassword') || {}).value;
 
