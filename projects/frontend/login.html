@@ -84,6 +84,8 @@
       <label class="field__label" for="regPass">Пароль</label>
       <input class="field__input" id="regPass" type="password" placeholder="минимум 6 символов" autocomplete="new-password"/>
     </div>
+    <!-- Капча: honeypot + minTime + арифметика. Загружается через /api/captcha. -->
+    <div data-captcha></div>
     <p class="auth-form__err" id="regErr"></p>
     <button class="btn btn--primary btn--full" type="submit" id="regBtn">Зарегистрироваться</button>
     <p class="auth-form__switch">Уже есть аккаунт? <button type="button" class="auth-form__link" data-switch="login">Войти</button></p>
@@ -107,6 +109,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/captcha.js"></script>
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
@@ -222,32 +225,66 @@
     var pass   = document.getElementById('regPass').value;
     var err    = document.getElementById('regErr');
     var btn    = document.getElementById('regBtn');
+    var form   = document.getElementById('registerForm');
     err.textContent = '';
     if(pass.length < 6){ err.textContent = 'Пароль должен содержать минимум 6 символов.'; return; }
+
+    /* ─── Капча: предпроверка ДО Supabase signUp ───
+       Иначе при провале капчи останется orphan-аккаунт в Supabase
+       auth.users без записи в public.users. */
+    var captchaFields = window.spCaptcha && window.spCaptcha.getFields(form);
+    if (!captchaFields) return;  /* пустой ответ — spCaptcha сам показал ошибку */
+
     btn.disabled = true;
-    btn.textContent = 'Регистрируем…';
-    spRegister(email, pass).then(function(res){
-      if(res.ok){
-        if(res.confirmRequired){
-          var confirmEmail = document.getElementById('confirmEmail');
-          if(confirmEmail) confirmEmail.textContent = email;
-          document.getElementById('registerForm').style.display = 'none';
-          document.getElementById('authTabs').style.display = 'none';
-          document.getElementById('confirmPanel').style.display = '';
-        } else {
-          location.href = '/account.html';
+    btn.textContent = 'Проверка…';
+
+    fetch('/api/captcha/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(captchaFields),
+    }).then(function(r){ return r.json().then(function(d){ return { ok: r.ok, body: d }; }); })
+      .then(function(resp) {
+        if (!resp.ok) {
+          if (window.spCaptcha) window.spCaptcha.handleServerError(resp.body && resp.body.error);
+          else err.textContent = (resp.body && resp.body.error && resp.body.error.message) || 'Проверка не пройдена.';
+          btn.disabled = false;
+          btn.textContent = 'Зарегистрироваться';
+          return;
         }
-      } else {
-        err.textContent = res.error;
+
+        /* Капча ОК — продолжаем с регистрацией.
+           Передаём captchaFields дальше, чтобы /api/auth/register
+           тоже мог провалидировать (защита от попыток обойти фронт). */
+        btn.textContent = 'Регистрируем…';
+        spRegister(email, pass, captchaFields).then(function(res){
+          if(res.ok){
+            if(res.confirmRequired){
+              var confirmEmail = document.getElementById('confirmEmail');
+              if(confirmEmail) confirmEmail.textContent = email;
+              document.getElementById('registerForm').style.display = 'none';
+              document.getElementById('authTabs').style.display = 'none';
+              document.getElementById('confirmPanel').style.display = '';
+            } else {
+              location.href = '/account.html';
+            }
+          } else {
+            err.textContent = res.error;
+            btn.disabled = false;
+            btn.textContent = 'Зарегистрироваться';
+          }
+        }).catch(function(e){
+          console.error('[Register error]', e);
+          err.textContent = 'Ошибка подключения к серверу. Проверьте интернет или попробуйте позже.';
+          btn.disabled = false;
+          btn.textContent = 'Зарегистрироваться';
+        });
+      })
+      .catch(function(e){
+        console.error('[Captcha verify error]', e);
+        err.textContent = 'Не удалось проверить капчу. Попробуйте позже.';
         btn.disabled = false;
         btn.textContent = 'Зарегистрироваться';
-      }
-    }).catch(function(e){
-      console.error('[Register error]', e);
-      err.textContent = 'Ошибка подключения к серверу. Проверьте интернет или попробуйте позже.';
-      btn.disabled = false;
-      btn.textContent = 'Зарегистрироваться';
-    });
+      });
   });
 })();
 </script>

@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 const db = require('../config/database');
+const { verifyCaptcha } = require('../middleware/captcha');
 
 // TODO: вернуться к аутентификации через ADMIN_API_TOKEN (X-Admin-Token header),
 // когда токен будет корректно прописан в GitHub Secrets и .env на продовом сервере.
@@ -49,7 +50,8 @@ router.post('/admin/login', (req, res) => {
 // POST /api/auth/register
 // Создаёт записи в public.schools и public.users после успешного Supabase signUp.
 // Вызывается с фронтенда сразу после supabase.auth.signUp().
-router.post('/register', async (req, res) => {
+// Защищена капчей (honeypot + minTime + арифметика).
+router.post('/register', verifyCaptcha, async (req, res) => {
   const { userId, email, name, schoolName, city } = req.body;
 
   if (!userId || !email) {

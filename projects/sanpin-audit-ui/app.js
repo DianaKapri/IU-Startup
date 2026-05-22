@@ -98,6 +98,16 @@ app.use('/subscription-request', subscriptionsRouter);
 const adminSubscriptionsRouter = require('./routes/adminSubscriptions');
 app.use('/subscription-requests', adminSubscriptionsRouter);
 
+// ─── Капча (anti-bot для регистрации и оплаты) ────────────────
+// GET  /api/captcha         → { question, token }
+// POST /api/captcha/verify  → { ok: true } если капча пройдена (для предпроверки)
+// Также проверяется на /api/auth/register и /api/subscription-request (middleware)
+const captchaRouter = require('./routes/captcha');
+app.use('/captcha', captchaRouter);
+
+const captchaVerifyRouter = require('./routes/captchaVerify');
+app.use('/captcha/verify', captchaVerifyRouter);
+
 // ─── Protected scripts (signed URL для generator-v2.js) ───────
 // POST /api/generator-token  → выдать HMAC-токен (требует подписку)
 // GET  /api/scripts/generator-v2.js?token=...  → отдать защищённый файл

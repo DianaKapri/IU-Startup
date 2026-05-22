@@ -121,6 +121,8 @@
   <div class="field"><label class="field__label" for="payOrg">Название организации</label><input class="field__input" id="payOrg" type="text" placeholder="МБОУ СОШ №42"/></div>
   <div class="field"><label class="field__label" for="payInn">ИНН</label><input class="field__input" id="payInn" type="text" placeholder="1234567890"/></div>
   <div class="field"><label class="field__label" for="payEmail">Email для чека</label><input class="field__input" id="payEmail" type="email" placeholder="buh@school.ru"/></div>
+  <!-- Капча перед оплатой -->
+  <div data-captcha></div>
   <p class="pay-modal__err" id="payErr"></p>
   <p class="pay-modal__ok" id="payOk"></p>
   <button class="btn btn--primary btn--full" id="paySubmit" type="button">Перейти к оплате</button>
@@ -135,6 +137,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/pricing.js"></script>
+<script src="/js/captcha.js"></script>
 <script src="/js/scripts.js"></script>
 <script>
 spInitNav();
@@ -164,6 +167,11 @@ spInitNav();
 
     if (!org || !inn || !email) { err.textContent = 'Заполните все поля.'; return; }
 
+    /* Капча: достаём поля из виджета внутри pay-modal. Если пользователь
+       не ответил — spCaptcha.getFields сам покажет ошибку и вернёт null. */
+    const captchaFields = window.spCaptcha && window.spCaptcha.getFields(document.getElementById('payModal'));
+    if (!captchaFields) return;
+
     const btn = document.getElementById('paySubmit');
     const originalText = btn.textContent;
     btn.disabled = true;
@@ -171,7 +179,7 @@ spInitNav();
 
     const payWindow = window.open('', '_blank');
 
-    const body = { organization_name: org, inn, email };
+    const body = { organization_name: org, inn, email, ...captchaFields };
     if (typeof spGetCurrentUser === 'function') {
       try {
         const user = await spGetCurrentUser();
@@ -188,7 +196,13 @@ spInitNav();
       const data = await res.json();
       if (!res.ok) {
         if (payWindow) payWindow.close();
-        err.textContent = data.error?.message || 'Ошибка. Попробуйте позже.';
+        /* Если капча упала — показываем через handleServerError, перезагрузим challenge */
+        const errCode = data && data.error && data.error.code;
+        if (errCode && errCode.startsWith('CAPTCHA_') && window.spCaptcha) {
+          window.spCaptcha.handleServerError(data.error);
+        } else {
+          err.textContent = data.error?.message || 'Ошибка. Попробуйте позже.';
+        }
         btn.disabled = false;
         btn.textContent = originalText;
         return;

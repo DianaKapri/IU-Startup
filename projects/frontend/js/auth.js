@@ -24,70 +24,16 @@ function _showCooldownMsg() {
   setTimeout(function() { el.style.opacity = '0'; setTimeout(function() { el.remove(); }, 300); }, 2000);
 }
 
-/* ═══ «Я не робот» — confirmation before heavy actions ═══ */
-var _humanVerified = false;
-try { _humanVerified = sessionStorage.getItem('_humanOk') === '1'; } catch(e) {}
-
+/* ═══ «Я не робот» — упразднено в пользу настоящей капчи ═══
+   Раньше здесь была самописная модалка с чекбоксом, которая никакой
+   защиты не давала (обходилась `sessionStorage.setItem('_humanOk','1')`).
+   Теперь защита перенесена на серверный verifyCaptcha с honeypot+timer+
+   арифметикой (см. /js/captcha.js и /api/captcha). Сам requireHuman
+   оставлен как no-op для обратной совместимости с местами, где он ещё
+   вызывается (account.js, scripts.js, index.html). Эти места можно
+   подчищать постепенно — функция просто немедленно вызывает callback. */
 function requireHuman(callback) {
-  if (_humanVerified) { callback(); return; }
-  var overlay = document.getElementById('humanCheckOverlay');
-  if (overlay) { overlay.style.display = 'flex'; return; }
-
-  overlay = document.createElement('div');
-  overlay.id = 'humanCheckOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99998;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);';
-
-  var box = document.createElement('div');
-  box.style.cssText = 'background:#1d1d1f;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px 32px;max-width:340px;width:90%;text-align:center;';
-
-  var title = document.createElement('p');
-  title.textContent = 'Подтвердите действие';
-  title.style.cssText = 'color:#f5f5f7;font-size:1rem;font-weight:600;margin:0 0 16px;';
-
-  var label = document.createElement('label');
-  label.style.cssText = 'display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;margin-bottom:16px;transition:border-color .2s;';
-
-  var cb = document.createElement('input');
-  cb.type = 'checkbox';
-  cb.id = 'humanCheckbox';
-  cb.style.cssText = 'width:20px;height:20px;accent-color:#3b82f6;cursor:pointer;flex-shrink:0;';
-
-  var txt = document.createElement('span');
-  txt.textContent = 'Я не робот';
-  txt.style.cssText = 'color:#f5f5f7;font-size:.9rem;font-weight:500;';
-
-  label.appendChild(cb);
-  label.appendChild(txt);
-
-  var btn = document.createElement('button');
-  btn.textContent = 'Продолжить';
-  btn.style.cssText = 'width:100%;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;opacity:.4;pointer-events:none;transition:opacity .2s;font-family:inherit;';
-
-  cb.addEventListener('change', function() {
-    btn.style.opacity = cb.checked ? '1' : '.4';
-    btn.style.pointerEvents = cb.checked ? 'auto' : 'none';
-    label.style.borderColor = cb.checked ? '#3b82f6' : 'rgba(255,255,255,.1)';
-  });
-
-  btn.addEventListener('click', function() {
-    if (!cb.checked) return;
-    _humanVerified = true;
-    try { sessionStorage.setItem('_humanOk', '1'); } catch(e) {}
-    overlay.style.display = 'none';
-    callback();
-  });
-
-  overlay.addEventListener('click', function(e) {
-    if (e.target === overlay) overlay.style.display = 'none';
-  });
-
-  box.appendChild(title);
-  box.appendChild(label);
-  box.appendChild(btn);
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-
-  window._humanCallback = callback;
+  if (typeof callback === 'function') callback();
 }
 
 function _translateError(msg) {
@@ -266,7 +212,7 @@ function spLogin(email, password) {
   });
 }
 
-function spRegister(email, password) {
+function spRegister(email, password, captchaFields) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     return Promise.resolve({ ok: false, error: 'Некорректный email' });
   }
@@ -297,16 +243,25 @@ function spRegister(email, password) {
           })
         : Promise.resolve(null);
 
+      /* Тело запроса включает captchaFields, если они переданы.
+         Это нужно для проверки middleware verifyCaptcha на /api/auth/register. */
+      var backendBody = {
+        userId: u.id,
+        email: u.email,
+        name: '',
+        schoolName: '',
+        city: '',
+      };
+      if (captchaFields) {
+        backendBody._hp = captchaFields._hp;
+        backendBody._captchaToken = captchaFields._captchaToken;
+        backendBody._captchaAnswer = captchaFields._captchaAnswer;
+      }
+
       var backendPromise = fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: u.id,
-          email: u.email,
-          name: '',
-          schoolName: '',
-          city: '',
-        }),
+        body: JSON.stringify(backendBody),
       }).then(function (r) { return r.json(); })
         .then(function (data) {
           if (!data.ok) console.warn('[spRegister] backend register error:', data.error);

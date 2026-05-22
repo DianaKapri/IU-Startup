@@ -3,6 +3,7 @@ const router = express.Router();
 const { Resend } = require('resend');
 const db = require('../config/database');
 const yokassa = require('../services/payment/yokassa');
+const { verifyCaptcha } = require('../middleware/captcha');
 
 const { SCHOOL_PRICE_YEAR, formatPrice } = require('../config/pricing');
 
@@ -28,7 +29,8 @@ function escapeHtml(str) {
 }
 
 // POST /api/subscription-request
-router.post('/', async (req, res) => {
+// Защищена капчей (honeypot + minTime + арифметика).
+router.post('/', verifyCaptcha, async (req, res) => {
   const { organization_name, inn, email, user_id, user_name, user_school } = req.body;
 
   if (!organization_name || !inn || !email) {
