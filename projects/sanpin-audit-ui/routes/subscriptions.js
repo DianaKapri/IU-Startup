@@ -5,7 +5,7 @@ const db = require('../config/database');
 const yokassa = require('../services/payment/yokassa');
 const { verifyCaptcha } = require('../middleware/captcha');
 
-const { SCHOOL_PRICE_YEAR, formatPrice } = require('../config/pricing');
+const { SCHOOL_PRICE_YEAR, SCHOOL_PAYMENT_AMOUNT, formatPrice } = require('../config/pricing');
 
 let _resend = null;
 function getResend() {
@@ -63,7 +63,7 @@ router.post('/', verifyCaptcha, async (req, res) => {
     const result = await db.query(
       `INSERT INTO subscription_requests
          (organization_name, inn, email, plan, price, status, user_id, user_name, user_school, created_at)
-       VALUES ($1, $2, $3, 'school', ${SCHOOL_PRICE_YEAR}, 'pending', $4, $5, $6, NOW())
+       VALUES ($1, $2, $3, 'school', ${SCHOOL_PAYMENT_AMOUNT}, 'pending', $4, $5, $6, NOW())
        RETURNING id`,
       [organization_name, inn, email, user_id || null, user_name || null, user_school || null]
     );
@@ -75,7 +75,7 @@ router.post('/', verifyCaptcha, async (req, res) => {
     try {
       const returnUrl = `${process.env.FRONTEND_URL || 'https://shkolaplan.ru'}/account.html`;
       const payment = await yokassa.createPayment({
-        amount: SCHOOL_PRICE_YEAR,
+        amount: SCHOOL_PAYMENT_AMOUNT,
         description: `Подписка ШколаПлан — ${organization_name}`,
         returnUrl,
         metadata: { subscription_request_id: requestId },
