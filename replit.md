@@ -1,76 +1,140 @@
-# ШколаПлан — School Schedule System
+ШколаПлан
+Описание проекта
+ШколаПлан — веб-сервис для автоматизации школьного расписания. Решает две задачи: проверяет готовое расписание на соответствие СанПиН 1.2.3685-21 и генерирует новое расписание из учебного плана с учётом всех санитарных норм.
 
-## Overview
-ШколаПлан is an automated school scheduling system that helps schools create optimized timetables while ensuring compliance with Russian sanitary regulations (SanPiN 1.2.3685-21).
+Работает на двух уровнях доступа: бесплатный (аудит и просмотр) и платный (генерация расписания, подбор замен, расширенный экспорт).
 
-## Key Features
-- **SanPiN Audit**: Automatically checks schedules for 47+ regulatory violations
-- **Smart Parser**: Excel/CSV parser with fuzzy matching for teacher names and subjects
-- **Schedule Generation**: Algorithmic schedule generation with IEP (IUP) support
-- **Emergency Substitutions**: AI-assisted teacher replacement suggestions
-
-## Project Structure
-```
-server.js                    # Root entry point: serves frontend + proxies API
-package.json                 # Root package.json
-
+Функционал
+СанПиН-аудит
+Загрузка готового расписания в формате .xlsx / .xls
+Умный парсер с нечётким сопоставлением имён учителей и названий предметов
+Проверка по нормам СанПиН 1.2.3685-21:
+Максимальное число уроков в день по классам (1–11)
+Максимальная недельная нагрузка
+Шкала трудности предметов (по Сивкову)
+Распределение нагрузки по дням недели
+Обязательный облегчённый день
+Окна в расписании учителей
+Чередование сложных и лёгких предметов
+Итоговый балл качества расписания от 0 до 100
+Список нарушений с указанием класса, правила и рекомендации по устранению
+Оптимизированная версия расписания с исправленными нарушениями
+Генератор расписания (платный тариф)
+Два режима генерации:
+Быстрый — JS-алгоритм, результат за секунды
+Оптимальный — CP-SAT решатель (Google OR-Tools), максимальное качество, до 30 минут
+Генерация из учебного плана: классы, предметы, учителя, часы в неделю
+Загрузка учебного плана из .xlsx
+Автоматическая проверка сгенерированного расписания по СанПиН сразу после генерации
+Публичная ссылка на сгенерированное расписание (share URL)
+Экстренные замены (платный тариф)
+Подбор свободного учителя на конкретный урок
+Учитывает занятость педагогов в выбранный день и время
+Личный кабинет
+Регистрация и вход через Supabase Auth
+Профиль: имя, школа, email, пароль
+История загруженных расписаний и результатов аудита
+Выбор режима работы: аудит существующего или построение нового расписания
+Встроенная демо-версия аудита без загрузки файла
+Подписка и оплата
+Заявка на подписку с реквизитами организации
+Оплата через ЮKassa (webhook payment.succeeded)
+Email-уведомления через Resend при активации подписки
+Административная панель
+Просмотр и управление заявками на подписку
+Смена статуса заявки: одобрить / отклонить / выставить счёт
+Создание платёжной ссылки ЮKassa из интерфейса
+Страницы
+Файл	Назначение
+index.html	Лендинг с описанием продукта и демонстрацией аудита
+login.html	Вход и регистрация
+account.html	Личный кабинет: загрузка файла, аудит, конструктор
+generator.html	Генератор расписания из учебного плана
+demo.html	Публичная демо-страница
+audit-view.html	Просмотр результатов аудита
+schedule.html	Просмотр расписания
+compare.html	Сравнение двух расписаний
+subscription.html	Оформление подписки
+contacts.html	Контакты
+onboarding.html	Онбординг нового пользователя
+wizard.html	Мастер создания расписания
+reset-password.html	Сброс пароля
+admin.html	Административная панель
+admin-login.html	Вход в админку
+Архитектура
+server.js                        # Точка входа: раздаёт фронтенд + проксирует API
+package.json
 projects/
-  frontend/                  # Static HTML/CSS/JS frontend (landing, demo, login)
-    index.html               # Landing page
-    demo.html                # Demo page
-    login.html               # Login page
-    account.html             # User account page
-    css/                     # Stylesheets
-    js/                      # Frontend scripts
+  frontend/                      # Статический фронтенд (HTML/CSS/JS)
+    index.html, account.html …   # Страницы
+    css/                         # Стили
+    js/
+      auth.js                    # Supabase Auth: вход, регистрация, профиль
+      account.js                 # Логика личного кабинета
+      engine.js                  # Клиентский аудит и генерация (демо)
+  sanpin-audit-ui/               # Backend Express API (порт 4000)
+    app.js                       # Точка входа Express
+    config/database.js           # Пул соединений PostgreSQL
+    middleware/
+      upload.js                  # Multer: загрузка файлов
+      requirePlan.js             # Проверка тарифного плана
+      requireAdmin.js            # Проверка токена администратора
+    routes/
+      auth.js                    # POST /api/auth/register, /admin/login
+      users.js                   # GET/PATCH /api/users/me
+      schedules.js               # GET /api/schedules/template, POST/GET /api/schedules
+      generator.js               # POST /api/generate, /from-xlsx, /substitute
+      subscriptions.js           # POST /api/subscription-request
+      adminSubscriptions.js      # GET/PUT /api/admin/subscriptions
+      payments.js                # POST /api/payments/webhook, /check/:id
+      protectedScripts.js        # Защищённые JS-файлы для платных пользователей
+    services/
+      audit/                     # Логика проверки СанПиН (checks.js, scoring.js)
+      parser/                    # Парсер Excel с нечётким сопоставлением
+      template/                  # Генерация Excel-шаблона
+      payment/                   # Интеграция ЮKassa
+      auth/                      # Верификация Supabase JWT
+      cp-sat-service.js          # Интеграция с CP-SAT решателем
+    migrations/                  # SQL-миграции
 
-  sanpin-audit-ui/           # Backend Express API
-    app.js                   # Express entry point (runs on port 4000)
-    package.json
-    config/database.js       # PostgreSQL connection pool
-    middleware/upload.js     # File upload middleware (multer)
-    routes/schedules.js      # Schedule upload/status endpoints
-    services/parser/         # Excel file parser
-    services/audit/          # SanPiN audit logic
-    services/template/       # Excel template generation
-    migrations/              # SQL migration files
+Запуск:
 
-  schedule-generator/        # Schedule generation microservice
-  services/                  # Shared service logic
-```
+node server.js   # Фронтенд на порту 5000, API на порту 4000
 
-## Architecture
-- **Frontend**: Static files served by Express from `projects/frontend/` on port 5000
-- **Backend API**: Express app in `projects/sanpin-audit-ui/` on port 4000
-- **Proxy**: Root server proxies `/api/*` requests from port 5000 → 4000
-- **Database**: Replit PostgreSQL (DATABASE_URL env var)
+Фронтенд проксирует все /api/* запросы на порт 4000 через http-proxy-middleware.
 
-## Database Schema
-- `schools` — School records
-- `users` — User accounts (linked to schools)
-- `schedules` — Uploaded schedule files with parsing status
-- `audit_results` — SanPiN audit results for schedules
-
-## Running the App
-```bash
-node server.js   # Starts frontend (port 5000) + backend (port 4000)
-```
-
-## Authentication
-Supabase Auth is used for all user authentication:
-- Login / registration via `spLogin()` / `spRegister()` in `auth.js`
-- User profile (name, school, plan) stored in Supabase `user_metadata`
-- Session managed by Supabase JS SDK (loaded from CDN on all pages)
-- Public config (URL + anon key) served via `GET /api/client-config`
-
-## Environment Variables
-- `DATABASE_URL` — PostgreSQL connection string (set by Replit)
-- `SUPABASE_URL` — Supabase project URL (secret)
-- `SUPABASE_KEY` — Supabase anon public key (secret)
-- `PORT` — Backend port (defaults to 4000)
-- `FRONTEND_URL` — Allowed CORS origin (defaults to http://localhost:3000)
-- `NODE_ENV` — Environment mode (development/production)
-
-## Dependencies
-- **Root**: express (static server + proxy)
-- **Backend**: express, cors, helmet, multer, pg, xlsx, exceljs, dotenv
-- **Frontend CDN**: @supabase/supabase-js@2, xlsx@0.18.5
+База данных
+Таблица	Содержимое
+schools	Записи школ
+users	Пользователи (привязка к Supabase UID)
+schedules	Загруженные файлы расписаний и статус парсинга
+audit_results	Результаты СанПиН-аудита
+schedules_generated	Сгенерированные расписания (с флагом is_public)
+Таблицы оплаты	Заявки на подписку, платежи ЮKassa
+Аутентификация
+Вход / регистрация / сброс пароля — через Supabase Auth
+Имя, школа, план — хранятся в user_metadata Supabase и дублируются в PostgreSQL
+Supabase конфиг (URL + anon key) раздаётся фронтенду через GET /api/client-config
+Сессия управляется Supabase JS SDK (CDN)
+Смена профиля: email обновляется только если он изменился (иначе Supabase возвращает 422)
+Переменные окружения
+Переменная	Описание
+DATABASE_URL	Строка подключения PostgreSQL (задаётся Replit)
+SUPABASE_URL	URL проекта Supabase (секрет)
+SUPABASE_KEY	Anon public ключ Supabase (секрет)
+FRONTEND_URL	Разрешённый CORS origin, можно через запятую
+PORT	Порт бэкенда (по умолчанию 4000)
+NODE_ENV	Режим окружения (development / production)
+RESEND_API_KEY	API ключ Resend для email-уведомлений (секрет)
+RESEND_FROM_EMAIL	Адрес отправителя писем
+ADMIN_EMAIL	Email администратора для уведомлений об оплатах
+YOKASSA_SHOP_ID	ID магазина ЮKassa
+YOKASSA_SECRET_KEY	Секретный ключ ЮKassa
+ADMIN_TOKEN	Токен доступа к административным эндпоинтам
+Зависимости
+Root: express, http-proxy-middleware, dotenv
+Backend: express, cors, helmet, multer, pg, xlsx, exceljs, dotenv, resend
+Frontend CDN: @supabase/supabase-js@2, xlsx@0.18.5
+User preferences
+Язык общения: русский
+Комментарии в коде: русский
